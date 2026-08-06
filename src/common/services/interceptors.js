@@ -1,0 +1,38 @@
+import axiosInstance from "./axios";
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // console.log("Interceptor Executed");
+    console.log("URL:", config.url);
+
+    const token = localStorage.getItem("accessToken");
+
+    // console.log("TOKEN:", token);
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // console.log("Headers:", config.headers);
+
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+
+      window.location.href = "/";
+    }
+
+    return Promise.reject(error);
+  },
+);
+
+export default axiosInstance;
