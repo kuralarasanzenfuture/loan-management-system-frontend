@@ -19,17 +19,22 @@ export default function ProfileDropdown() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
+  // Mapped to safely pull `username` and `role_name` from the getMe API,
+  // falling back to defaults if they are missing.
   const currentUser = {
-    name: user?.name || user?.fullName || DEFAULT_USER.name,
+    name: user?.username || user?.name || user?.fullName || DEFAULT_USER.name,
     email: user?.email || DEFAULT_USER.email,
-    role: user?.role?.name || user?.role || DEFAULT_USER.role,
+    role:
+      user?.role_name || user?.role?.name || user?.role || DEFAULT_USER.role,
     avatarUrl: user?.avatarUrl || DEFAULT_USER.avatarUrl,
   };
+  console.log("Current User:", currentUser); // Debugging line to check the current user data
 
   useEffect(() => {
     if (!open) return;
     const handleClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target))
+        setOpen(false);
     };
     const handleEsc = (e) => e.key === "Escape" && setOpen(false);
     document.addEventListener("mousedown", handleClick);
@@ -43,11 +48,11 @@ export default function ProfileDropdown() {
   const handleLogout = async () => {
     setOpen(false);
     try {
-      await dispatch(logoutUser()).unwrap();
-      navigate("/login");
+      await dispatch(logoutUser());
     } catch (err) {
       console.error("Logout failed", err);
-      navigate("/login");
+    } finally {
+      navigate("/login", { replace: true });
     }
   };
 
@@ -67,8 +72,12 @@ export default function ProfileDropdown() {
         </div>
 
         <div className="hidden sm:flex flex-col items-start leading-tight">
-          <span className="text-xs font-semibold text-base-content">{currentUser.name}</span>
-          <span className="text-[10px] text-base-content/40 font-medium">{currentUser.role}</span>
+          <span className="text-xs font-semibold text-base-content">
+            {currentUser.name}
+          </span>
+          <span className="text-[10px] text-base-content/40 font-medium">
+            {currentUser.role}
+          </span>
         </div>
 
         <ChevronDown
@@ -89,8 +98,12 @@ export default function ProfileDropdown() {
                 </div>
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-bold text-base-content truncate">{currentUser.name}</span>
-                <span className="text-[11px] text-base-content/40 font-medium truncate">{currentUser.email}</span>
+                <span className="text-sm font-bold text-base-content truncate">
+                  {currentUser.name}
+                </span>
+                <span className="text-[11px] text-base-content/40 font-medium truncate">
+                  {currentUser.email}
+                </span>
               </div>
             </div>
           </li>
@@ -119,7 +132,8 @@ export default function ProfileDropdown() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 w-full text-xs font-semibold py-2.5 px-3 rounded-lg text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors cursor-pointer"
             >
-              <Settings size={15} className="text-base-content/40" /> Account Settings
+              <Settings size={15} className="text-base-content/40" /> Account
+              Settings
             </button>
           </li>
 

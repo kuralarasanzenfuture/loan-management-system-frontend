@@ -2,12 +2,15 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import authReducer from "../redux/auth/authSlice.js";
 import roleReducer from "../redux/roles/roleSlice.js";
+import userReducer from "../redux/users/userSlice.js";
+import customerReducer from "../redux/customers/customerSlice.js";
 
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     roles: roleReducer,
-    
+    users: userReducer,
+    customers: customerReducer
   },
 });

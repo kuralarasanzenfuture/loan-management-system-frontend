@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import { Outlet } from "react-router-dom";
+import { fetchCurrentUser } from "../../redux/auth/authSlice.js";
 import Sidebar from "../components/layout/Sidebar/Sidebar";
 import Header from "../components/layout/Header/Header";
 
@@ -9,8 +11,13 @@ import Header from "../components/layout/Header/Header";
  * Persists desktop collapse preference in localStorage for seamless sessions.
  */
 export default function MainLayout() {
+  const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+
+  useEffect(() => {
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
+
   // Persistent sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebar_collapsed");
@@ -22,7 +29,7 @@ export default function MainLayout() {
   }, [sidebarCollapsed]);
 
   return (
-    <div className="flex min-h-screen bg-base-300 text-base-content antialiased">
+    <div className="flex min-h-screen bg-base-200 text-base-content antialiased">
       {/* Sidebar Navigation */}
       <Sidebar
         open={sidebarOpen}

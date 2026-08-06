@@ -41,12 +41,14 @@ export const refreshToken = async () => {
 //   }
 // };
 
-export const logout = async () => {
+export const logout = async (data = {}) => {
   try {
-    const refreshToken = localStorage.getItem("refreshToken");
+    const refreshToken = data?.refreshToken || localStorage.getItem("refreshToken");
+    const session_id = data?.session_id || localStorage.getItem("sessionId");
 
     const response = await api.post("/users/logout", {
       refreshToken,
+      session_id,
     });
 
     return response.data;

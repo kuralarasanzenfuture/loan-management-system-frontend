@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { getRoles, createRole, updateRole, deleteRole } from "./roleService.js";
+import { getRoles, createRole, updateRole, deleteRole } from "./role.service.js";
 
 // Get Roles
 export const fetchRoles = createAsyncThunk(

@@ -2,16 +2,13 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   login,
   getMe,
-  refreshToken,
+  refreshToken as refreshTokenService, // renamed to avoid conflict if needed, though you import it as refreshToken
   logout,
   logoutAllDevices,
 } from "./auth.service.js";
 
 // -------------------- Helpers --------------------
 
-// Handles both `{ success, data: {...} }` wrapper shape and an
-// already-flat user object, so it's safe no matter which endpoint
-// happens to wrap its response and which doesn't.
 function unwrapUser(payload) {
   return payload?.data ?? payload;
 }
@@ -26,71 +23,87 @@ export const loginUser = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Login failed");
     }
-  },
+  }
 );
 
 export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
+      console.log("Fetching current user with getMe API call"); // Debugging line to check when the fetch is triggered
       return await getMe();
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch user",
+        error.response?.data?.message || "Failed to fetch user"
       );
     }
-  },
+  }
 );
 
 export const refreshUserToken = createAsyncThunk(
   "auth/refreshToken",
   async (_, { rejectWithValue }) => {
     try {
-      return await refreshToken();
+      return await refreshTokenService();
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Token refresh failed",
+        error.response?.data?.message || "Token refresh failed"
       );
     }
-  },
+  }
 );
 
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch }) => {
     try {
-      await logout();
-      return true;
+      const token = localStorage.getItem("refreshToken");
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const sessionId = localStorage.getItem("sessionId") || user?.session_id;
+      await logout({ refreshToken: token, session_id: sessionId });
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Logout failed");
+      console.warn("Server logout error:", error);
+    } finally {
+      dispatch(clearAuth());
     }
-  },
+    return true;
+  }
 );
 
 export const logoutAll = createAsyncThunk(
   "auth/logoutAll",
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch }) => {
     try {
-      await logoutAllDevices();
-      return true;
+      const token = localStorage.getItem("refreshToken");
+      await logoutAllDevices({ refreshToken: token });
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Logout all failed",
-      );
+      console.warn("Server logout all error:", error);
+    } finally {
+      dispatch(clearAuth());
     }
-  },
+    return true;
+  }
 );
 
 // -------------------- Initial State --------------------
 
 const rawStoredUser = JSON.parse(localStorage.getItem("user")) || null;
+const rawAccessToken = localStorage.getItem("accessToken");
+const isValidAccessToken =
+  rawAccessToken &&
+  rawAccessToken !== "undefined" &&
+  rawAccessToken !== "null";
+
+if (!isValidAccessToken && rawAccessToken) {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("user");
+  localStorage.removeItem("refreshToken");
+}
 
 const initialState = {
-  // Guard against old cached data that may have been saved in the
-  // wrapped `{ success, data }` shape before this fix.
   user: unwrapUser(rawStoredUser),
-  accessToken: localStorage.getItem("accessToken") || null,
-  isAuthenticated: !!localStorage.getItem("accessToken"),
+  accessToken: isValidAccessToken ? rawAccessToken : null,
+  isAuthenticated: isValidAccessToken,
   loading: false,
   error: null,
 };
@@ -108,12 +121,38 @@ const authSlice = createSlice({
 
     setCredentials(state, action) {
       const userData = unwrapUser(action.payload.user);
-      state.user = userData;
-      state.accessToken = action.payload.accessToken;
-      state.isAuthenticated = true;
+      const token =
+        action.payload.accessToken ||
+        action.payload.access_token ||
+        action.payload.data?.accessToken ||
+        action.payload.data?.access_token;
+      const refreshToken =
+        action.payload.refreshToken ||
+        action.payload.refresh_token ||
+        action.payload.data?.refreshToken ||
+        action.payload.data?.refresh_token;
+      const sessionId =
+        action.payload.session_id ||
+        action.payload.sessionId ||
+        action.payload.data?.session_id ||
+        action.payload.data?.sessionId;
 
-      localStorage.setItem("accessToken", action.payload.accessToken);
-      localStorage.setItem("user", JSON.stringify(userData));
+      state.user = userData;
+      state.accessToken = token;
+      state.isAuthenticated = Boolean(token);
+
+      if (token) {
+        localStorage.setItem("accessToken", token);
+      }
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
+      }
+      if (sessionId) {
+        localStorage.setItem("sessionId", sessionId);
+      }
+      if (userData) {
+        localStorage.setItem("user", JSON.stringify(userData));
+      }
     },
 
     clearAuth(state) {
@@ -123,6 +162,8 @@ const authSlice = createSlice({
       state.error = null;
 
       localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("sessionId");
       localStorage.removeItem("user");
     },
   },
@@ -139,13 +180,45 @@ const authSlice = createSlice({
         state.loading = false;
 
         const userData = unwrapUser(action.payload.user);
-        state.user = userData;
-        state.accessToken = action.payload.accessToken;
-        state.isAuthenticated = true;
+        const token =
+          action.payload.accessToken ||
+          action.payload.access_token ||
+          action.payload.data?.accessToken ||
+          action.payload.data?.access_token;
+        const refreshToken =
+          action.payload.refreshToken ||
+          action.payload.refresh_token ||
+          action.payload.data?.refreshToken ||
+          action.payload.data?.refresh_token;
+        const sessionId =
+          action.payload.session_id ||
+          action.payload.sessionId ||
+          action.payload.data?.session_id ||
+          action.payload.data?.sessionId;
 
-        localStorage.setItem("accessToken", action.payload.accessToken);
-        localStorage.setItem("refreshToken", action.payload.refreshToken);
-        localStorage.setItem("user", JSON.stringify(userData));
+        state.user = userData;
+        state.accessToken = token || null;
+        state.isAuthenticated = Boolean(token);
+
+        if (token) {
+          localStorage.setItem("accessToken", token);
+        } else {
+          localStorage.removeItem("accessToken");
+        }
+
+        if (refreshToken) {
+          localStorage.setItem("refreshToken", refreshToken);
+        } else {
+          localStorage.removeItem("refreshToken");
+        }
+
+        if (sessionId) {
+          localStorage.setItem("sessionId", sessionId);
+        }
+
+        if (userData) {
+          localStorage.setItem("user", JSON.stringify(userData));
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -160,10 +233,11 @@ const authSlice = createSlice({
         state.loading = false;
 
         const userData = unwrapUser(action.payload);
-        // console.log("current user",userData);
         state.user = userData;
 
-        // localStorage.setItem("user", JSON.stringify(userData));
+        console.log("Fetched Current User:", userData); // Debugging line to check the fetched user data
+        // Persist the updated getMe profile to LocalStorage
+        localStorage.setItem("user", JSON.stringify(userData));
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {
         state.loading = false;
@@ -172,9 +246,17 @@ const authSlice = createSlice({
 
       // Refresh Token
       .addCase(refreshUserToken.fulfilled, (state, action) => {
-        state.accessToken = action.payload.accessToken;
+        const token =
+          action.payload.accessToken ||
+          action.payload.access_token ||
+          action.payload.data?.accessToken ||
+          action.payload.data?.access_token;
 
-        localStorage.setItem("accessToken", action.payload.accessToken);
+        state.accessToken = token || null;
+
+        if (token) {
+          localStorage.setItem("accessToken", token);
+        }
       })
 
       // Logout
@@ -184,6 +266,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
 
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
       })
 
@@ -194,6 +277,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
 
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
       });
   },
