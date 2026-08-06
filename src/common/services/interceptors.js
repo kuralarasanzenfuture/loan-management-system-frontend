@@ -97,14 +97,26 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Call your refresh token API
+        // Call refresh token API
         const data = await refreshToken();
-        
-        // Adjust property path based on your API response structure (e.g., data.accessToken or data.data.accessToken)
-        const newAccessToken = data.accessToken; 
+
+        const newAccessToken =
+          data?.access_token ||
+          data?.accessToken ||
+          data?.data?.access_token ||
+          data?.data?.accessToken;
+
+        const newRefreshToken =
+          data?.refresh_token ||
+          data?.refreshToken ||
+          data?.data?.refresh_token ||
+          data?.data?.refreshToken;
 
         if (newAccessToken) {
           localStorage.setItem("accessToken", newAccessToken);
+          if (newRefreshToken) {
+            localStorage.setItem("refreshToken", newRefreshToken);
+          }
 
           // Update header for current failed request
           axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;

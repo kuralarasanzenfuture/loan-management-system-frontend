@@ -23,7 +23,15 @@ export const getMe = async () => {
 
 export const refreshToken = async () => {
   try {
-    const response = await api.post("/users/refresh-token");
+    const refresh_token = localStorage.getItem("refreshToken");
+    const session_id = localStorage.getItem("sessionId");
+
+    const response = await api.post("/users/refresh-token", {
+      refresh_token,
+      refreshToken: refresh_token,
+      session_id,
+      sessionId: session_id,
+    });
     return response.data;
   } catch (error) {
     console.error("Error refreshing token:", error);

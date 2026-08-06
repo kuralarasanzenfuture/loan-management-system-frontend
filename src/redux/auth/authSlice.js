@@ -251,11 +251,19 @@ const authSlice = createSlice({
           action.payload.access_token ||
           action.payload.data?.accessToken ||
           action.payload.data?.access_token;
+        const refreshToken =
+          action.payload.refreshToken ||
+          action.payload.refresh_token ||
+          action.payload.data?.refreshToken ||
+          action.payload.data?.refresh_token;
 
         state.accessToken = token || null;
 
         if (token) {
           localStorage.setItem("accessToken", token);
+        }
+        if (refreshToken) {
+          localStorage.setItem("refreshToken", refreshToken);
         }
       })
 
