@@ -89,6 +89,11 @@ export const NAV_SECTIONS = [
         path: "/active-loans",
       },
       {
+        label: "Loan Plans",
+        icon: PiggyBank,
+        path: "/loan-plans",
+      },
+      {
         label: "Loan Types",
         icon: Calculator,
         path: "/loan-types",

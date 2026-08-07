@@ -4,6 +4,7 @@ import authReducer from "../redux/auth/authSlice.js";
 import roleReducer from "../redux/roles/roleSlice.js";
 import userReducer from "../redux/users/userSlice.js";
 import customerReducer from "../redux/customers/customerSlice.js";
+import loanPlanAndPenalityReducer from "../redux/loanPlanAndPenalities/loanPlanAndPenalitySlice.js";
 
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     auth: authReducer,
     roles: roleReducer,
     users: userReducer,
-    customers: customerReducer
+    customers: customerReducer,
+    loanPlanAndPenalities: loanPlanAndPenalityReducer,
   },
 });

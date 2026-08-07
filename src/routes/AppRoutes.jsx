@@ -12,6 +12,10 @@ import RolesPage from "../features/roles/pages/RolesPage.jsx";
 import UsersPage from "../features/users/pages/UsersPage.jsx";
 import CustomersPage from "../features/customers/pages/CustomersPage.jsx";
 import CustomerViewPage from "../features/customers/pages/CustomerViewPage.jsx";
+import ProfilePage from "../common/pages/ProfilePage.jsx";
+import SettingsPage from "../common/pages/SettingsPage.jsx";
+import LoanPlansPage from "../features/loanPlan/pages/LoanPlansPage.jsx";
+import LoanPlanViewPage from "../features/loanPlan/pages/LoanPlanViewPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -26,6 +30,8 @@ const AppRoutes = () => {
       {/* Protected */}
       <Route element={<ProtectedRoute />}>
         {/* Dashboard Layout */}
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
 
@@ -38,10 +44,15 @@ const AppRoutes = () => {
           />
 
           <Route path="/guarantors" element={<div>Guarantors Page</div>} />
+
+          <Route path="/loan-plans" element={<LoanPlansPage />} />
+          <Route path="/loan-plans/:id" element={<LoanPlanViewPage />} />
+
           <Route
             path="/loan-applications"
             element={<div>Loan Applications Page</div>}
           />
+          {/* <Route path="/loan-plans" element={<div>Loan Plans Page</div>} /> */}
           <Route
             path="/loan-approval"
             element={<div>Loan Approval Page</div>}

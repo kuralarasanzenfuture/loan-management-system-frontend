@@ -56,6 +56,16 @@ export default function ProfileDropdown() {
     }
   };
 
+  const handleProfile = () => {
+    setOpen(false);
+    navigate("/profile");
+  };
+
+  const handleSettings = () => {
+    setOpen(false);
+    navigate("/settings");
+  };
+
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -111,7 +121,8 @@ export default function ProfileDropdown() {
           <li>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              // onClick={() => setOpen(false)}
+              onClick={handleProfile}
               className="flex items-center gap-2 w-full text-xs font-semibold py-2.5 px-3 rounded-lg text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors cursor-pointer"
             >
               <User size={15} className="text-base-content/40" /> My Profile
@@ -129,7 +140,8 @@ export default function ProfileDropdown() {
           <li>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              // onClick={() => setOpen(false)}
+              onClick={handleSettings}
               className="flex items-center gap-2 w-full text-xs font-semibold py-2.5 px-3 rounded-lg text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors cursor-pointer"
             >
               <Settings size={15} className="text-base-content/40" /> Account
