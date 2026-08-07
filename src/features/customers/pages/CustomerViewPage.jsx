@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -13,9 +13,12 @@ import {
 } from "lucide-react";
 import {
   fetchCustomerById,
+  editCustomer,
   clearSelectedCustomer,
+  clearCustomerError,
 } from "../../../redux/customers/customerSlice.js";
 import CustomerDocumentsPanel from "../components/CustomerDocumentsPanel.jsx";
+import CustomerFormModal from "../components/CustomerFormModal.jsx";
 
 const STATUS_STYLES = {
   active: "badge-success badge-outline",
@@ -27,12 +30,27 @@ export default function CustomerViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { customer, loading } = useSelector((state) => state.customers);
+  const { customer, loading, error } = useSelector((state) => state.customers);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [formSubmitting, setFormSubmitting] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCustomerById(id));
     return () => dispatch(clearSelectedCustomer());
   }, [dispatch, id]);
+
+  const handleEditSubmit = async (formData) => {
+    setFormSubmitting(true);
+    try {
+      const action = await dispatch(editCustomer({ id, formData }));
+      if (editCustomer.fulfilled.match(action)) {
+        setEditModalOpen(false);
+        dispatch(fetchCustomerById(id));
+      }
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
 
   if (loading && !customer) {
     return (
@@ -100,7 +118,10 @@ export default function CustomerViewPage() {
         </div>
 
         <button
-          onClick={() => navigate(`/customers/${customer.id}/edit`)}
+          onClick={() => {
+            dispatch(clearCustomerError());
+            setEditModalOpen(true);
+          }}
           className="btn btn-primary btn-sm gap-1.5"
         >
           <Pencil size={15} />
@@ -178,7 +199,10 @@ export default function CustomerViewPage() {
           </div>
 
           {/* Documents */}
-          <CustomerDocumentsPanel documents={customer.documents || []} />
+          <CustomerDocumentsPanel
+            documents={customer.documents || []}
+            photo={customer.photo}
+          />
         </div>
 
         {/* Right column: reference & meta */}
@@ -229,6 +253,18 @@ export default function CustomerViewPage() {
           </div>
         </div>
       </div>
+
+      <CustomerFormModal
+        open={editModalOpen}
+        initialData={customer}
+        loading={formSubmitting}
+        error={editModalOpen ? error : null}
+        onClose={() => {
+          setEditModalOpen(false);
+          dispatch(clearCustomerError());
+        }}
+        onSubmit={handleEditSubmit}
+      />
     </div>
   );
 }

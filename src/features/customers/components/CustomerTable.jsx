@@ -72,6 +72,7 @@ export default function CustomerTable({
               <tr
                 key={c.id}
                 className="border-b border-base-200 last:border-0 hover:bg-base-200/50 transition-colors"
+                onClick={() => onView(c)}
               >
                 <td className="text-base-content/40">{index + 1}</td>
 

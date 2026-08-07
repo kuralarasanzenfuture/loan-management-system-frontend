@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Search, Users, CheckCircle2, Ban } from "lucide-react";
 import {
   fetchCustomers,
+  fetchCustomerById,
   addCustomer,
   editCustomer,
   removeCustomer,
@@ -97,9 +98,14 @@ export default function CustomersPage() {
     setFormModal({});
   };
 
-  const handleOpenEdit = (customer) => {
+  const handleOpenEdit = async (customer) => {
     dispatch(clearCustomerError());
-    setFormModal(customer);
+    const res = await dispatch(fetchCustomerById(customer.id));
+    if (fetchCustomerById.fulfilled.match(res)) {
+      setFormModal(res.payload.data || res.payload);
+    } else {
+      setFormModal(customer);
+    }
   };
 
   const handleCloseForm = () => {
@@ -121,6 +127,7 @@ export default function CustomersPage() {
 
       if (wasFulfilled) {
         setFormModal(null);
+        dispatch(fetchCustomers());
       }
     } finally {
       setFormSubmitting(false);
@@ -134,6 +141,7 @@ export default function CustomersPage() {
       const action = await dispatch(removeCustomer(deleteTarget.id));
       if (removeCustomer.fulfilled.match(action)) {
         setDeleteTarget(null);
+        dispatch(fetchCustomers());
       }
     } finally {
       setDeleteSubmitting(false);
@@ -273,11 +281,9 @@ export default function CustomersPage() {
       {/* Delete confirm modal */}
       <CustomerDeleteModal
         open={Boolean(deleteTarget)}
-        itemName={[deleteTarget?.first_name, deleteTarget?.last_name]
-          .filter(Boolean)
-          .join(" ")}
-        itemLabel="customer"
+        customer={deleteTarget}
         loading={deleteSubmitting}
+        error={error}
         onConfirm={handleConfirmDelete}
         onClose={() => setDeleteTarget(null)}
       />

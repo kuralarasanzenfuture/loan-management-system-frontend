@@ -96,6 +96,7 @@ const customerSlice = createSlice({
       .addCase(fetchCustomers.fulfilled, (state, action) => {
         state.loading = false;
         state.customers = action.payload.data || action.payload;
+        console.log("Fetched customers:", state.customers);
       })
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.loading = false;
@@ -109,6 +110,7 @@ const customerSlice = createSlice({
       .addCase(fetchCustomerById.fulfilled, (state, action) => {
         state.loading = false;
         state.customer = action.payload.data || action.payload;
+        console.log("Fetched customer:", state.customer);
       })
       .addCase(fetchCustomerById.rejected, (state, action) => {
         state.loading = false;
