@@ -1,7 +1,7 @@
 import React from "react";
-import SidebarBrand from "./SidebarBrand";
+import SidebarBrand from "./components/SidebarBrand";
 import SidebarNav from "./SidebarNav";
-import SidebarFooter from "./SidebarFooter";
+import SidebarFooter from "./components/SidebarFooter";
 
 /**
  * Sidebar Component

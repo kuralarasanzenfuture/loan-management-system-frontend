@@ -111,3 +111,30 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
 }
+
+/* Add this to your globals.css (or wherever your other utility classes live).
+   Keeps the sidebar's scrollbar thin so it doesn't squeeze the ~80px
+   collapsed icon column. Works in Firefox (scrollbar-width) and
+   Chrome/Safari/Edge (::-webkit-scrollbar). */
+
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
