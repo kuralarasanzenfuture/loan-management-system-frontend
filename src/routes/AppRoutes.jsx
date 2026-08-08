@@ -18,6 +18,7 @@ import LoanPlansPage from "../features/loanPlan/pages/LoanPlansPage.jsx";
 import LoanPlanViewPage from "../features/loanPlan/pages/LoanPlanViewPage.jsx";
 import CustomerLoansPage from "../features/customerLoans/pages/CustomerLoansPage.jsx";
 import LoanViewPage from "../features/customerLoans/pages/LoanViewPage.jsx";
+import Analytics from "../features/Analytics/pages/Analytics.jsx";
 
 const AppRoutes = () => {
   return (
@@ -37,10 +38,13 @@ const AppRoutes = () => {
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
 
-          <Route path="/analytics" element={<div>Analytics Page</div>} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:id" element={<CustomerViewPage />} />
-          <Route path="/customer-documents" element={<div>Customer Documesnts Page</div>} />
+          <Route
+            path="/customer-documents"
+            element={<div>Customer Documesnts Page</div>}
+          />
 
           <Route path="/guarantors" element={<div>Guarantors Page</div>} />
 
@@ -54,7 +58,10 @@ const AppRoutes = () => {
           <Route path="/loan-applications" element={<CustomerLoansPage />} />
           <Route path="/loans/:id" element={<LoanViewPage />} />
           {/* <Route path="/loans/:id" element={<div >View Loan</div>} /> */}
-          <Route path="/loan-approval" element={<div>Loan Approval Page</div>} />
+          <Route
+            path="/loan-approval"
+            element={<div>Loan Approval Page</div>}
+          />
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/repayments" element={<div>Repayments Page</div>} />
