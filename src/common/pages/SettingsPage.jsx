@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Settings as SettingsIcon,
   ShieldCheck,
@@ -10,7 +10,26 @@ import {
   Sun,
   LogOut,
   Check,
+  ChevronDown,
 } from "lucide-react";
+
+// All themes available in the daisyUI config (tailwind.config.js)
+const AVAILABLE_THEMES = [
+  "meridian-light",
+  "meridian-dark",
+  "light",
+  "dark",
+  "cupcake",
+  "corporate",
+  "business",
+  "night",
+  "forest",
+  "luxury",
+  "dracula",
+  "winter",
+  "dim",
+  "nord",
+];
 
 const TABS = [
   { key: "security", label: "Security", icon: ShieldCheck },
@@ -130,7 +149,7 @@ function SecurityTab() {
           {MOCK_SESSIONS.map((s) => (
             <div
               key={s.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-base-200 px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-lg border border-base-200 px-4 py-3"
             >
               <div>
                 <div className="text-sm font-medium flex items-center gap-2">
@@ -240,9 +259,36 @@ function NotificationsTab() {
 
 /* ---------------- Preferences ---------------- */
 function PreferencesTab() {
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("meridian-theme") || "meridian-dark",
+  );
+  const [themeOpen, setThemeOpen] = useState(false);
+  const themeRef = useRef(null);
   const [language, setLanguage] = useState("en");
   const [timezone, setTimezone] = useState("Asia/Kolkata");
+
+  // Apply the selected theme to the document root and persist it,
+  // mirroring the behaviour of the ThemeSelector component.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("meridian-theme", theme);
+  }, [theme]);
+
+  // Close the theme dropdown when clicking outside
+  useEffect(() => {
+    if (!themeOpen) return;
+    const handleClick = (e) => {
+      if (themeRef.current && !themeRef.current.contains(e.target))
+        setThemeOpen(false);
+    };
+    const handleEsc = (e) => e.key === "Escape" && setThemeOpen(false);
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [themeOpen]);
 
   return (
     <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
@@ -252,41 +298,64 @@ function PreferencesTab() {
       </p>
 
       <div className="space-y-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-base-200 text-base-content/50 shrink-0">
-              {theme === "dark" ? <Moon size={15} /> : <Sun size={15} />}
-            </span>
-            <div>
-              <div className="text-sm font-medium">Theme</div>
-              <div className="text-xs text-base-content/50 mt-0.5">
-                Switch between light and dark mode.
-              </div>
-            </div>
-          </div>
-          <div className="join">
+        <div className="form-control">
+          <label className="label pb-1" htmlFor="pref-theme">
+            <span className="label-text text-xs font-semibold">Theme</span>
+          </label>
+          <div ref={themeRef} className="relative">
             <button
-              className={`join-item btn btn-sm ${theme === "light" ? "btn-primary" : "btn-ghost bg-base-200"}`}
-              onClick={() => setTheme("light")}
+              id="pref-theme"
+              type="button"
+              onClick={() => setThemeOpen((v) => !v)}
+              className="btn btn-sm btn-outline w-full justify-between normal-case"
+              aria-expanded={themeOpen}
             >
-              Light
+              <span className="flex items-center gap-2">
+                {theme === "light" || theme === "meridian-light" ? (
+                  <Sun size={14} />
+                ) : (
+                  <Moon size={14} />
+                )}
+                {theme.replace("meridian-", "")}
+              </span>
+              <ChevronDown size={14} className="shrink-0" />
             </button>
-            <button
-              className={`join-item btn btn-sm ${theme === "dark" ? "btn-primary" : "btn-ghost bg-base-200"}`}
-              onClick={() => setTheme("dark")}
-            >
-              Dark
-            </button>
+
+            {themeOpen && (
+              <ul className="absolute right-0 left-0 top-full mt-2 max-h-60 overflow-y-auto rounded-xl border border-base-300 bg-base-100 shadow-dropdown p-1 z-50">
+                {AVAILABLE_THEMES.map((t) => (
+                  <li key={t}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTheme(t);
+                        setThemeOpen(false);
+                      }}
+                      className={`flex items-center justify-between w-full text-xs font-medium py-2 px-3 rounded-lg transition-colors ${
+                        theme === t
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
+                      }`}
+                    >
+                      <span className="capitalize">
+                        {t.replace("meridian-", "")}
+                      </span>
+                      {theme === t && <Check size={13} className="text-primary" />}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
         <div className="form-control max-w-xs">
-          <label className="label py-1" htmlFor="pref-language">
-            <span className="label-text text-xs font-medium">Language</span>
+          <label className="label pb-1" htmlFor="pref-language">
+            <span className="label-text text-xs font-semibold">Language</span>
           </label>
           <select
             id="pref-language"
-            className="select select-bordered select-sm"
+            className="select select-bordered select-sm rounded-lg"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
@@ -297,12 +366,12 @@ function PreferencesTab() {
         </div>
 
         <div className="form-control max-w-xs">
-          <label className="label py-1" htmlFor="pref-timezone">
-            <span className="label-text text-xs font-medium">Timezone</span>
+          <label className="label pb-1" htmlFor="pref-timezone">
+            <span className="label-text text-xs font-semibold">Timezone</span>
           </label>
           <select
             id="pref-timezone"
-            className="select select-bordered select-sm"
+            className="select select-bordered select-sm rounded-lg"
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
           >

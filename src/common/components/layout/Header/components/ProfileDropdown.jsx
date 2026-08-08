@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { logoutUser } from "../../../../redux/auth/authSlice.js";
+import { logoutUser } from "../../../../../redux/auth/authSlice.js";
 import { LogOut, User, Settings, CreditCard, ChevronDown } from "lucide-react";
 
 const DEFAULT_USER = {
@@ -28,7 +28,6 @@ export default function ProfileDropdown() {
       user?.role_name || user?.role?.name || user?.role || DEFAULT_USER.role,
     avatarUrl: user?.avatarUrl || DEFAULT_USER.avatarUrl,
   };
-  console.log("Current User:", currentUser); // Debugging line to check the current user data
 
   useEffect(() => {
     if (!open) return;

@@ -25,6 +25,7 @@ export default function CustomerLoanTable({
   onDelete,
   onStatusChange,
 }) {
+  console.log(loans);
   if (loading && loans.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-base-content/40 gap-2">
@@ -72,7 +73,7 @@ export default function CustomerLoanTable({
             <tr
               key={loan.id}
               className="border-b border-base-200 last:border-0 hover:bg-base-200/50 transition-colors"
-            //   onClick={() => onView(loan)}
+              //   onClick={() => onView(loan)}
             >
               <td className="text-base-content/40">{index + 1}</td>
 
@@ -87,10 +88,37 @@ export default function CustomerLoanTable({
                 </div>
               </td>
 
-              <td className="text-xs">
+              {/* <td className="text-xs">
                 <span className="font-semibold text-base-content/80">
                   {loan.customer_name || `Customer #${loan.customer_id}`}
                 </span>
+              </td> */}
+              <td className="text-xs">
+                <div className="flex items-center gap-2">
+                  {loan.photo ? (
+                    <img
+                      className="w-8 h-8 rounded-full object-cover"
+                      src={loan.photo}
+                      alt={loan.customer_name || "Customer Photo"}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center uppercase select-none shrink-0">
+                      {loan.customer_name
+                        ? loan.customer_name
+                            .trim()
+                            .split(" ")
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map((word) => word[0])
+                            .join("")
+                        : `#${loan.customer_id}`}
+                    </div>
+                  )}
+
+                  <span className="font-semibold text-base-content/80">
+                    {loan.customer_name || `Customer #${loan.customer_id}`}
+                  </span>
+                </div>
               </td>
 
               <td className="text-xs">

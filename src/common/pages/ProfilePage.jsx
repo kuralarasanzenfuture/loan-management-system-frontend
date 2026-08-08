@@ -20,14 +20,15 @@ const DEFAULT_USER = {
   phone: "",
 };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ProfilePage() {
   const { user } = useSelector((state) => state.auth);
 
   const currentUser = {
     name: user?.username || user?.name || user?.fullName || DEFAULT_USER.name,
     email: user?.email || DEFAULT_USER.email,
-    role:
-      user?.role_name || user?.role?.name || user?.role || DEFAULT_USER.role,
+    role: user?.role_name || user?.role?.name || user?.role || DEFAULT_USER.role,
     avatarUrl: user?.avatarUrl || DEFAULT_USER.avatarUrl,
     phone: user?.phone || DEFAULT_USER.phone,
   };
@@ -38,11 +39,34 @@ export default function ProfilePage() {
     email: currentUser.email,
     phone: currentUser.phone,
   });
+  const [infoFieldErrors, setInfoFieldErrors] = useState({});
   const [infoSaving, setInfoSaving] = useState(false);
   const [infoSaved, setInfoSaved] = useState(false);
 
+  const InfoFieldError = ({ field }) =>
+    infoFieldErrors[field] ? (
+      <span className="text-[11px] text-error mt-1 block">
+        {infoFieldErrors[field]}
+      </span>
+    ) : null;
+
+  const validateInfo = () => {
+    const errs = {};
+    if (!infoForm.name.trim()) errs.name = "Full name is required.";
+    if (!infoForm.email.trim()) {
+      errs.email = "Email is required.";
+    } else if (!EMAIL_RE.test(infoForm.email.trim())) {
+      errs.email = "Enter a valid email address.";
+    }
+    return errs;
+  };
+
   const handleInfoSubmit = async (e) => {
     e.preventDefault();
+    const errs = validateInfo();
+    setInfoFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setInfoSaving(true);
     setInfoSaved(false);
     try {
@@ -62,31 +86,39 @@ export default function ProfilePage() {
     next: "",
     confirm: "",
   });
-  const [showPw, setShowPw] = useState({
-    current: false,
-    next: false,
-    confirm: false,
-  });
-  const [pwError, setPwError] = useState("");
+  const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
+  const [pwFieldErrors, setPwFieldErrors] = useState({});
   const [pwSaving, setPwSaving] = useState(false);
   const [pwSaved, setPwSaved] = useState(false);
 
+  const PwFieldError = ({ field }) =>
+    pwFieldErrors[field] ? (
+      <span className="text-[11px] text-error mt-1 block">
+        {pwFieldErrors[field]}
+      </span>
+    ) : null;
+
+  const validatePassword = () => {
+    const errs = {};
+    if (!pwForm.current) errs.current = "Enter your current password.";
+    if (!pwForm.next) {
+      errs.next = "Enter a new password.";
+    } else if (pwForm.next.length < 8) {
+      errs.next = "Must be at least 8 characters.";
+    }
+    if (!pwForm.confirm) {
+      errs.confirm = "Confirm your new password.";
+    } else if (pwForm.next && pwForm.confirm !== pwForm.next) {
+      errs.confirm = "Doesn't match new password.";
+    }
+    return errs;
+  };
+
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    setPwError("");
-
-    if (!pwForm.current || !pwForm.next || !pwForm.confirm) {
-      setPwError("Fill in all three password fields.");
-      return;
-    }
-    if (pwForm.next.length < 8) {
-      setPwError("New password must be at least 8 characters.");
-      return;
-    }
-    if (pwForm.next !== pwForm.confirm) {
-      setPwError("New password and confirmation don't match.");
-      return;
-    }
+    const errs = validatePassword();
+    setPwFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
 
     setPwSaving(true);
     try {
@@ -97,7 +129,7 @@ export default function ProfilePage() {
       setPwSaved(true);
       setTimeout(() => setPwSaved(false), 2500);
     } catch (err) {
-      setPwError(err?.message || "Couldn't update your password.");
+      setPwFieldErrors({ current: err?.message || "Couldn't update your password." });
     } finally {
       setPwSaving(false);
     }
@@ -134,7 +166,9 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <h2 className="mt-4 font-semibold text-base">{currentUser.name}</h2>
+          <h2 className="mt-4 font-semibold text-base text-base-content">
+            {currentUser.name}
+          </h2>
           <span className="badge badge-primary badge-outline gap-1.5 mt-2">
             <ShieldCheck size={12} />
             {currentUser.role}
@@ -158,7 +192,9 @@ export default function ProfilePage() {
         <div className="space-y-6">
           {/* Personal information */}
           <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
-            <h3 className="font-semibold text-sm mb-1">Personal information</h3>
+            <h3 className="font-semibold text-sm mb-1 text-base-content">
+              Personal information
+            </h3>
             <p className="text-xs text-base-content/50 mb-5">
               This is shown across the platform wherever your name appears.
             </p>
@@ -166,17 +202,19 @@ export default function ProfilePage() {
             <form onSubmit={handleInfoSubmit} className="space-y-4" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
-                  <label className="label py-1" htmlFor="profile-name">
-                    <span className="label-text text-xs font-medium">
-                      Full name
-                    </span>
+                  <label className="label pb-1" htmlFor="profile-name">
+                    <span className="label-text text-xs font-semibold">Full name</span>
                   </label>
-                  <label className="input input-bordered input-sm flex items-center gap-2">
-                    <User size={14} className="text-base-content/40" />
+                  <label
+                    className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${
+                      infoFieldErrors.name ? "input-error" : ""
+                    }`}
+                  >
+                    <User size={14} className="text-base-content/40 shrink-0" />
                     <input
                       id="profile-name"
                       type="text"
-                      className="grow"
+                      className="grow text-base-content"
                       value={infoForm.name}
                       onChange={(e) =>
                         setInfoForm((f) => ({ ...f, name: e.target.value }))
@@ -184,20 +222,19 @@ export default function ProfilePage() {
                       disabled={infoSaving}
                     />
                   </label>
+                  <InfoFieldError field="name" />
                 </div>
 
                 <div className="form-control">
-                  <label className="label py-1" htmlFor="profile-phone">
-                    <span className="label-text text-xs font-medium">
-                      Phone
-                    </span>
+                  <label className="label pb-1" htmlFor="profile-phone">
+                    <span className="label-text text-xs font-semibold">Phone</span>
                   </label>
-                  <label className="input input-bordered input-sm flex items-center gap-2">
-                    <Phone size={14} className="text-base-content/40" />
+                  <label className="input input-bordered input-sm flex items-center gap-2 rounded-lg">
+                    <Phone size={14} className="text-base-content/40 shrink-0" />
                     <input
                       id="profile-phone"
                       type="tel"
-                      className="grow"
+                      className="grow text-base-content"
                       placeholder="Not set"
                       value={infoForm.phone}
                       onChange={(e) =>
@@ -210,17 +247,19 @@ export default function ProfilePage() {
               </div>
 
               <div className="form-control">
-                <label className="label py-1" htmlFor="profile-email">
-                  <span className="label-text text-xs font-medium">
-                    Email address
-                  </span>
+                <label className="label pb-1" htmlFor="profile-email">
+                  <span className="label-text text-xs font-semibold">Email address</span>
                 </label>
-                <label className="input input-bordered input-sm flex items-center gap-2">
-                  <Mail size={14} className="text-base-content/40" />
+                <label
+                  className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${
+                    infoFieldErrors.email ? "input-error" : ""
+                  }`}
+                >
+                  <Mail size={14} className="text-base-content/40 shrink-0" />
                   <input
                     id="profile-email"
                     type="email"
-                    className="grow"
+                    className="grow text-base-content"
                     value={infoForm.email}
                     onChange={(e) =>
                       setInfoForm((f) => ({ ...f, email: e.target.value }))
@@ -228,6 +267,7 @@ export default function ProfilePage() {
                     disabled={infoSaving}
                   />
                 </label>
+                <InfoFieldError field="email" />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">
@@ -236,11 +276,7 @@ export default function ProfilePage() {
                     <Check size={13} /> Saved
                   </span>
                 )}
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={infoSaving}
-                >
+                <button type="submit" className="btn btn-primary btn-sm" disabled={infoSaving}>
                   {infoSaving ? "Saving…" : "Save changes"}
                 </button>
               </div>
@@ -249,62 +285,52 @@ export default function ProfilePage() {
 
           {/* Password */}
           <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
-            <h3 className="font-semibold text-sm mb-1">Change password</h3>
+            <h3 className="font-semibold text-sm mb-1 text-base-content">
+              Change password
+            </h3>
             <p className="text-xs text-base-content/50 mb-5">
-              Use at least 8 characters. We recommend a mix of letters, numbers,
-              and symbols.
+              Use at least 8 characters. We recommend a mix of letters, numbers, and symbols.
             </p>
 
-            {pwError && (
-              <div className="alert alert-error text-sm py-2 mb-4">
-                <span>{pwError}</span>
-              </div>
-            )}
-
-            <form
-              onSubmit={handlePasswordSubmit}
-              className="space-y-4"
-              noValidate
-            >
+            <form onSubmit={handlePasswordSubmit} className="space-y-4" noValidate>
               {[
-                { key: "current", label: "Current password" },
-                { key: "next", label: "New password" },
-                { key: "confirm", label: "Confirm new password" },
-              ].map(({ key, label }) => (
+                { key: "current", label: "Current password", autoComplete: "current-password" },
+                { key: "next", label: "New password", autoComplete: "new-password" },
+                { key: "confirm", label: "Confirm new password", autoComplete: "new-password" },
+              ].map(({ key, label, autoComplete }) => (
                 <div className="form-control" key={key}>
-                  <label className="label py-1" htmlFor={`pw-${key}`}>
-                    <span className="label-text text-xs font-medium">
-                      {label}
-                    </span>
+                  <label className="label pb-1" htmlFor={`pw-${key}`}>
+                    <span className="label-text text-xs font-semibold">{label}</span>
                   </label>
-                  <label className="input input-bordered input-sm flex items-center gap-2">
-                    <Lock size={14} className="text-base-content/40" />
+                  <label
+                    className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${
+                      pwFieldErrors[key] ? "input-error" : ""
+                    }`}
+                  >
+                    <Lock size={14} className="text-base-content/40 shrink-0" />
                     <input
                       id={`pw-${key}`}
                       type={showPw[key] ? "text" : "password"}
-                      className="grow"
+                      className="grow text-base-content"
                       value={pwForm[key]}
                       onChange={(e) =>
                         setPwForm((f) => ({ ...f, [key]: e.target.value }))
                       }
                       disabled={pwSaving}
-                      autoComplete={
-                        key === "current" ? "current-password" : "new-password"
-                      }
+                      autoComplete={autoComplete}
                     />
                     <button
                       type="button"
-                      className="text-base-content/40 hover:text-base-content/70"
+                      className="text-base-content/40 hover:text-base-content/70 shrink-0"
                       onClick={() =>
                         setShowPw((s) => ({ ...s, [key]: !s[key] }))
                       }
-                      aria-label={
-                        showPw[key] ? "Hide password" : "Show password"
-                      }
+                      aria-label={showPw[key] ? "Hide password" : "Show password"}
                     >
                       {showPw[key] ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </label>
+                  <PwFieldError field={key} />
                 </div>
               ))}
 
@@ -314,11 +340,7 @@ export default function ProfilePage() {
                     <Check size={13} /> Password updated
                   </span>
                 )}
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={pwSaving}
-                >
+                <button type="submit" className="btn btn-primary btn-sm" disabled={pwSaving}>
                   {pwSaving ? "Updating…" : "Update password"}
                 </button>
               </div>

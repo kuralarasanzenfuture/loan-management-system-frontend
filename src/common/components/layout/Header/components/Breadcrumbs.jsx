@@ -39,11 +39,13 @@ export default function Breadcrumbs() {
           {pathnames.map((value, index) => {
             const last = index === pathnames.length - 1;
             const to = `/${pathnames.slice(0, index + 1).join("/")}`;
-            const label = ROUTE_LABELS[value] || value.charAt(0).toUpperCase() + value.slice(1);
+            const label =
+              ROUTE_LABELS[value] ||
+              value.charAt(0).toUpperCase() + value.slice(1);
 
             return (
               <li key={to} className="flex items-center gap-1">
-                <ChevronRight size={12} className="text-base-content/30" />
+                {/* <ChevronRight size={12} className="text-base-content/30" /> */}
                 {last ? (
                   <span className="font-semibold text-base-content tracking-tight">
                     {label}

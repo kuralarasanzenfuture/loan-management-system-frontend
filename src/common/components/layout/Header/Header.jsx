@@ -6,11 +6,12 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import Breadcrumbs from "./Breadcrumbs";
-import SearchBar from "./SearchBar";
-import NotificationBell from "./NotificationBell";
-import ProfileDropdown from "./ProfileDropdown";
+import Breadcrumbs from "./components/Breadcrumbs.jsx";
+import SearchBar from "./components/SearchBar.jsx";
+import NotificationBell from "./components/NotificationBell.jsx";
+import ProfileDropdown from "./components/ProfileDropdown.jsx";
 import ThemeSelector from "../../theme/ThemeSelector.jsx";
+import QuickSearch from "./components/QuickSearch.jsx";
 
 export default function Header({
   onMenuClick = () => {},
@@ -82,6 +83,7 @@ export default function Header({
           )}
         </button>
 
+          <QuickSearch />
         <NotificationBell />
 
         <div className="divider divider-horizontal mx-0.5 h-6 self-center" />

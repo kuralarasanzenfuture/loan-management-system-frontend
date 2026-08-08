@@ -31,19 +31,16 @@ const AppRoutes = () => {
 
       {/* Protected */}
       <Route element={<ProtectedRoute />}>
-        {/* Dashboard Layout */}
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        {/* Dashboard Layout — wraps all authenticated pages so they share
+            the sidebar, header (theme selector, profile dropdown, etc.),
+            and the proper bg-base-200 page background. */}
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
 
           <Route path="/analytics" element={<div>Analytics Page</div>} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:id" element={<CustomerViewPage />} />
-          <Route
-            path="/customer-documents"
-            element={<div>Customer Documesnts Page</div>}
-          />
+          <Route path="/customer-documents" element={<div>Customer Documesnts Page</div>} />
 
           <Route path="/guarantors" element={<div>Guarantors Page</div>} />
 
@@ -54,19 +51,18 @@ const AppRoutes = () => {
             path="/loan-applications"
             element={<div>Loan Applications Page</div>}
           /> */}
-          <Route
-            path="/loan-applications"
-            element={<CustomerLoansPage />}
-          />
+          <Route path="/loan-applications" element={<CustomerLoansPage />} />
           <Route path="/loans/:id" element={<LoanViewPage />} />
           {/* <Route path="/loans/:id" element={<div >View Loan</div>} /> */}
-          <Route
-            path="/loan-approval"
-            element={<div>Loan Approval Page</div>}
-          />
+          <Route path="/loan-approval" element={<div>Loan Approval Page</div>} />
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/repayments" element={<div>Repayments Page</div>} />
+
+          {/* Profile & Settings now live inside MainLayout so they get the
+              shared header, sidebar, and correct dark-mode background. */}
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Route>
     </Routes>

@@ -132,11 +132,11 @@ export default function CustomerLoanFormModal({
       status: form.status,
       // Send calculated fields too — most backends still want these
       // persisted rather than recomputed, per your loans table schema.
-    //   commission_amount: derived.commission_amount,
-    //   net_disbursed_amount: derived.net_disbursed_amount,
-    //   installment_amount: derived.installment_amount,
-    //   total_repayment: derived.total_repayment,
-    //   end_date: derived.end_date,
+      //   commission_amount: derived.commission_amount,
+      //   net_disbursed_amount: derived.net_disbursed_amount,
+      //   installment_amount: derived.installment_amount,
+      //   total_repayment: derived.total_repayment,
+      //   end_date: derived.end_date,
     };
 
     onSubmit(payload);
@@ -178,7 +178,7 @@ export default function CustomerLoanFormModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Customer search-select */}
-          <div className="form-control relative">
+          {/* <div className="form-control relative">
             <label className="label pb-1">
               <span className="label-text text-xs font-semibold">
                 Customer *
@@ -225,6 +225,87 @@ export default function CustomerLoanFormModal({
                       </button>
                     </li>
                   ))
+                )}
+              </ul>
+            )}
+          </div> */}
+
+          <div className="form-control relative">
+            <label className="label pb-1">
+              <span className="label-text text-xs font-semibold">
+                Customer *
+              </span>
+            </label>
+            <label
+              className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${fieldErrors.customer_id ? "input-error" : ""}`}
+            >
+              <Search size={14} className="text-base-content/40 shrink-0" />
+              <input
+                type="text"
+                className="grow"
+                placeholder="Search by name, mobile, or customer no…"
+                value={customerQuery}
+                onChange={(e) => {
+                  setCustomerQuery(e.target.value);
+                  setShowCustomerList(true);
+                  setForm((prev) => ({ ...prev, customer_id: "" }));
+                }}
+                onFocus={() => setShowCustomerList(true)}
+                disabled={isEdit}
+              />
+            </label>
+            <FieldError field="customer_id" />
+
+            {showCustomerList && !isEdit && (
+              <ul className="absolute z-20 top-full mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-base-300 bg-base-100 shadow-dropdown py-1">
+                {filteredCustomers.length === 0 ? (
+                  <li className="px-3 py-2 text-xs text-base-content/40">
+                    No matching customers
+                  </li>
+                ) : (
+                  filteredCustomers.map((c) => {
+                    const fullName =
+                      `${c.first_name || ""} ${c.last_name || ""}`.trim();
+                    const initials = fullName
+                      ? fullName
+                          .split(" ")
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .map((w) => w[0])
+                          .join("")
+                      : `#${c.id}`;
+
+                    return (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectCustomer(c)}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-base-200 flex items-center justify-between gap-2"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {c.photo ? (
+                              <img
+                                src={c.photo}
+                                alt={fullName}
+                                className="w-7 h-7 rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-semibold text-[10px] flex items-center justify-center uppercase select-none shrink-0">
+                                {initials}
+                              </div>
+                            )}
+                            <span className="font-medium truncate">
+                              {fullName || `Customer #${c.id}`}
+                            </span>
+                          </div>
+
+                          <span className="text-base-content/40 shrink-0">
+                            {c.mobile}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })
                 )}
               </ul>
             )}
