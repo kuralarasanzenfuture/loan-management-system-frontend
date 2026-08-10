@@ -11,7 +11,8 @@ import DashboardPage from "../common/pages/DashboardPage.jsx";
 import RolesPage from "../features/roles/pages/RolesPage.jsx";
 import UsersPage from "../features/users/pages/UsersPage.jsx";
 import CustomersPage from "../features/customers/pages/CustomersPage.jsx";
-import CustomerViewPage from "../features/customers/pages/CustomerViewPage.jsx";
+// import CustomerViewPage from "../features/customers/pages/CustomerViewPage.jsx";
+import CustomerViewPage from "../features/customers/pages/CustomerViewPage-new.jsx";
 import ProfilePage from "../common/pages/ProfilePage.jsx";
 import SettingsPage from "../common/pages/SettingsPage.jsx";
 import LoanPlansPage from "../features/loanPlan/pages/LoanPlansPage.jsx";
@@ -19,6 +20,9 @@ import LoanPlanViewPage from "../features/loanPlan/pages/LoanPlanViewPage.jsx";
 import CustomerLoansPage from "../features/customerLoans/pages/CustomerLoansPage.jsx";
 import LoanViewPage from "../features/customerLoans/pages/LoanViewPage.jsx";
 import Analytics from "../features/Analytics/pages/Analytics.jsx";
+import CompanyDetailsViewPage from "../features/companyDetails/pages/CompanyDetailsViewPage.jsx";
+import CompanyDetailsListPage from "../features/companyDetails/pages/CompanyDetailsListPage.jsx";
+import CompanyDetailsFormPage from "../features/companyDetails/components/CompanyDetailsFormPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -37,7 +41,6 @@ const AppRoutes = () => {
             and the proper bg-base-200 page background. */}
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:id" element={<CustomerViewPage />} />
@@ -45,12 +48,9 @@ const AppRoutes = () => {
             path="/customer-documents"
             element={<div>Customer Documesnts Page</div>}
           />
-
           <Route path="/guarantors" element={<div>Guarantors Page</div>} />
-
           <Route path="/loan-plans" element={<LoanPlansPage />} />
           <Route path="/loan-plans/:id" element={<LoanPlanViewPage />} />
-
           {/* <Route
             path="/loan-applications"
             element={<div>Loan Applications Page</div>}
@@ -65,7 +65,28 @@ const AppRoutes = () => {
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/repayments" element={<div>Repayments Page</div>} />
-
+          {/* Singleton usage (simplest — one company, no list needed) */}
+          <Route
+            path="/companies-details"
+            element={<CompanyDetailsViewPage />}
+          />
+          {/* // OR multi-company usage (if you go that route) */}
+          {/* <Route
+            path="/settings/companies"
+            element={<CompanyDetailsListPage />}
+          />
+          <Route
+            path="/settings/companies/new"
+            element={<CompanyDetailsFormPage initialData={null} />}
+          />
+          <Route
+            path="/settings/companies/:id/edit"
+            element={<CompanyDetailsEditWrapper />} // fetches by id, then renders CompanyDetailsFormPage
+          />
+          <Route
+            path="/settings/companies/:id"
+            element={<CompanyDetailsSingleViewPage />}
+          /> */}
           {/* Profile & Settings now live inside MainLayout so they get the
               shared header, sidebar, and correct dark-mode background. */}
           <Route path="/profile" element={<ProfilePage />} />

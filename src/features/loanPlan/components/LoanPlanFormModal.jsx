@@ -45,6 +45,8 @@ export default function LoanPlanFormModal({
   onSubmit,
 }) {
   const isEdit = Boolean(initialData?.id);
+  // Plan is "in use" if it has loans attached — core fields are locked
+  const isUsed = isEdit && Number(initialData?.loan_count) > 0;
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
 
@@ -95,53 +97,56 @@ export default function LoanPlanFormModal({
     if (!form.plan_name.trim()) errors.plan_name = "Plan name is required";
     if (!form.plan_code.trim()) errors.plan_code = "Plan code is required";
 
-    if (
-      !form.tenure ||
-      isNaN(form.tenure) ||
-      Number(form.tenure) <= 0 ||
-      !Number.isInteger(Number(form.tenure))
-    )
-      errors.tenure = "Enter a valid positive integer for tenure";
+    // Skip core-field validation if the plan is in use (fields are locked)
+    if (!isUsed) {
+      if (
+        !form.tenure ||
+        isNaN(form.tenure) ||
+        Number(form.tenure) <= 0 ||
+        !Number.isInteger(Number(form.tenure))
+      )
+        errors.tenure = "Enter a valid positive integer for tenure";
 
-    if (
-      form.commission_value === "" ||
-      isNaN(form.commission_value) ||
-      Number(form.commission_value) < 0
-    )
-      errors.commission_value = "Enter a valid commission value";
-    else if (
-      form.commission_type === "percentage" &&
-      Number(form.commission_value) > 100
-    )
-      errors.commission_value = "Percentage cannot exceed 100";
+      if (
+        form.commission_value === "" ||
+        isNaN(form.commission_value) ||
+        Number(form.commission_value) < 0
+      )
+        errors.commission_value = "Enter a valid commission value";
+      else if (
+        form.commission_type === "percentage" &&
+        Number(form.commission_value) > 100
+      )
+        errors.commission_value = "Percentage cannot exceed 100";
 
-    if (
-      form.penalty.penalty_value === "" ||
-      isNaN(form.penalty.penalty_value) ||
-      Number(form.penalty.penalty_value) < 0
-    )
-      errors["penalty.penalty_value"] = "Enter a valid penalty value";
-    else if (
-      form.penalty.penalty_type === "percentage" &&
-      Number(form.penalty.penalty_value) > 100
-    )
-      errors["penalty.penalty_value"] = "Percentage cannot exceed 100";
+      if (
+        form.penalty.penalty_value === "" ||
+        isNaN(form.penalty.penalty_value) ||
+        Number(form.penalty.penalty_value) < 0
+      )
+        errors["penalty.penalty_value"] = "Enter a valid penalty value";
+      else if (
+        form.penalty.penalty_type === "percentage" &&
+        Number(form.penalty.penalty_value) > 100
+      )
+        errors["penalty.penalty_value"] = "Percentage cannot exceed 100";
 
-    if (
-      form.penalty.grace_days !== "" &&
-      (isNaN(form.penalty.grace_days) ||
-        Number(form.penalty.grace_days) < 0 ||
-        !Number.isInteger(Number(form.penalty.grace_days)))
-    )
-      errors["penalty.grace_days"] =
-        "Grace days must be a non-negative integer";
+      if (
+        form.penalty.grace_days !== "" &&
+        (isNaN(form.penalty.grace_days) ||
+          Number(form.penalty.grace_days) < 0 ||
+          !Number.isInteger(Number(form.penalty.grace_days)))
+      )
+        errors["penalty.grace_days"] =
+          "Grace days must be a non-negative integer";
 
-    if (
-      form.penalty.max_penalty !== "" &&
-      form.penalty.max_penalty !== null &&
-      (isNaN(form.penalty.max_penalty) || Number(form.penalty.max_penalty) < 0)
-    )
-      errors["penalty.max_penalty"] = "Max penalty cannot be negative";
+      if (
+        form.penalty.max_penalty !== "" &&
+        form.penalty.max_penalty !== null &&
+        (isNaN(form.penalty.max_penalty) || Number(form.penalty.max_penalty) < 0)
+      )
+        errors["penalty.max_penalty"] = "Max penalty cannot be negative";
+    }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -154,14 +159,18 @@ export default function LoanPlanFormModal({
     const payload = {
       plan_name: form.plan_name.trim(),
       plan_code: form.plan_code.trim().toUpperCase(),
-      collection_frequency: String(form.collection_frequency).toLowerCase(),
-      tenure: Number(form.tenure),
-      tenure_type: String(form.tenure_type).toLowerCase(),
-      commission_type: String(form.commission_type).toLowerCase(),
-      commission_value: Number(form.commission_value),
       description: form.description.trim() || null,
       status: String(form.status).toLowerCase(),
-      penalty: {
+    };
+
+    // Only include core fields if plan is not in use (backend would reject them anyway)
+    if (!isUsed) {
+      payload.collection_frequency = String(form.collection_frequency).toLowerCase();
+      payload.tenure = Number(form.tenure);
+      payload.tenure_type = String(form.tenure_type).toLowerCase();
+      payload.commission_type = String(form.commission_type).toLowerCase();
+      payload.commission_value = Number(form.commission_value);
+      payload.penalty = {
         grace_days:
           form.penalty.grace_days === "" ? 0 : Number(form.penalty.grace_days),
         penalty_type: String(form.penalty.penalty_type).toLowerCase(),
@@ -171,8 +180,8 @@ export default function LoanPlanFormModal({
             ? null
             : Number(form.penalty.max_penalty),
         status: String(form.penalty.status).toLowerCase(),
-      },
-    };
+      };
+    }
 
     onSubmit(payload);
   };
@@ -208,6 +217,15 @@ export default function LoanPlanFormModal({
             <X size={18} />
           </button>
         </div>
+
+        {isUsed && (
+          <div className="alert alert-warning text-xs py-2 mb-3">
+            <span>
+              ⚠️ This plan has <strong>{initialData.loan_count}</strong> active loan(s). Core fields are locked and cannot be changed.
+              You can only update the <strong>Plan Name</strong>, <strong>Plan Code</strong>, <strong>Description</strong>, and <strong>Status</strong>.
+            </span>
+          </div>
+        )}
 
         {error && (
           <div className="alert alert-error text-sm py-2 mb-4">
@@ -268,7 +286,8 @@ export default function LoanPlanFormModal({
                 <select
                   value={form.collection_frequency}
                   onChange={handleChange("collection_frequency")}
-                  className="select select-bordered select-sm rounded-lg w-full capitalize"
+                  disabled={isUsed}
+                  className={`select select-bordered select-sm rounded-lg w-full capitalize ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {FREQUENCY_OPTIONS.map((f) => (
                     <option key={f} value={f} className="capitalize">
@@ -308,7 +327,8 @@ export default function LoanPlanFormModal({
                   min="1"
                   value={form.tenure}
                   onChange={handleChange("tenure")}
-                  className={inputClass("tenure")}
+                  disabled={isUsed}
+                  className={`${inputClass("tenure")} ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                   placeholder="100"
                 />
                 <FieldError field="tenure" />
@@ -322,7 +342,8 @@ export default function LoanPlanFormModal({
                 <select
                   value={form.tenure_type}
                   onChange={handleChange("tenure_type")}
-                  className="select select-bordered select-sm rounded-lg w-full capitalize"
+                  disabled={isUsed}
+                  className={`select select-bordered select-sm rounded-lg w-full capitalize ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {TENURE_TYPE_OPTIONS.map((t) => (
                     <option key={t} value={t} className="capitalize">
@@ -341,7 +362,8 @@ export default function LoanPlanFormModal({
                 <select
                   value={form.commission_type}
                   onChange={handleChange("commission_type")}
-                  className="select select-bordered select-sm rounded-lg w-full capitalize"
+                  disabled={isUsed}
+                  className={`select select-bordered select-sm rounded-lg w-full capitalize ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {VALUE_TYPE_OPTIONS.map((t) => (
                     <option key={t} value={t} className="capitalize">
@@ -363,7 +385,8 @@ export default function LoanPlanFormModal({
                   step="0.01"
                   value={form.commission_value}
                   onChange={handleChange("commission_value")}
-                  className={inputClass("commission_value")}
+                  disabled={isUsed}
+                  className={`${inputClass("commission_value")} ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                   placeholder="2.5"
                 />
                 <FieldError field="commission_value" />
@@ -404,7 +427,8 @@ export default function LoanPlanFormModal({
                   min="0"
                   value={form.penalty.grace_days}
                   onChange={handlePenaltyChange("grace_days")}
-                  className={inputClass("penalty.grace_days")}
+                  disabled={isUsed}
+                  className={`${inputClass("penalty.grace_days")} ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                   placeholder="3"
                 />
                 <FieldError field="penalty.grace_days" />
@@ -418,7 +442,8 @@ export default function LoanPlanFormModal({
                 <select
                   value={form.penalty.status}
                   onChange={handlePenaltyChange("status")}
-                  className="select select-bordered select-sm rounded-lg w-full capitalize"
+                  disabled={isUsed}
+                  className={`select select-bordered select-sm rounded-lg w-full capitalize ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {STATUS_OPTIONS.map((s) => (
                     <option key={s} value={s} className="capitalize">
@@ -437,7 +462,8 @@ export default function LoanPlanFormModal({
                 <select
                   value={form.penalty.penalty_type}
                   onChange={handlePenaltyChange("penalty_type")}
-                  className="select select-bordered select-sm rounded-lg w-full capitalize"
+                  disabled={isUsed}
+                  className={`select select-bordered select-sm rounded-lg w-full capitalize ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {VALUE_TYPE_OPTIONS.map((t) => (
                     <option key={t} value={t} className="capitalize">
@@ -459,7 +485,8 @@ export default function LoanPlanFormModal({
                   step="0.01"
                   value={form.penalty.penalty_value}
                   onChange={handlePenaltyChange("penalty_value")}
-                  className={inputClass("penalty.penalty_value")}
+                  disabled={isUsed}
+                  className={`${inputClass("penalty.penalty_value")} ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                   placeholder="1.5"
                 />
                 <FieldError field="penalty.penalty_value" />
@@ -477,7 +504,8 @@ export default function LoanPlanFormModal({
                   step="0.01"
                   value={form.penalty.max_penalty}
                   onChange={handlePenaltyChange("max_penalty")}
-                  className={inputClass("penalty.max_penalty")}
+                  disabled={isUsed}
+                  className={`${inputClass("penalty.max_penalty")} ${isUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                   placeholder="500"
                 />
                 <p className="text-[10px] text-base-content/40 mt-1">

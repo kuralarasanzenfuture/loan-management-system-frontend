@@ -179,7 +179,7 @@ export const NAV_SECTIONS = [
       {
         label: "Companies",
         icon: Building2,
-        path: "/companies",
+        path: "/companies-details",
       },
     ],
   },

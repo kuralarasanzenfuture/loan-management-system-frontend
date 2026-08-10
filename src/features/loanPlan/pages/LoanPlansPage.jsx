@@ -38,6 +38,7 @@ export default function LoanPlansPage() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [deactivatedMsg, setDeactivatedMsg] = useState("");
 
   useEffect(() => {
     dispatch(fetchLoanPlanAndPenalities());
@@ -120,7 +121,7 @@ export default function LoanPlansPage() {
 
       if (wasFulfilled) {
         setFormModal(null);
-        dispatch(fetchLoanPlanAndPenalities());
+        // Redux slice already updates the list in-memory — no need to re-fetch
       }
     } finally {
       setFormSubmitting(false);
@@ -134,6 +135,14 @@ export default function LoanPlansPage() {
       const action = await dispatch(removeLoanPlanAndPenality(deleteTarget.id));
       if (removeLoanPlanAndPenality.fulfilled.match(action)) {
         setDeleteTarget(null);
+        dispatch(clearLoanPlanAndPenalityError());
+        // If backend soft-deactivated instead of deleting, show info
+        if (action.payload?.response?.deactivated) {
+          setDeactivatedMsg(
+            `"${deleteTarget.plan_name}" is in use by active loans. It has been set to Inactive instead of being deleted.`,
+          );
+          setTimeout(() => setDeactivatedMsg(""), 6000);
+        }
       }
     } finally {
       setDeleteSubmitting(false);
@@ -162,7 +171,13 @@ export default function LoanPlansPage() {
         </button>
       </div>
 
-      {error && !formModal && (
+      {deactivatedMsg && (
+        <div className="alert alert-info text-sm py-2 mb-4">
+          <span>{deactivatedMsg}</span>
+        </div>
+      )}
+
+      {error && !formModal && !deleteTarget && (
         <div className="alert alert-error text-sm py-2 mb-4">
           <span>
             {typeof error === "string" ? error : "Something went wrong."}
@@ -277,7 +292,10 @@ export default function LoanPlansPage() {
         loading={deleteSubmitting}
         error={deleteTarget ? error : null}
         onConfirm={handleConfirmDelete}
-        onClose={() => setDeleteTarget(null)}
+        onClose={() => {
+          setDeleteTarget(null);
+          dispatch(clearLoanPlanAndPenalityError());
+        }}
       />
     </div>
   );

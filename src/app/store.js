@@ -7,6 +7,7 @@ import customerReducer from "../redux/customers/customerSlice.js";
 import loanPlanAndPenalityReducer from "../redux/loanPlanAndPenalities/loanPlanAndPenalitySlice.js";
 import customerLoanReducer from "../redux/customerLoans/customerLoanSlice.js";
 import installmentReducer from "../redux/installments/installmentSlice.js";
+import companyDetailsReducer from "../redux/companyDetails/companyDetailsSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -17,5 +18,6 @@ export const store = configureStore({
     loanPlanAndPenalities: loanPlanAndPenalityReducer,
     customerLoans: customerLoanReducer,
     installments: installmentReducer,
+    companyDetails: companyDetailsReducer,
   },
 });
