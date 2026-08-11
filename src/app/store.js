@@ -8,6 +8,7 @@ import loanPlanAndPenalityReducer from "../redux/loanPlanAndPenalities/loanPlanA
 import customerLoanReducer from "../redux/customerLoans/customerLoanSlice.js";
 import installmentReducer from "../redux/installments/installmentSlice.js";
 import companyDetailsReducer from "../redux/companyDetails/companyDetailsSlice.js";
+import companyBankReducer from "../redux/companyBanks/companyBankSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -19,5 +20,11 @@ export const store = configureStore({
     customerLoans: customerLoanReducer,
     installments: installmentReducer,
     companyDetails: companyDetailsReducer,
+    companyBanks: companyBankReducer,
+  // },
+  // middleware: (getDefaultMiddleware) => {
+  //   return getDefaultMiddleware({
+  //     serializableCheck: false,
+  //   });
   },
 });

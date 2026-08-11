@@ -181,6 +181,11 @@ export const NAV_SECTIONS = [
         icon: Building2,
         path: "/companies-details",
       },
+      {
+        label: "bank Accounts",
+        icon: Banknote,
+        path: "/bank-accounts",
+      }
     ],
   },
 

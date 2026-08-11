@@ -88,6 +88,44 @@ const TABS = [
   { key: "social", label: "Social", icon: Share2 },
 ];
 
+const tabForField = {
+  company_name: "basic",
+  legal_name: "basic",
+  trade_name: "basic",
+  business_type: "basic",
+  establishment_date: "basic",
+  status: "basic",
+  business_description: "basic",
+  gst_number: "registration",
+  pan_number: "registration",
+  phone: "contact",
+  alternate_phone: "contact",
+  email: "contact",
+  alternate_email: "contact",
+  website: "contact",
+  address_line_1: "address",
+  address_line_2: "address",
+  landmark: "address",
+  city: "address",
+  taluk: "address",
+  district: "address",
+  state: "address",
+  state_code: "address",
+  country: "address",
+  pincode: "address",
+  latitude: "address",
+  longitude: "address",
+  business_start_time: "hours",
+  business_end_time: "hours",
+  working_days: "hours",
+  weekly_off_day: "hours",
+  timezone: "hours",
+  facebook_url: "social",
+  instagram_url: "social",
+  youtube_url: "social",
+  whatsapp_number: "social",
+};
+
 /**
  * CompanyDetailsFormPage
  * Props:
@@ -110,6 +148,7 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
   });
 
   useEffect(() => {
+    dispatch(clearCompanyDetailsError());
     if (isEdit) {
       setForm({
         company_name: initialData.company_name || "",
@@ -153,7 +192,7 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
         status: initialData.status || "active",
       });
     }
-  }, [isEdit, initialData]);
+  }, [isEdit, initialData, dispatch]);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -175,7 +214,6 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
 
   const handleImageClear = (key) => {
     setImages((prev) => ({ ...prev, [key]: null }));
-    // Also signal removal of an existing image on edit, if backend needs it
     setForm((prev) => ({ ...prev, [`remove_${key}`]: true }));
   };
 
@@ -195,28 +233,22 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
       errors.company_name = "Company name is required";
     if (
       form.gst_number &&
-      !/^[0-9A-Z]{15}$/.test(form.gst_number.trim().toUpperCase())
+      !/^[0-9A-Z]{15}$/i.test(form.gst_number.trim())
     )
       errors.gst_number = "Enter a valid 15-character GST number";
     if (
       form.pan_number &&
-      !/^[A-Z]{5}\d{4}[A-Z]$/.test(form.pan_number.trim().toUpperCase())
+      !/^[A-Z]{5}\d{4}[A-Z]$/i.test(form.pan_number.trim())
     )
       errors.pan_number = "Enter a valid PAN (e.g. ABCDE1234F)";
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email))
-      errors.email = "Enter a valid email";
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email.trim()))
+      errors.email = "Enter a valid email address";
+    if (form.alternate_email && !/^\S+@\S+\.\S+$/.test(form.alternate_email.trim()))
+      errors.alternate_email = "Enter a valid alternate email address";
     if (form.pincode && !/^\d{6}$/.test(form.pincode.trim()))
       errors.pincode = "Pincode must be 6 digits";
     setFieldErrors(errors);
     return { valid: Object.keys(errors).length === 0, errors };
-  };
-
-  const tabForField = {
-    company_name: "basic",
-    gst_number: "registration",
-    pan_number: "registration",
-    email: "contact",
-    pincode: "address",
   };
 
   const handleSubmit = async (e) => {
@@ -224,26 +256,30 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
     const { valid, errors } = validate();
     if (!valid) {
       const firstErrorField = Object.keys(errors)[0];
-      setActiveTab(tabForField[firstErrorField] || "basic");
+      if (tabForField[firstErrorField]) {
+        setActiveTab(tabForField[firstErrorField]);
+      }
       return;
     }
 
     const fd = new FormData();
     Object.entries(form).forEach(([key, value]) => {
       if (key === "working_days") {
-        fd.append(key, value.join(","));
+        fd.append(key, Array.isArray(value) ? value.join(",") : "");
       } else if (key.startsWith("remove_")) {
-        return; // handled separately below
+        return;
       } else {
         fd.append(key, value === "" || value === null ? "" : value);
       }
     });
-    if (form.gst_number) fd.set("gst_number", form.gst_number.toUpperCase());
-    if (form.pan_number) fd.set("pan_number", form.pan_number.toUpperCase());
+
+    if (form.gst_number) fd.set("gst_number", form.gst_number.toUpperCase().trim());
+    if (form.pan_number) fd.set("pan_number", form.pan_number.toUpperCase().trim());
 
     Object.entries(images).forEach(([key, file]) => {
       if (file) fd.append(key, file);
     });
+
     Object.keys(form)
       .filter((k) => k.startsWith("remove_"))
       .forEach((k) => {
@@ -260,7 +296,7 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
 
     if (wasFulfilled) {
       if (onCancel) {
-        onCancel(); // Return to view mode (inline edit)
+        onCancel();
       } else {
         navigate("/companies-details");
       }
@@ -292,7 +328,9 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
       {error && (
         <div className="alert alert-error text-sm py-2">
           <span>
-            {typeof error === "string" ? error : "Something went wrong."}
+            {typeof error === "string"
+              ? error
+              : error?.message || "Something went wrong."}
           </span>
         </div>
       )}
@@ -530,7 +568,7 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
                     </span>
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={form.website}
                     onChange={handleChange("website")}
                     className={inputClass("website")}
@@ -848,10 +886,11 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
                     </span>
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={form.facebook_url}
                     onChange={handleChange("facebook_url")}
                     className={inputClass("facebook_url")}
+                    placeholder="https://facebook.com/yourpage"
                   />
                 </div>
                 <div className="form-control">
@@ -861,10 +900,11 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
                     </span>
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={form.instagram_url}
                     onChange={handleChange("instagram_url")}
                     className={inputClass("instagram_url")}
+                    placeholder="https://instagram.com/yourhandle"
                   />
                 </div>
                 <div className="form-control">
@@ -874,10 +914,11 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
                     </span>
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={form.youtube_url}
                     onChange={handleChange("youtube_url")}
                     className={inputClass("youtube_url")}
+                    placeholder="https://youtube.com/@yourchannel"
                   />
                 </div>
                 <div className="form-control">
@@ -891,6 +932,7 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
                     value={form.whatsapp_number}
                     onChange={handleChange("whatsapp_number")}
                     className={inputClass("whatsapp_number")}
+                    placeholder="919876543210"
                   />
                 </div>
               </div>

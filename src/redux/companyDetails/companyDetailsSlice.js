@@ -7,6 +7,10 @@ import {
   deleteCompanyDetails,
 } from "./companyDetails.service.js";
 
+// Helper for extracting clean error strings
+const getErrorMessage = (err) =>
+  err.response?.data?.message || err.message || "Something went wrong";
+
 // ─── Get Single Company (singleton) ───────────────────────────────────────────
 export const fetchCompanyDetails = createAsyncThunk(
   "companyDetails/fetchCompanyDetails",
@@ -14,7 +18,7 @@ export const fetchCompanyDetails = createAsyncThunk(
     try {
       return await getCompanyDetails();
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      return rejectWithValue(getErrorMessage(err));
     }
   },
 );
@@ -26,7 +30,7 @@ export const fetchCompanyDetailById = createAsyncThunk(
     try {
       return await getCompanyDetailById(id);
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      return rejectWithValue(getErrorMessage(err));
     }
   },
 );
@@ -38,9 +42,7 @@ export const addCompanyDetails = createAsyncThunk(
     try {
       return await createCompanyDetails(formData);
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || err.message || "Something went wrong",
-      );
+      return rejectWithValue(getErrorMessage(err));
     }
   },
 );
@@ -52,7 +54,7 @@ export const editCompanyDetails = createAsyncThunk(
     try {
       return await updateCompanyDetails(id, formData);
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      return rejectWithValue(getErrorMessage(err));
     }
   },
 );
@@ -65,7 +67,7 @@ export const removeCompanyDetails = createAsyncThunk(
       await deleteCompanyDetails(id);
       return id;
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      return rejectWithValue(getErrorMessage(err));
     }
   },
 );
@@ -74,10 +76,6 @@ const companyDetailsSlice = createSlice({
   name: "companyDetails",
 
   initialState: {
-    /**
-     * company: the singleton company record (object | null)
-     * companyDetail: used when viewing by ID
-     */
     company: null,
     companyDetail: null,
     loading: false,
@@ -103,7 +101,6 @@ const companyDetailsSlice = createSlice({
       })
       .addCase(fetchCompanyDetails.fulfilled, (state, action) => {
         state.loading = false;
-        // Backend returns { success: true, data: company | null }
         const payload = action.payload;
         state.company = payload?.data !== undefined ? payload.data : payload;
       })
@@ -134,7 +131,6 @@ const companyDetailsSlice = createSlice({
       })
       .addCase(addCompanyDetails.fulfilled, (state, action) => {
         state.loading = false;
-        // Backend returns { success, message, data: company }
         const payload = action.payload;
         state.company = payload?.data !== undefined ? payload.data : payload;
       })
@@ -150,7 +146,6 @@ const companyDetailsSlice = createSlice({
       })
       .addCase(editCompanyDetails.fulfilled, (state, action) => {
         state.loading = false;
-        // Backend returns { success, message, data: updatedCompany }
         const payload = action.payload;
         const updated = payload?.data !== undefined ? payload.data : payload;
         state.company = updated;

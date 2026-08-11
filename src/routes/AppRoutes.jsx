@@ -23,6 +23,8 @@ import Analytics from "../features/Analytics/pages/Analytics.jsx";
 import CompanyDetailsViewPage from "../features/companyDetails/pages/CompanyDetailsViewPage.jsx";
 import CompanyDetailsListPage from "../features/companyDetails/pages/CompanyDetailsListPage.jsx";
 import CompanyDetailsFormPage from "../features/companyDetails/components/CompanyDetailsFormPage.jsx";
+import CompanyBanksPage from "../features/companyBank/pages/CompanyBanksPage.jsx";
+import CompanyBankViewPage from "../features/companyBank/pages/CompanyBankViewPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -70,6 +72,7 @@ const AppRoutes = () => {
             path="/companies-details"
             element={<CompanyDetailsViewPage />}
           />
+
           {/* // OR multi-company usage (if you go that route) */}
           {/* <Route
             path="/settings/companies"
@@ -87,6 +90,11 @@ const AppRoutes = () => {
             path="/settings/companies/:id"
             element={<CompanyDetailsSingleViewPage />}
           /> */}
+
+          <Route path="/bank-accounts" element={<CompanyBanksPage />} />
+          <Route path="/bank-accounts/:id" element={<CompanyBankViewPage />} />
+          
+
           {/* Profile & Settings now live inside MainLayout so they get the
               shared header, sidebar, and correct dark-mode background. */}
           <Route path="/profile" element={<ProfilePage />} />
