@@ -161,19 +161,17 @@ export default function CustomerViewPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors -mb-px whitespace-nowrap ${
-                isActive
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors -mb-px whitespace-nowrap ${isActive
                   ? "border-primary text-primary"
                   : "border-transparent text-base-content/40 hover:text-base-content/70"
-              }`}
+                }`}
             >
               <Icon size={14} />
               {tab.label}
               {typeof tab.count === "number" && (
                 <span
-                  className={`badge badge-xs font-bold ${
-                    isActive ? "badge-primary" : "badge-ghost"
-                  }`}
+                  className={`badge badge-xs font-bold ${isActive ? "badge-primary" : "badge-ghost"
+                    }`}
                 >
                   {tab.count}
                 </span>

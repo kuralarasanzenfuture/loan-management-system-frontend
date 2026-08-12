@@ -26,6 +26,7 @@ import {
 } from "../../../redux/companyBanks/companyBankSlice.js";
 import CompanyBankFormModal from "../components/CompanyBankFormModal.jsx";
 import CompanyBankDeleteModal from "../components/CompanyBankDeleteModal.jsx";
+import BankTransactionsPage from "../../bankTransactions/pages/BankTransactionsPage.jsx";
 
 const STATUS_STYLES = {
   active: "badge-success badge-outline",
@@ -85,6 +86,7 @@ export default function CompanyBankViewPage() {
   const [settingPrimary, setSettingPrimary] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
     dispatch(fetchCompanyBankById(id));
@@ -146,6 +148,8 @@ export default function CompanyBankViewPage() {
   }
 
   if (!bank) return null;
+
+  const bankLabel = `${bank.bank_name}${bank.account_number ? ` •••• ${bank.account_number.slice(-4)}` : ""}`;
 
   return (
     <div className="space-y-6">
@@ -267,172 +271,222 @@ export default function CompanyBankViewPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Bank & Branch */}
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2 flex items-center gap-1.5">
-              <Landmark size={13} /> Bank & Branch
-            </h3>
-            <div className="divide-y divide-base-200">
-              <InfoRow label="Bank Name" value={bank.bank_name} />
-              <InfoRow label="Bank Code" value={bank.bank_code} />
-              <InfoRow label="Branch Name" value={bank.branch_name} />
-              <InfoRow label="Branch Code" value={bank.branch_code} />
-            </div>
-          </div>
+      {/* Tab Navigation */}
+      {/* <div className="tabs tabs-bordered mt-2">
+        <button
+          className={`tab tab-bordered ${activeTab === "details" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("details")}
+        >
+          Account Details
+        </button>
+        <button
+          className={`tab tab-bordered ${activeTab === "transactions" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("transactions")}
+        >
+          Transactions
+        </button>
+      </div> */}
 
-          {/* Account Details */}
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2 flex items-center gap-1.5">
-              <BadgeCheck size={13} /> Account Details
-            </h3>
-            <div className="divide-y divide-base-200">
-              <InfoRow
-                label="Account Holder"
-                value={bank.account_holder_name}
-              />
-              <InfoRow
-                label="Account Number"
-                value={bank.account_number}
-                copyable
-                copied={copiedField === "account_number"}
-                onCopy={() => handleCopy("account_number", bank.account_number)}
-              />
-              <InfoRow
-                label="Account Type"
-                value={bank.account_type?.replace(/_/g, " ")}
-              />
-              <InfoRow
-                label="IFSC Code"
-                value={bank.ifsc_code}
-                copyable
-                copied={copiedField === "ifsc_code"}
-                onCopy={() => handleCopy("ifsc_code", bank.ifsc_code)}
-              />
-              <InfoRow label="MICR Code" value={bank.micr_code} />
-              <InfoRow label="SWIFT Code" value={bank.swift_code} />
-            </div>
-          </div>
+      <div className="tabs tabs-bordered mt-2">
+        <button
+          className={`tab ${activeTab === "details"
+              ? "tab-active text-primary !border-primary"
+              : "text-base-content/40 hover:text-base-content/70"
+            }`}
+          onClick={() => setActiveTab("details")}
+        >
+          Account Details
+        </button>
 
-          {/* Digital Payment */}
-          {(bank.upi_id || bank.upi_qr_code) && (
+        <button
+          className={`tab ${activeTab === "transactions"
+              ? "tab-active text-primary !border-primary"
+              : "text-base-content/40 hover:text-base-content/70"
+            }`}
+          onClick={() => setActiveTab("transactions")}
+        >
+          Transactions
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "details" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Bank & Branch */}
             <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2 flex items-center gap-1.5">
-                <QrCode size={13} /> Digital Payment
+                <Landmark size={13} /> Bank & Branch
               </h3>
-              <div className="flex items-center gap-5">
-                {bank.upi_qr_code && (
-                  <div
-                    onClick={() => setQrModalOpen(true)}
-                    className="w-24 h-24 rounded-xl border border-base-300 bg-base-200/30 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer group relative hover:border-primary/50 transition-colors"
-                    title="Click to view QR code"
-                  >
-                    <img
-                      src={bank.upi_qr_code}
-                      alt="UPI QR"
-                      className="w-full h-full object-contain p-1"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                      <Eye size={16} />
-                    </div>
-                  </div>
-                )}
-                <div className="flex-1 divide-y divide-base-200">
-                  <InfoRow
-                    label="UPI ID"
-                    value={bank.upi_id}
-                    copyable
-                    copied={copiedField === "upi_id"}
-                    onCopy={() => handleCopy("upi_id", bank.upi_id)}
-                  />
-                </div>
+              <div className="divide-y divide-base-200">
+                <InfoRow label="Bank Name" value={bank.bank_name} />
+                <InfoRow label="Bank Code" value={bank.bank_code} />
+                <InfoRow label="Branch Name" value={bank.branch_name} />
+                <InfoRow label="Branch Code" value={bank.branch_code} />
               </div>
             </div>
-          )}
 
-          {bank.remarks && (
+            {/* Account Details */}
+            <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2 flex items-center gap-1.5">
+                <BadgeCheck size={13} /> Account Details
+              </h3>
+              <div className="divide-y divide-base-200">
+                <InfoRow
+                  label="Account Holder"
+                  value={bank.account_holder_name}
+                />
+                <InfoRow
+                  label="Account Number"
+                  value={bank.account_number}
+                  copyable
+                  copied={copiedField === "account_number"}
+                  onCopy={() =>
+                    handleCopy("account_number", bank.account_number)
+                  }
+                />
+                <InfoRow
+                  label="Account Type"
+                  value={bank.account_type?.replace(/_/g, " ")}
+                />
+                <InfoRow
+                  label="IFSC Code"
+                  value={bank.ifsc_code}
+                  copyable
+                  copied={copiedField === "ifsc_code"}
+                  onCopy={() => handleCopy("ifsc_code", bank.ifsc_code)}
+                />
+                <InfoRow label="MICR Code" value={bank.micr_code} />
+                <InfoRow label="SWIFT Code" value={bank.swift_code} />
+              </div>
+            </div>
+
+            {/* Digital Payment */}
+            {(bank.upi_id || bank.upi_qr_code) && (
+              <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2 flex items-center gap-1.5">
+                  <QrCode size={13} /> Digital Payment
+                </h3>
+                <div className="flex items-center gap-5">
+                  {bank.upi_qr_code && (
+                    <div
+                      onClick={() => setQrModalOpen(true)}
+                      className="w-24 h-24 rounded-xl border border-base-300 bg-base-200/30 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer group relative hover:border-primary/50 transition-colors"
+                      title="Click to view QR code"
+                    >
+                      <img
+                        src={bank.upi_qr_code}
+                        alt="UPI QR"
+                        className="w-full h-full object-contain p-1"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                        <Eye size={16} />
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex-1 divide-y divide-base-200">
+                    <InfoRow
+                      label="UPI ID"
+                      value={bank.upi_id}
+                      copyable
+                      copied={copiedField === "upi_id"}
+                      onCopy={() => handleCopy("upi_id", bank.upi_id)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {bank.remarks && (
+              <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2">
+                  Remarks
+                </h3>
+                <p className="text-sm text-base-content/70 leading-relaxed">
+                  {bank.remarks}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Right column */}
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-3">
+                Purpose & Flags
+              </h3>
+              <div className="space-y-2">
+                <span className="badge badge-ghost badge-sm font-medium w-full justify-start py-3">
+                  {PURPOSE_LABELS[bank.account_purpose] || bank.account_purpose}
+                </span>
+                {Boolean(bank.is_collection_account) && (
+                  <span className="badge badge-info badge-outline badge-sm gap-1 font-medium w-full justify-start py-3">
+                    <CircleDot size={10} /> Collection Account
+                  </span>
+                )}
+                {Boolean(bank.is_disbursement_account) && (
+                  <span className="badge badge-success badge-outline badge-sm gap-1 font-medium w-full justify-start py-3">
+                    <CircleDot size={10} /> Disbursement Account
+                  </span>
+                )}
+                {!bank.is_collection_account &&
+                  !bank.is_disbursement_account && (
+                    <p className="text-xs text-base-content/30 py-2">
+                      No additional flags set.
+                    </p>
+                  )}
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2">
-                Remarks
+                Timeline
               </h3>
-              <p className="text-sm text-base-content/70 leading-relaxed">
-                {bank.remarks}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Right column */}
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-3">
-              Purpose & Flags
-            </h3>
-            <div className="space-y-2">
-              <span className="badge badge-ghost badge-sm font-medium w-full justify-start py-3">
-                {PURPOSE_LABELS[bank.account_purpose] || bank.account_purpose}
-              </span>
-              {Boolean(bank.is_collection_account) && (
-                <span className="badge badge-info badge-outline badge-sm gap-1 font-medium w-full justify-start py-3">
-                  <CircleDot size={10} /> Collection Account
-                </span>
-              )}
-              {Boolean(bank.is_disbursement_account) && (
-                <span className="badge badge-success badge-outline badge-sm gap-1 font-medium w-full justify-start py-3">
-                  <CircleDot size={10} /> Disbursement Account
-                </span>
-              )}
-              {!bank.is_collection_account && !bank.is_disbursement_account && (
-                <p className="text-xs text-base-content/30 py-2">
-                  No additional flags set.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2">
-              Timeline
-            </h3>
-            <div className="divide-y divide-base-200">
-              <InfoRow
-                label="Opened"
-                value={
-                  bank.opened_date
-                    ? new Date(bank.opened_date).toLocaleDateString()
-                    : null
-                }
-              />
-              <InfoRow
-                label="Closed"
-                value={
-                  bank.closed_date
-                    ? new Date(bank.closed_date).toLocaleDateString()
-                    : null
-                }
-              />
-              <InfoRow
-                label="Created"
-                value={
-                  bank.created_at
-                    ? new Date(bank.created_at).toLocaleString()
-                    : null
-                }
-              />
-              <InfoRow
-                label="Updated"
-                value={
-                  bank.updated_at
-                    ? new Date(bank.updated_at).toLocaleString()
-                    : null
-                }
-              />
+              <div className="divide-y divide-base-200">
+                <InfoRow
+                  label="Opened"
+                  value={
+                    bank.opened_date
+                      ? new Date(bank.opened_date).toLocaleDateString()
+                      : null
+                  }
+                />
+                <InfoRow
+                  label="Closed"
+                  value={
+                    bank.closed_date
+                      ? new Date(bank.closed_date).toLocaleDateString()
+                      : null
+                  }
+                />
+                <InfoRow
+                  label="Created"
+                  value={
+                    bank.created_at
+                      ? new Date(bank.created_at).toLocaleString()
+                      : null
+                  }
+                />
+                <InfoRow
+                  label="Updated"
+                  value={
+                    bank.updated_at
+                      ? new Date(bank.updated_at).toLocaleString()
+                      : null
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === "transactions" && (
+        <div className="mt-4">
+          <BankTransactionsPage bankId={bank.id} bankLabel={bankLabel} />
+        </div>
+      )}
 
       {/* QR Code Full Modal */}
       {qrModalOpen && bank.upi_qr_code && (

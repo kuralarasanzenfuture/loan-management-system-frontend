@@ -93,8 +93,8 @@ export default function CompanyDetailsViewPage() {
           </div>
           <span
             className={`badge gap-1.5 font-medium ml-2 ${company.status === "active"
-                ? "badge-success badge-outline"
-                : "badge-ghost"
+              ? "badge-success badge-outline"
+              : "badge-ghost"
               }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-current" />

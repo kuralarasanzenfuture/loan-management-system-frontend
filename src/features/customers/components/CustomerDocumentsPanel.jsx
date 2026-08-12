@@ -154,11 +154,10 @@ export default function CustomerDocumentsPanel({
                     <div className="flex items-center gap-2 min-w-0">
                       <span
                         onClick={fileUrl ? handleViewDoc : undefined}
-                        className={`truncate text-base-content/70 ${
-                          fileUrl
+                        className={`truncate text-base-content/70 ${fileUrl
                             ? "cursor-pointer hover:underline hover:text-primary font-medium"
                             : ""
-                        }`}
+                          }`}
                         title={cleanFileName}
                       >
                         {cleanFileName}
@@ -172,11 +171,10 @@ export default function CustomerDocumentsPanel({
 
                     {/* Status Badge */}
                     <span
-                      className={`badge badge-xs font-medium shrink-0 ${
-                        doc.verified
+                      className={`badge badge-xs font-medium shrink-0 ${doc.verified
                           ? "badge-success badge-outline"
                           : "badge-warning badge-outline"
-                      }`}
+                        }`}
                     >
                       {doc.verified ? "Verified" : "Pending"}
                     </span>

@@ -9,6 +9,7 @@ import customerLoanReducer from "../redux/customerLoans/customerLoanSlice.js";
 import installmentReducer from "../redux/installments/installmentSlice.js";
 import companyDetailsReducer from "../redux/companyDetails/companyDetailsSlice.js";
 import companyBankReducer from "../redux/companyBanks/companyBankSlice.js";
+import bankTransactionReducer from "../redux/bankTransactions/bankTransactionSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -21,6 +22,7 @@ export const store = configureStore({
     installments: installmentReducer,
     companyDetails: companyDetailsReducer,
     companyBanks: companyBankReducer,
+    bankTransactions: bankTransactionReducer,
   // },
   // middleware: (getDefaultMiddleware) => {
   //   return getDefaultMiddleware({

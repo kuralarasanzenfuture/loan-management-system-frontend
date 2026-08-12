@@ -185,6 +185,11 @@ export const NAV_SECTIONS = [
         label: "bank Accounts",
         icon: Banknote,
         path: "/bank-accounts",
+      },
+      {
+        label: "bank Transactions",
+        icon: ScrollText,
+        path: "/bank-transactions",
       }
     ],
   },

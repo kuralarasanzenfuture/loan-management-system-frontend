@@ -129,6 +129,7 @@ const companyBankSlice = createSlice({
       .addCase(fetchCompanyBankById.fulfilled, (state, action) => {
         state.loading = false;
         state.companyBank = action.payload.data || action.payload;
+        console.log("Fetched companyBank:", state.companyBank);
       })
       .addCase(fetchCompanyBankById.rejected, (state, action) => {
         state.loading = false;
