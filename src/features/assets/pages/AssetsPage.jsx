@@ -151,6 +151,7 @@ export default function AssetsPage() {
         : addAsset.fulfilled.match(action);
       if (wasFulfilled) setFormModal(null);
     } finally {
+      dispatch(fetchAssets());
       setFormSubmitting(false);
     }
   };
