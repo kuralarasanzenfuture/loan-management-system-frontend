@@ -190,6 +190,16 @@ export const NAV_SECTIONS = [
         label: "bank Transactions",
         icon: ScrollText,
         path: "/bank-transactions",
+      },
+      {
+        label: "Assets categories",
+        icon: Database,
+        path: "/asset-categories",
+      },
+      {
+        label: "Assets",
+        icon: Landmark,
+        path: "/assets",
       }
     ],
   },

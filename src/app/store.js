@@ -10,6 +10,8 @@ import installmentReducer from "../redux/installments/installmentSlice.js";
 import companyDetailsReducer from "../redux/companyDetails/companyDetailsSlice.js";
 import companyBankReducer from "../redux/companyBanks/companyBankSlice.js";
 import bankTransactionReducer from "../redux/bankTransactions/bankTransactionSlice.js";
+import assetCategoryReducer from "../redux/assetCategories/assetCategorySlice.js";
+import assetReducer from "../redux/assets/assetSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -23,6 +25,8 @@ export const store = configureStore({
     companyDetails: companyDetailsReducer,
     companyBanks: companyBankReducer,
     bankTransactions: bankTransactionReducer,
+    assetCategories: assetCategoryReducer,
+    assets: assetReducer,
   // },
   // middleware: (getDefaultMiddleware) => {
   //   return getDefaultMiddleware({
