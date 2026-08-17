@@ -30,6 +30,8 @@ import BankTransactionViewPage from "../features/bankTransactions/pages/BankTran
 import AssetCategoriesPage from "../features/assetCategory/pages/AssetCategoriesPage.jsx";
 import AssetsPage from "../features/assets/pages/AssetsPage.jsx";
 import AssetViewPage from "../features/assets/pages/AssetViewPage.jsx";
+import HandLoansPage from "../features/handLoans/pages/HandLoansPage.jsx";
+import HandLoanViewPage from "../features/handLoans/pages/HandLoanViewPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -108,6 +110,9 @@ const AppRoutes = () => {
 
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/assets/:id" element={<AssetViewPage />} />
+
+          <Route path="/hand-loans" element={<HandLoansPage />} />
+          <Route path="/hand-loans/:id" element={<HandLoanViewPage />} />
 
           {/* Profile & Settings now live inside MainLayout so they get the
               shared header, sidebar, and correct dark-mode background. */}

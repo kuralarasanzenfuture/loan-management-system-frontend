@@ -169,6 +169,17 @@ export const NAV_SECTIONS = [
   },
 
   {
+    label: "Hand Loans",
+    items: [
+      {
+        label: "Hand Loans",
+        icon: PiggyBank,
+        path: "/hand-loans",
+      },
+    ],
+  },
+
+  {
     label: "Organization",
     items: [
       {
@@ -200,7 +211,7 @@ export const NAV_SECTIONS = [
         label: "Assets",
         icon: Landmark,
         path: "/assets",
-      }
+      },
     ],
   },
 

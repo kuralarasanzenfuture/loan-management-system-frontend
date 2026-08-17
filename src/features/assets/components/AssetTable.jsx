@@ -115,10 +115,12 @@ export default function AssetTable({
 
               <td className="text-xs">
                 <div className="font-semibold text-base-content">
-                  {formatCurrency(asset.current_value)}
+                  {/* {formatCurrency(asset.current_value)} */}
+                  {formatCurrency(asset.purchase_price)}
                 </div>
                 <div className="text-[10px] text-base-content/40">
-                  Bought {formatCurrency(asset.purchase_price)}
+                  Bought
+                  {/* {formatCurrency(asset.purchase_price)} */}
                 </div>
               </td>
 

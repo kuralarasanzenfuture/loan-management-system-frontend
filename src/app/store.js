@@ -12,6 +12,7 @@ import companyBankReducer from "../redux/companyBanks/companyBankSlice.js";
 import bankTransactionReducer from "../redux/bankTransactions/bankTransactionSlice.js";
 import assetCategoryReducer from "../redux/assetCategories/assetCategorySlice.js";
 import assetReducer from "../redux/assets/assetSlice.js";
+import handLoanReducer from "../redux/handLoans/handLoanSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -27,6 +28,7 @@ export const store = configureStore({
     bankTransactions: bankTransactionReducer,
     assetCategories: assetCategoryReducer,
     assets: assetReducer,
+    handLoans: handLoanReducer,
   // },
   // middleware: (getDefaultMiddleware) => {
   //   return getDefaultMiddleware({
