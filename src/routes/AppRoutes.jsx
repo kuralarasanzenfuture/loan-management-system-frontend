@@ -32,6 +32,8 @@ import AssetsPage from "../features/assets/pages/AssetsPage.jsx";
 import AssetViewPage from "../features/assets/pages/AssetViewPage.jsx";
 import HandLoansPage from "../features/handLoans/pages/HandLoansPage.jsx";
 import HandLoanViewPage from "../features/handLoans/pages/HandLoanViewPage.jsx";
+import PersonalChitsPage from "../features/personalChit/pages/PersonalChitsPage.jsx";
+import PersonalChitViewPage from "../features/personalChit/pages/PersonalChitViewPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -113,6 +115,12 @@ const AppRoutes = () => {
 
           <Route path="/hand-loans" element={<HandLoansPage />} />
           <Route path="/hand-loans/:id" element={<HandLoanViewPage />} />
+
+          <Route path="/personal-chits" element={<PersonalChitsPage />} />
+          <Route
+            path="/personal-chits/:id"
+            element={<PersonalChitViewPage />}
+          />
 
           {/* Profile & Settings now live inside MainLayout so they get the
               shared header, sidebar, and correct dark-mode background. */}

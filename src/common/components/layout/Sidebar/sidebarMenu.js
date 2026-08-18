@@ -180,6 +180,17 @@ export const NAV_SECTIONS = [
   },
 
   {
+    label: "personal Chits",
+    items: [
+      {
+        label: "Personal Chits",
+        icon: PiggyBank,
+        path: "/personal-chits",
+      },
+    ],
+  },
+
+  {
     label: "Organization",
     items: [
       {

@@ -13,6 +13,8 @@ import bankTransactionReducer from "../redux/bankTransactions/bankTransactionSli
 import assetCategoryReducer from "../redux/assetCategories/assetCategorySlice.js";
 import assetReducer from "../redux/assets/assetSlice.js";
 import handLoanReducer from "../redux/handLoans/handLoanSlice.js";
+import personalChitReducer from "../redux/personalChits/personalChitSlice.js";
+import personalChitPaymentReducer from "../redux/personalChitPayment/personalChitPaymentSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -29,6 +31,8 @@ export const store = configureStore({
     assetCategories: assetCategoryReducer,
     assets: assetReducer,
     handLoans: handLoanReducer,
+    personalChits: personalChitReducer,
+    personalChitPayments: personalChitPaymentReducer,
   // },
   // middleware: (getDefaultMiddleware) => {
   //   return getDefaultMiddleware({
