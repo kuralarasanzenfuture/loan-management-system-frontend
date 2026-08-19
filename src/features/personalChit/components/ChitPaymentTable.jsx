@@ -44,6 +44,7 @@ export default function ChitPaymentTable({
             <th className="font-medium">#</th>
             <th className="font-medium">Due Date</th>
             <th className="font-medium">Due Amount</th>
+            <th className="font-medium">Benefit</th>
             <th className="font-medium">Paid</th>
             <th className="font-medium">Pending</th>
             <th className="font-medium">Mode</th>
@@ -69,6 +70,15 @@ export default function ChitPaymentTable({
                 </td>
                 <td className="text-xs font-semibold">
                   {formatCurrency(p.due_amount)}
+                </td>
+                <td className="text-xs">
+                  {Number(p.bit_benefit_amount) > 0 ? (
+                    <span className="text-primary font-semibold">
+                      {formatCurrency(p.bit_benefit_amount)}
+                    </span>
+                  ) : (
+                    <span className="text-base-content/30">—</span>
+                  )}
                 </td>
                 <td className="text-xs">
                   {p.paid_amount > 0 ? (
