@@ -167,3 +167,27 @@ export const calculatePenalty = async (id) => {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
+
+// GET /installments/today?date=YYYY-MM-DD (date optional, defaults to server's today)
+export const getTodayCollections = async (date) => {
+  try {
+    const params = date ? { date } : {};
+    const response = await api.get("/loan-installments/today-collections", {
+      params,
+    });
+
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};
+
+// GET /installments/overdue (unscoped by loan — every overdue installment across all active loans)
+export const getOverdueInstallmentsGlobal = async (params = {}) => {
+  try {
+    const response = await api.get("/loan-installments/overdue", { params });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};

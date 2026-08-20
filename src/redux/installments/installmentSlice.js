@@ -11,6 +11,8 @@ import {
   getOverdueInstallments,
   getLoanSummary,
   calculatePenalty,
+  getTodayCollections,
+  getOverdueInstallmentsGlobal,
 } from "./installment.service.js";
 
 // =========================================================
@@ -202,6 +204,44 @@ export const fetchPenalty = createAsyncThunk(
 );
 
 // =========================================================
+// TODAY'S COLLECTIONS (cross-loan)
+// =========================================================
+
+export const fetchTodayCollections = createAsyncThunk(
+  "installments/fetchTodayCollections",
+  async (date, { rejectWithValue }) => {
+    try {
+      return await getTodayCollections(date);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to fetch today's collections",
+      );
+    }
+  },
+);
+
+// =========================================================
+// GLOBAL OVERDUE INSTALLMENTS (cross-loan)
+// =========================================================
+
+export const fetchOverdueInstallmentsGlobal = createAsyncThunk(
+  "installments/fetchOverdueInstallmentsGlobal",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      return await getOverdueInstallmentsGlobal(params);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to fetch overdue installments",
+      );
+    }
+  },
+);
+
+// =========================================================
 // SLICE
 // =========================================================
 
@@ -238,6 +278,14 @@ const installmentSlice = createSlice({
 
     // Result from regenerate
     regenerateResult: null,
+
+    // Today's collections
+    todayCollections: [],
+    todaySummary: null,
+
+    // Global overdue installments
+    overdueGlobal: [],
+    overdueGlobalSummary: null,
 
     loading: false,
     error: null,
@@ -296,6 +344,18 @@ const installmentSlice = createSlice({
 
     clearRegenerateResult: (state) => {
       state.regenerateResult = null;
+    },
+
+    // =====================================================
+    // CLEAR COLLECTION DASHBOARD
+    // =====================================================
+
+    clearCollectionDashboard: (state) => {
+      state.todayCollections = [];
+      state.todaySummary = null;
+      state.overdueGlobal = [];
+      state.overdueGlobalSummary = null;
+      state.error = null;
     },
   },
 
@@ -425,8 +485,7 @@ const installmentSlice = createSlice({
         state.paymentResult = action.payload?.data ?? action.payload;
 
         const payload = action.payload;
-
-        const updated = payload?.installment ?? payload?.data?.installment;
+        const updated = payload?.installment ?? payload?.data?.installment ?? (payload?.id ? payload : null);
 
         if (updated?.id) {
           const index = state.installments.findIndex(
@@ -434,11 +493,37 @@ const installmentSlice = createSlice({
           );
 
           if (index !== -1) {
-            state.installments[index] = updated;
+            state.installments[index] = { ...state.installments[index], ...updated };
           }
 
           if (state.installment?.id === updated.id) {
-            state.installment = updated;
+            state.installment = { ...state.installment, ...updated };
+          }
+
+          // Also update in today's collections
+          const todayIdx = state.todayCollections.findIndex(
+            (item) => item.id === updated.id,
+          );
+          if (todayIdx !== -1) {
+            state.todayCollections[todayIdx] = {
+              ...state.todayCollections[todayIdx],
+              ...updated,
+            };
+          }
+
+          // Also update in overdue list
+          const overdueIdx = state.overdueGlobal.findIndex(
+            (item) => item.id === updated.id,
+          );
+          if (overdueIdx !== -1) {
+            if (updated.status === "paid" || Number(updated.balance_amount || 0) <= 0) {
+              state.overdueGlobal.splice(overdueIdx, 1);
+            } else {
+              state.overdueGlobal[overdueIdx] = {
+                ...state.overdueGlobal[overdueIdx],
+                ...updated,
+              };
+            }
           }
         }
       })
@@ -615,6 +700,137 @@ const installmentSlice = createSlice({
       .addCase(fetchPenalty.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // =====================================================
+      // TODAY'S COLLECTIONS
+      // =====================================================
+
+      .addCase(fetchTodayCollections.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(fetchTodayCollections.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const payload = action.payload;
+        const inner = payload?.data ?? payload;
+
+        let list = [];
+        if (Array.isArray(inner)) {
+          list = inner;
+        } else if (Array.isArray(inner?.installments)) {
+          list = inner.installments;
+        } else if (Array.isArray(inner?.data)) {
+          list = inner.data;
+        } else if (Array.isArray(payload?.installments)) {
+          list = payload.installments;
+        }
+
+        state.todayCollections = list;
+
+        const totalDueCalc = list.reduce(
+          (sum, i) =>
+            sum +
+            Number(
+              i.total_due ??
+                (Number(i.principal_amount || 0) + Number(i.penalty_amount || 0)) ??
+                i.balance_amount ??
+                0,
+            ),
+          0,
+        );
+
+        const collectedCalc =
+          Number(payload?.total_collection ?? inner?.total_collection ?? 0) ||
+          list.reduce((sum, i) => sum + Number(i.paid_amount || 0), 0);
+
+        state.todaySummary = {
+          total_due:
+            inner?.summary?.total_due ?? payload?.summary?.total_due ?? totalDueCalc,
+          total_installments:
+            inner?.summary?.total_installments ??
+            payload?.summary?.total_installments ??
+            list.length,
+          collected_today:
+            inner?.summary?.collected_today ??
+            payload?.summary?.collected_today ??
+            collectedCalc,
+          total_balance:
+            inner?.summary?.total_balance ??
+            payload?.summary?.total_balance ??
+            list.reduce((sum, i) => sum + Number(i.balance_amount || 0), 0),
+        };
+      })
+
+      .addCase(fetchTodayCollections.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.todayCollections = [];
+        state.todaySummary = null;
+      })
+
+      // =====================================================
+      // GLOBAL OVERDUE INSTALLMENTS
+      // =====================================================
+
+      .addCase(fetchOverdueInstallmentsGlobal.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(fetchOverdueInstallmentsGlobal.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const payload = action.payload;
+        const inner = payload?.data ?? payload;
+
+        let list = [];
+        if (Array.isArray(inner)) {
+          list = inner;
+        } else if (Array.isArray(inner?.installments)) {
+          list = inner.installments;
+        } else if (Array.isArray(inner?.data)) {
+          list = inner.data;
+        } else if (Array.isArray(payload?.installments)) {
+          list = payload.installments;
+        }
+
+        state.overdueGlobal = list;
+
+        const totalOverdueCalc = list.reduce(
+          (sum, i) =>
+            sum +
+            Number(
+              i.balance_amount ??
+                i.total_due ??
+                (Number(i.principal_amount || 0) + Number(i.penalty_amount || 0)) ??
+                0,
+            ),
+          0,
+        );
+
+        state.overdueGlobalSummary = {
+          total_due:
+            inner?.summary?.total_due ??
+            payload?.summary?.total_due ??
+            payload?.total_overdue_amount ??
+            inner?.total_overdue_amount ??
+            totalOverdueCalc,
+          total_installments:
+            inner?.summary?.total_installments ??
+            payload?.summary?.total_installments ??
+            payload?.count ??
+            list.length,
+        };
+      })
+
+      .addCase(fetchOverdueInstallmentsGlobal.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.overdueGlobal = [];
+        state.overdueGlobalSummary = null;
       });
   },
 });
@@ -630,6 +846,7 @@ export const {
   clearPaymentResult,
   clearPenalty,
   clearRegenerateResult,
+  clearCollectionDashboard,
 } = installmentSlice.actions;
 
 // =========================================================

@@ -35,6 +35,7 @@ import HandLoanViewPage from "../features/handLoans/pages/HandLoanViewPage.jsx";
 import PersonalChitsPage from "../features/personalChit/pages/PersonalChitsPage.jsx";
 import PersonalChitViewPage from "../features/personalChit/pages/PersonalChitViewPage.jsx";
 import LoanCollectionPage from "../features/collectionLoan/pages/LoanCollectionPage.jsx";
+import CollectionDashboardPage from "../features/collectionLoan/pages/CollectionDashboardPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -123,7 +124,7 @@ const AppRoutes = () => {
             element={<PersonalChitViewPage />}
           />
 
-          {/* <Route path="collection" element={<div>Collection Page</div>} /> */}
+          {/* Collection & EMI routes */}
           <Route path="/loan-collections" element={<LoanCollectionPage />} />
           <Route
             path="/loan-collections/:loanId"
@@ -133,6 +134,14 @@ const AppRoutes = () => {
             path="/loans/:loanId/collections"
             element={<LoanCollectionPage />}
           />
+          <Route
+            path="/loans/:loanId/collection"
+            element={<LoanCollectionPage />}
+          />
+
+          <Route path="/due-collections" element={<CollectionDashboardPage />} />
+          <Route path="/emi-collection" element={<CollectionDashboardPage />} />
+          <Route path="/collection" element={<CollectionDashboardPage />} />
 
           {/* Profile & Settings now live inside MainLayout so they get the
               shared header, sidebar, and correct dark-mode background. */}
