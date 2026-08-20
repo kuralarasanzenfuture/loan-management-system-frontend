@@ -34,6 +34,7 @@ import HandLoansPage from "../features/handLoans/pages/HandLoansPage.jsx";
 import HandLoanViewPage from "../features/handLoans/pages/HandLoanViewPage.jsx";
 import PersonalChitsPage from "../features/personalChit/pages/PersonalChitsPage.jsx";
 import PersonalChitViewPage from "../features/personalChit/pages/PersonalChitViewPage.jsx";
+import LoanCollectionPage from "../features/collectionLoan/pages/LoanCollectionPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -120,6 +121,17 @@ const AppRoutes = () => {
           <Route
             path="/personal-chits/:id"
             element={<PersonalChitViewPage />}
+          />
+
+          {/* <Route path="collection" element={<div>Collection Page</div>} /> */}
+          <Route path="/loan-collections" element={<LoanCollectionPage />} />
+          <Route
+            path="/loan-collections/:loanId"
+            element={<LoanCollectionPage />}
+          />
+          <Route
+            path="/loans/:loanId/collections"
+            element={<LoanCollectionPage />}
           />
 
           {/* Profile & Settings now live inside MainLayout so they get the

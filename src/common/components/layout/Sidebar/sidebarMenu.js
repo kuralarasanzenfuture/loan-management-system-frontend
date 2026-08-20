@@ -120,6 +120,11 @@ export const NAV_SECTIONS = [
     label: "Collections",
     items: [
       {
+        label: "Loan Collections",
+        icon: KeyRound,
+        path: "/loan-collections",
+      },
+      {
         label: "EMI Collection",
         icon: Wallet,
         path: "/emi-collection",

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
+  IndianRupee,
 } from "lucide-react";
 import {
   fetchCustomerLoanById,
@@ -204,13 +205,22 @@ export default function LoanViewPage() {
           </span>
         </div>
 
-        <button
-          onClick={() => setEditModalOpen(true)}
-          className="btn btn-primary btn-sm gap-1.5"
-        >
-          <Pencil size={15} />
-          Edit
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(`/loan-collections/${loan.id}`)}
+            className="btn btn-outline btn-primary btn-sm gap-1.5"
+          >
+            <IndianRupee size={15} />
+            Collect
+          </button>
+          <button
+            onClick={() => setEditModalOpen(true)}
+            className="btn btn-primary btn-sm gap-1.5"
+          >
+            <Pencil size={15} />
+            Edit
+          </button>
+        </div>
       </div>
 
       {/* Quick stats */}
