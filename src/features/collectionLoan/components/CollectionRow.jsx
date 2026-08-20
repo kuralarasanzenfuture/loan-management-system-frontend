@@ -26,21 +26,27 @@ export default function CollectionRow({
   const loanDisplayName = installment.loan_no || (installment.loan_id ? `Loan #${installment.loan_id}` : "—");
   const mobileDisplay = installment.customer_mobile || installment.mobile || "—";
 
+  const principal = Number(installment.principal_amount || 0);
+  const penalty = Number(installment.penalty_amount || installment.calculated_penalty_amount || 0);
+  const paid = Number(installment.paid_amount || 0);
+
   const totalDue = Number(
-    installment.total_due ??
-      (Number(installment.principal_amount || 0) + Number(installment.penalty_amount || 0)) ??
-      installment.balance_amount ??
-      0,
+    (installment.total_due != null && Number(installment.total_due) >= principal + penalty)
+      ? Number(installment.total_due)
+      : (principal + penalty)
   );
 
+  const rawBalance = Number(installment.balance_amount || 0);
   const balance = Number(
-    installment.balance_amount ??
-      (installment.status === "paid" ? 0 : totalDue),
+    Math.max(
+      rawBalance,
+      totalDue - paid
+    ).toFixed(2)
   );
 
   const status =
     installment.status ||
-    (balance <= 0 ? "paid" : Number(installment.paid_amount || 0) > 0 ? "partial" : "pending");
+    (balance <= 0 ? "paid" : paid > 0 ? "partial" : "pending");
 
   const isPaid = status === "paid" || balance <= 0;
 
@@ -91,19 +97,30 @@ export default function CollectionRow({
         <div className="font-semibold text-base-content/80">
           {formatDate(installment.due_date) || "—"}
         </div>
-        {showDaysOverdue && installment.days_overdue != null && Number(installment.days_overdue) > 0 && (
-          <div className="flex items-center gap-1 text-[10px] text-error font-medium mt-0.5">
+        {installment.days_overdue != null && Number(installment.days_overdue) > 0 ? (
+          <div className="flex items-center gap-1 text-[10px] text-error font-semibold mt-0.5">
             <AlertTriangle size={10} /> {installment.days_overdue} days overdue
+          </div>
+        ) : showDaysOverdue ? (
+          <div className="text-[10px] text-base-content/40 mt-0.5">On time</div>
+        ) : null}
+      </td>
+
+      <td className="text-right text-xs">
+        <div className="font-bold text-base-content">
+          {formatCurrency(totalDue)}
+        </div>
+        {penalty > 0 && (
+          <div className="text-[10px] text-error font-medium mt-0.5" title={`Principal: ${formatCurrency(principal)} + Penalty: ${formatCurrency(penalty)}`}>
+            EMI {formatCurrency(principal)} + Pen {formatCurrency(penalty)}
           </div>
         )}
       </td>
 
-      <td className="text-right text-xs font-bold text-base-content">
-        {formatCurrency(totalDue)}
-      </td>
-
       <td className="text-right text-xs font-semibold">
-        {formatCurrency(balance)}
+        <span className={balance > 0 && penalty > 0 ? "text-error font-bold" : ""}>
+          {formatCurrency(balance)}
+        </span>
       </td>
 
       <td>
@@ -125,7 +142,7 @@ export default function CollectionRow({
             <button
               onClick={handleCollect}
               className="btn btn-primary btn-xs rounded-lg gap-1 font-medium shadow-xs"
-              title="Collect EMI payment"
+              title="Collect EMI & Penalty payment"
             >
               <IndianRupee size={12} />
               Collect

@@ -101,9 +101,23 @@ export default function CollectionDashboardPage() {
     setPayTarget(installment);
   };
 
-  const handlePaySubmit = async ({ id, formData }) => {
+  const handlePaySubmit = async ({ id, formData, penaltyAmount }) => {
     setPaySubmitting(true);
     try {
+      // If there is an overdue penalty, ensure it is applied first so backend total_due matches
+      if (penaltyAmount && Number(penaltyAmount) > 0) {
+        try {
+          await dispatch(
+            applyPenaltyAction({
+              id,
+              formData: { penalty_amount: Number(penaltyAmount) },
+            }),
+          );
+        } catch (penErr) {
+          console.warn("Penalty application notice:", penErr);
+        }
+      }
+
       const action = await dispatch(payInstallmentAction({ id, formData }));
       if (payInstallmentAction.fulfilled.match(action)) {
         setPayTarget(null);
