@@ -15,6 +15,7 @@ import assetReducer from "../redux/assets/assetSlice.js";
 import handLoanReducer from "../redux/handLoans/handLoanSlice.js";
 import personalChitReducer from "../redux/personalChits/personalChitSlice.js";
 import personalChitPaymentReducer from "../redux/personalChitPayment/personalChitPaymentSlice.js";
+import analyticsReducer from "../redux/analytics/analyticsSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -33,6 +34,7 @@ export const store = configureStore({
     handLoans: handLoanReducer,
     personalChits: personalChitReducer,
     personalChitPayments: personalChitPaymentReducer,
+    analytics: analyticsReducer,
   // },
   // middleware: (getDefaultMiddleware) => {
   //   return getDefaultMiddleware({

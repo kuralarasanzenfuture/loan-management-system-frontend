@@ -18,6 +18,7 @@ import {
   fetchTodayCollections,
   fetchOverdueInstallmentsGlobal,
   payInstallmentAction,
+  applyPenaltyAction,
   clearInstallmentError,
   clearCollectionDashboard,
 } from "../../../redux/installments/installmentSlice.js";

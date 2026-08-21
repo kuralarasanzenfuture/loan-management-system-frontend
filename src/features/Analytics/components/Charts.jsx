@@ -24,9 +24,23 @@ import {
   gridProps,
 } from "./chartTheme.js";
 
+const formatINR = (val) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+  }).format(Number(val) || 0);
+};
+
+const formatShortCurrency = (val) => {
+  const num = Number(val) || 0;
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)}Cr`;
+  if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
+  if (num >= 1000) return `₹${(num / 1000).toFixed(0)}k`;
+  return `₹${num}`;
+};
+
 // Shown when a chart is given no data, instead of rendering an empty plot
-// area — makes it obvious at a glance whether something's actually broken
-// vs. there just being no data for the selected period yet.
 function EmptyState({ height }) {
   return (
     <div
@@ -59,8 +73,14 @@ export function CollectionAreaChart({ data, height = 260 }) {
         </defs>
         <CartesianGrid {...gridProps} vertical={false} />
         <XAxis dataKey="day" {...axisTickProps} />
-        <YAxis {...axisTickProps} />
-        <Tooltip contentStyle={tooltipStyle} />
+        <YAxis {...axisTickProps} tickFormatter={formatShortCurrency} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(val, name) => [
+            formatINR(val),
+            name === "collected" ? "Collected" : name === "expected" ? "Expected" : name,
+          ]}
+        />
         <Area
           type="monotone"
           dataKey="expected"
@@ -87,9 +107,17 @@ export function WeeklyBarChart({ data, height = 260 }) {
       <BarChart data={data}>
         <CartesianGrid {...gridProps} vertical={false} />
         <XAxis dataKey="week" {...axisTickProps} />
-        <YAxis {...axisTickProps} />
-        <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="target" fill={CHART_COLORS.grid} radius={[6, 6, 0, 0]} />
+        <YAxis {...axisTickProps} tickFormatter={formatShortCurrency} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(val, name) => [
+            formatINR(val),
+            name === "target" ? "Target" : "Collected",
+          ]}
+        />
+        {data.some((d) => d.target !== undefined) && (
+          <Bar dataKey="target" fill={CHART_COLORS.grid} radius={[6, 6, 0, 0]} />
+        )}
         <Bar
           dataKey="collected"
           fill={CHART_COLORS.success}
@@ -107,8 +135,11 @@ export function MonthlyLineChart({ data, height = 240 }) {
       <LineChart data={data}>
         <CartesianGrid {...gridProps} vertical={false} />
         <XAxis dataKey="month" {...axisTickProps} />
-        <YAxis {...axisTickProps} />
-        <Tooltip contentStyle={tooltipStyle} />
+        <YAxis {...axisTickProps} tickFormatter={formatShortCurrency} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(val) => [formatINR(val), "Income"]}
+        />
         <Line
           type="monotone"
           dataKey="income"
@@ -141,7 +172,17 @@ export function DistributionPieChart({ data, height = 240 }) {
             />
           ))}
         </Pie>
-        <Tooltip contentStyle={tooltipStyle} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(val, name, item) => [
+            `${val} loans${
+              item?.payload?.loan_amount
+                ? ` (${formatINR(item.payload.loan_amount)})`
+                : ""
+            }`,
+            name,
+          ]}
+        />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
       </PieChart>
     </ResponsiveContainer>
@@ -161,7 +202,10 @@ export function VillageBarChart({ data, height = 240 }) {
           width={90}
           {...categoryAxisTickProps}
         />
-        <Tooltip contentStyle={tooltipStyle} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(val) => [`${val} customers`, "Customers"]}
+        />
         <Bar
           dataKey="count"
           fill={CHART_COLORS.secondary}
@@ -195,7 +239,10 @@ export function GrowthAreaChart({ data, height = 240 }) {
         <CartesianGrid {...gridProps} vertical={false} />
         <XAxis dataKey="month" {...axisTickProps} />
         <YAxis {...axisTickProps} />
-        <Tooltip contentStyle={tooltipStyle} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(val) => [`${val} new customers`, "Growth"]}
+        />
         <Area
           type="monotone"
           dataKey="customers"
@@ -207,3 +254,4 @@ export function GrowthAreaChart({ data, height = 240 }) {
     </ResponsiveContainer>
   );
 }
+
