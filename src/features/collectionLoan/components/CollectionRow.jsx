@@ -1,6 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, User, IndianRupee, ExternalLink, CheckCircle2 } from "lucide-react";
+import {
+  AlertTriangle,
+  User,
+  IndianRupee,
+  ExternalLink,
+  CheckCircle2,
+} from "lucide-react";
 import {
   STATUS_STYLES,
   formatCurrency,
@@ -21,28 +27,31 @@ export default function CollectionRow({
   const customerDisplayName =
     installment.customer_name ||
     `${installment.first_name || ""} ${installment.last_name || ""}`.trim() ||
-    (installment.customer_id ? `Customer #${installment.customer_id}` : "Customer");
+    (installment.customer_id
+      ? `Customer #${installment.customer_id}`
+      : "Customer");
 
-  const loanDisplayName = installment.loan_no || (installment.loan_id ? `Loan #${installment.loan_id}` : "—");
-  const mobileDisplay = installment.customer_mobile || installment.mobile || "—";
+  const loanDisplayName =
+    installment.loan_no ||
+    (installment.loan_id ? `Loan #${installment.loan_id}` : "—");
+  const mobileDisplay =
+    installment.customer_mobile || installment.mobile || "—";
 
   const principal = Number(installment.principal_amount || 0);
-  const penalty = Number(installment.penalty_amount || installment.calculated_penalty_amount || 0);
+  const penalty = Number(
+    installment.penalty_amount || installment.calculated_penalty_amount || 0,
+  );
   const paid = Number(installment.paid_amount || 0);
 
   const totalDue = Number(
-    (installment.total_due != null && Number(installment.total_due) >= principal + penalty)
+    installment.total_due != null &&
+      Number(installment.total_due) >= principal + penalty
       ? Number(installment.total_due)
-      : (principal + penalty)
+      : principal + penalty,
   );
 
   const rawBalance = Number(installment.balance_amount || 0);
-  const balance = Number(
-    Math.max(
-      rawBalance,
-      totalDue - paid
-    ).toFixed(2)
-  );
+  const balance = Number(Math.max(rawBalance, totalDue - paid).toFixed(2));
 
   const status =
     installment.status ||
@@ -89,15 +98,14 @@ export default function CollectionRow({
         </div>
       </td>
 
-      <td className="text-xs text-base-content/60">
-        {mobileDisplay}
-      </td>
+      <td className="text-xs text-base-content/60">{mobileDisplay}</td>
 
       <td className="text-xs">
         <div className="font-semibold text-base-content/80">
           {formatDate(installment.due_date) || "—"}
         </div>
-        {installment.days_overdue != null && Number(installment.days_overdue) > 0 ? (
+        {installment.days_overdue != null &&
+        Number(installment.days_overdue) > 0 ? (
           <div className="flex items-center gap-1 text-[10px] text-error font-semibold mt-0.5">
             <AlertTriangle size={10} /> {installment.days_overdue} days overdue
           </div>
@@ -111,14 +119,19 @@ export default function CollectionRow({
           {formatCurrency(totalDue)}
         </div>
         {penalty > 0 && (
-          <div className="text-[10px] text-error font-medium mt-0.5" title={`Principal: ${formatCurrency(principal)} + Penalty: ${formatCurrency(penalty)}`}>
+          <div
+            className="text-[10px] text-error font-medium mt-0.5"
+            title={`Principal: ${formatCurrency(principal)} + Penalty: ${formatCurrency(penalty)}`}
+          >
             EMI {formatCurrency(principal)} + Pen {formatCurrency(penalty)}
           </div>
         )}
       </td>
 
       <td className="text-right text-xs font-semibold">
-        <span className={balance > 0 && penalty > 0 ? "text-error font-bold" : ""}>
+        <span
+          className={balance > 0 && penalty > 0 ? "text-error font-bold" : ""}
+        >
           {formatCurrency(balance)}
         </span>
       </td>
@@ -135,7 +148,8 @@ export default function CollectionRow({
       <td>
         <div className="flex items-center justify-end gap-1.5">
           {isPaid ? (
-            <span className="badge badge-success badge-sm gap-1 text-[11px]">
+            // <span className="badge badge-success  text-success p-2 badge-sm gap-1 text-[11px]">
+            <span className="badge bg-success/25 text-success border border-success/30 p-2 badge-sm gap-1 text-[11px]">
               <CheckCircle2 size={12} /> Paid
             </span>
           ) : (
@@ -163,4 +177,3 @@ export default function CollectionRow({
     </tr>
   );
 }
-

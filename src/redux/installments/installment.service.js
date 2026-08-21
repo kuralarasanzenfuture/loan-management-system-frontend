@@ -191,3 +191,15 @@ export const getOverdueInstallmentsGlobal = async (params = {}) => {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
+
+export const CollectionReports = async (params = {}) => {
+  try {
+    const response = await api.get(
+      "/loan-installments/reports/loan-collections",
+      { params },
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};

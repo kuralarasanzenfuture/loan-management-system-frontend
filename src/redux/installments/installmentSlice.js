@@ -13,6 +13,7 @@ import {
   calculatePenalty,
   getTodayCollections,
   getOverdueInstallmentsGlobal,
+  CollectionReports,
 } from "./installment.service.js";
 
 // =========================================================
@@ -241,6 +242,21 @@ export const fetchOverdueInstallmentsGlobal = createAsyncThunk(
   },
 );
 
+export const fetchCollectionReports = createAsyncThunk(
+  "installments/fetchCollectionReports",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      return await CollectionReports(params);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to fetch today's collection reports",
+      );
+    }
+  },
+);
+
 // =========================================================
 // SLICE
 // =========================================================
@@ -286,6 +302,9 @@ const installmentSlice = createSlice({
     // Global overdue installments
     overdueGlobal: [],
     overdueGlobalSummary: null,
+
+    // collection reports
+    collectionReports: [],
 
     loading: false,
     error: null,
@@ -356,6 +375,13 @@ const installmentSlice = createSlice({
       state.overdueGlobal = [];
       state.overdueGlobalSummary = null;
       state.error = null;
+    },
+
+    // =====================================================
+    // CLEAR COLLECTION REPORTS
+    // =====================================================
+    clearCollectionReports: (state) => {
+      state.collectionReports = [];
     },
   },
 
@@ -485,7 +511,10 @@ const installmentSlice = createSlice({
         state.paymentResult = action.payload?.data ?? action.payload;
 
         const payload = action.payload;
-        const updated = payload?.installment ?? payload?.data?.installment ?? (payload?.id ? payload : null);
+        const updated =
+          payload?.installment ??
+          payload?.data?.installment ??
+          (payload?.id ? payload : null);
 
         if (updated?.id) {
           const index = state.installments.findIndex(
@@ -493,7 +522,10 @@ const installmentSlice = createSlice({
           );
 
           if (index !== -1) {
-            state.installments[index] = { ...state.installments[index], ...updated };
+            state.installments[index] = {
+              ...state.installments[index],
+              ...updated,
+            };
           }
 
           if (state.installment?.id === updated.id) {
@@ -516,7 +548,10 @@ const installmentSlice = createSlice({
             (item) => item.id === updated.id,
           );
           if (overdueIdx !== -1) {
-            if (updated.status === "paid" || Number(updated.balance_amount || 0) <= 0) {
+            if (
+              updated.status === "paid" ||
+              Number(updated.balance_amount || 0) <= 0
+            ) {
               state.overdueGlobal.splice(overdueIdx, 1);
             } else {
               state.overdueGlobal[overdueIdx] = {
@@ -735,7 +770,8 @@ const installmentSlice = createSlice({
             sum +
             Number(
               i.total_due ??
-                (Number(i.principal_amount || 0) + Number(i.penalty_amount || 0)) ??
+                Number(i.principal_amount || 0) +
+                  Number(i.penalty_amount || 0) ??
                 i.balance_amount ??
                 0,
             ),
@@ -748,7 +784,9 @@ const installmentSlice = createSlice({
 
         state.todaySummary = {
           total_due:
-            inner?.summary?.total_due ?? payload?.summary?.total_due ?? totalDueCalc,
+            inner?.summary?.total_due ??
+            payload?.summary?.total_due ??
+            totalDueCalc,
           total_installments:
             inner?.summary?.total_installments ??
             payload?.summary?.total_installments ??
@@ -805,7 +843,8 @@ const installmentSlice = createSlice({
             Number(
               i.balance_amount ??
                 i.total_due ??
-                (Number(i.principal_amount || 0) + Number(i.penalty_amount || 0)) ??
+                Number(i.principal_amount || 0) +
+                  Number(i.penalty_amount || 0) ??
                 0,
             ),
           0,
@@ -831,6 +870,25 @@ const installmentSlice = createSlice({
         state.error = action.payload;
         state.overdueGlobal = [];
         state.overdueGlobalSummary = null;
+      })
+
+      // =====================================================
+      // collection reports
+      // =====================================================
+
+      .addCase(fetchCollectionReports.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCollectionReports.fulfilled, (state, action) => {
+        state.loading = false;
+        const inner = action.payload?.data ?? action.payload;
+        state.collectionReports = Array.isArray(inner) ? inner : [];
+      })
+      .addCase(fetchCollectionReports.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.collectionReports = [];
       });
   },
 });
@@ -847,6 +905,7 @@ export const {
   clearPenalty,
   clearRegenerateResult,
   clearCollectionDashboard,
+  clearCollectionReports,
 } = installmentSlice.actions;
 
 // =========================================================

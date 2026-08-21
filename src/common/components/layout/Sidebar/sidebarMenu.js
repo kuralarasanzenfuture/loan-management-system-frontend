@@ -289,7 +289,7 @@ export const NAV_SECTIONS = [
       {
         label: "Collection Reports",
         icon: Receipt,
-        path: "/reports/collections",
+        path: "/reports/loan-collections",
       },
       {
         label: "Customer Reports",

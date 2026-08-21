@@ -10,6 +10,7 @@ import axios from "axios";
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:5000/api",
+  // baseURL: "https://fpnqchft-5000.inc1.devtunnels.ms/api",
   timeout: 30000,
 });
 
