@@ -37,6 +37,7 @@ import PersonalChitViewPage from "../features/personalChit/pages/PersonalChitVie
 import LoanCollectionPage from "../features/collectionLoan/pages/LoanCollectionPage.jsx";
 import CollectionDashboardPage from "../features/collectionLoan/pages/CollectionDashboardPage.jsx";
 import CollectionReportsPage from "../features/collectionLoan/reports/pages/CollectionReportsPage.jsx";
+import NotFoundPage from "../common/pages/NotFoundPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -151,7 +152,13 @@ const AppRoutes = () => {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
+
+        {/* 404 — catches any unmatched path for authenticated users */}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
+
+      {/* Global 404 — catches unmatched paths outside protected scope */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };

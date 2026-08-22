@@ -27,6 +27,7 @@ import PayInstallmentModal from "../components/PayInstallmentModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
 import { formatCurrency } from "../utils/collectionHelpers.js";
+import PaymentSuccessModal from "../components/PaymentSuccessModal.jsx";
 
 const TABS = [
   { key: "today", label: "Today's Due", icon: Calendar },
@@ -64,6 +65,7 @@ export default function CollectionDashboardPage() {
   const [payTarget, setPayTarget] = useState(null);
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [paySuccessMsg, setPaySuccessMsg] = useState("");
+  const [paySuccessData, setPaySuccessData] = useState(null);
 
   const loadData = () => {
     dispatch(fetchTodayCollections(selectedDate));
@@ -102,6 +104,38 @@ export default function CollectionDashboardPage() {
     setPayTarget(installment);
   };
 
+  // const handlePaySubmit = async ({ id, formData, penaltyAmount }) => {
+  //   setPaySubmitting(true);
+  //   try {
+  //     // If there is an overdue penalty, ensure it is applied first so backend total_due matches
+  //     if (penaltyAmount && Number(penaltyAmount) > 0) {
+  //       try {
+  //         await dispatch(
+  //           applyPenaltyAction({
+  //             id,
+  //             formData: { penalty_amount: Number(penaltyAmount) },
+  //           }),
+  //         );
+  //       } catch (penErr) {
+  //         console.warn("Penalty application notice:", penErr);
+  //       }
+  //     }
+
+  //     const action = await dispatch(payInstallmentAction({ id, formData }));
+  //     if (payInstallmentAction.fulfilled.match(action)) {
+  //       setPayTarget(null);
+  //       setPaySuccessMsg(
+  //         `Payment of ${formatCurrency(formData.paid_amount || formData.payment_amount)} recorded successfully!`,
+  //       );
+  //       setTimeout(() => setPaySuccessMsg(""), 5000);
+  //       // Refresh collections
+  //       loadData();
+  //     }
+  //   } finally {
+  //     setPaySubmitting(false);
+  //   }
+  // };
+
   const handlePaySubmit = async ({ id, formData, penaltyAmount }) => {
     setPaySubmitting(true);
     try {
@@ -122,10 +156,26 @@ export default function CollectionDashboardPage() {
       const action = await dispatch(payInstallmentAction({ id, formData }));
       if (payInstallmentAction.fulfilled.match(action)) {
         setPayTarget(null);
-        setPaySuccessMsg(
-          `Payment of ${formatCurrency(formData.paid_amount || formData.payment_amount)} recorded successfully!`,
-        );
-        setTimeout(() => setPaySuccessMsg(""), 5000);
+
+        // `action.payload` is whatever your payInstallmentAction thunk
+        // resolves with — adjust these field reads to match its actual
+        // shape (e.g. action.payload.data?.pending_amount instead of
+        // action.payload.pending_amount, if your API wraps responses in
+        // { data: ... }).
+        const updated = action.payload?.data ?? action.payload ?? {};
+
+        setPaySuccessData({
+          amount: Number(formData.paid_amount || formData.payment_amount || 0),
+          installmentNo: formData.installment_no ?? updated.installment_no,
+          paymentDate:
+            formData.payment_date || new Date().toISOString().slice(0, 10),
+          paymentMode: formData.payment_mode,
+          transactionReference: formData.transaction_reference,
+          penaltyAmount: Number(penaltyAmount || 0),
+          remainingBalance: updated.pending_amount,
+          status: updated.status,
+        });
+
         // Refresh collections
         loadData();
       }
@@ -428,7 +478,13 @@ export default function CollectionDashboardPage() {
         onClose={() => setPayTarget(null)}
         onSubmit={handlePaySubmit}
       />
+
+      <PaymentSuccessModal
+        open={Boolean(paySuccessData)}
+        data={paySuccessData}
+        onClose={() => setPaySuccessData(null)}
+        formatCurrency={formatCurrency}
+      />
     </div>
   );
 }
-
