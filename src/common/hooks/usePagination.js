@@ -33,7 +33,8 @@ export default function usePagination({
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [pageSize, setPageSizeState] = useState(initialSize);
 
-  const totalItems = data.length;
+  const safeData = Array.isArray(data) ? data : [];
+  const totalItems = safeData.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   // If current page exceeds total (e.g. after filtering), clamp it
@@ -41,8 +42,8 @@ export default function usePagination({
 
   const pagedData = useMemo(() => {
     const startIndex = (safePage - 1) * pageSize;
-    return data.slice(startIndex, startIndex + pageSize);
-  }, [data, safePage, pageSize]);
+    return safeData.slice(startIndex, startIndex + pageSize);
+  }, [safeData, safePage, pageSize]);
 
   const setPage = (targetPage) => {
     const clamped = Math.max(1, Math.min(targetPage, totalPages));

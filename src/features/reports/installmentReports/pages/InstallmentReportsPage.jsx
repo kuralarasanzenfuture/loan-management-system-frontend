@@ -1,0 +1,189 @@
+import React, { useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  FileBarChart2,
+  Receipt,
+  IndianRupee,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
+import {
+  fetchLoanInstallmentsReport,
+  clearInstallmentReports,
+} from "../../../../redux/loanReports/loanReportsSlice.js";
+import InstallmentReportFilters from "../components/InstallmentReportFilters.jsx";
+import InstallmentReportTable from "../components/InstallmentReportTable.jsx";
+import Pagination from "../../../../common/components/Pagination/Pagination.jsx";
+import usePagination from "../../../../common/hooks/usePagination.js";
+import {
+  formatCurrency,
+  exportToCsv,
+} from "../utils/installmentReportHelpers.js";
+
+export default function InstallmentReportsPage() {
+  const dispatch = useDispatch();
+  const {
+    installmentReports,
+    installmentReportsCount,
+    installmentReportsLoading: loading,
+    installmentReportsError: error,
+  } = useSelector((state) => state.loanReports);
+
+  useEffect(() => {
+    dispatch(fetchLoanInstallmentsReport({}));
+    return () => dispatch(clearInstallmentReports());
+  }, [dispatch]);
+
+  const handleApplyFilters = (filters) => {
+    dispatch(fetchLoanInstallmentsReport(filters));
+  };
+
+  const handleExport = () => {
+    exportToCsv(
+      installmentReports,
+      `installment-report-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+  };
+
+  const {
+    pagedData: pagedRows,
+    currentPage,
+    pageSize,
+    totalItems,
+    setPage,
+    setPageSize,
+  } = usePagination({ data: installmentReports, initialSize: 20 });
+
+  const totals = useMemo(() => {
+    return installmentReports.reduce(
+      (acc, r) => {
+        acc.totalDue += Number(r.total_due) || 0;
+        acc.totalPaid += Number(r.paid_amount) || 0;
+        acc.totalBalance += Number(r.balance_amount) || 0;
+        if (r.status === "paid") acc.paidCount += 1;
+        if (r.status === "overdue") acc.overdueCount += 1;
+        return acc;
+      },
+      {
+        totalDue: 0,
+        totalPaid: 0,
+        totalBalance: 0,
+        paidCount: 0,
+        overdueCount: 0,
+      },
+    );
+  }, [installmentReports]);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-semibold flex items-center gap-2">
+          <FileBarChart2 size={20} className="text-primary" />
+          Installment Reports
+        </h1>
+        <p className="text-sm text-base-content/50 mt-1">
+          Installment-level breakdown across all loans, filterable by status and
+          date.
+        </p>
+      </div>
+
+      {error && (
+        <div className="alert alert-error text-sm py-2">
+          <span>
+            {typeof error === "string" ? error : "Something went wrong."}
+          </span>
+        </div>
+      )}
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+            <Receipt size={18} />
+          </span>
+          <div>
+            <div className="text-xs text-base-content/50">
+              Total Installments
+            </div>
+            <div className="text-xl font-bold leading-tight">
+              {installmentReportsCount || installmentReports.length}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-info/10 text-info shrink-0">
+            <IndianRupee size={18} />
+          </span>
+          <div>
+            <div className="text-xs text-base-content/50">Total Due</div>
+            <div className="text-lg font-bold leading-tight">
+              {formatCurrency(totals.totalDue)}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-success/20 bg-success/5 px-5 py-4">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 text-success shrink-0">
+            <CheckCircle2 size={18} />
+          </span>
+          <div>
+            <div className="text-xs text-base-content/50">Paid</div>
+            <div className="text-lg font-bold leading-tight text-success">
+              {formatCurrency(totals.totalPaid)}
+            </div>
+            <div className="text-[10px] text-base-content/40">
+              {totals.paidCount} installments
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-error/20 bg-error/5 px-5 py-4">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-error/10 text-error shrink-0">
+            <AlertTriangle size={18} />
+          </span>
+          <div>
+            <div className="text-xs text-base-content/50">Outstanding</div>
+            <div className="text-lg font-bold leading-tight text-error">
+              {formatCurrency(totals.totalBalance)}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-warning/20 bg-warning/5 px-5 py-4">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-warning/10 text-warning shrink-0">
+            <AlertTriangle size={18} />
+          </span>
+          <div>
+            <div className="text-xs text-base-content/50">Overdue Count</div>
+            <div className="text-lg font-bold leading-tight text-warning">
+              {totals.overdueCount}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <InstallmentReportFilters
+        onApply={handleApplyFilters}
+        onExport={handleExport}
+        hasResults={installmentReports.length > 0}
+      />
+
+      {/* Table + Pagination */}
+      <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden">
+        <InstallmentReportTable rows={pagedRows} loading={loading} />
+        {totalItems > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

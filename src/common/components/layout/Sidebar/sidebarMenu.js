@@ -284,7 +284,12 @@ export const NAV_SECTIONS = [
       {
         label: "Loan Reports",
         icon: BarChart3,
-        path: "/reports/loans",
+        path: "/loan-reports",
+      },
+      {
+        label: "Loan Installment Reports",
+        icon: CalendarDays,
+        path: "/installment-reports",
       },
       {
         label: "Collection Reports",
@@ -294,7 +299,7 @@ export const NAV_SECTIONS = [
       {
         label: "Customer Reports",
         icon: Users,
-        path: "/reports/customers",
+        path: "/customer-reports",
       },
       {
         label: "Financial Reports",

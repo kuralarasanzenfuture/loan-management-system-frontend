@@ -52,4 +52,6 @@ export const updateCustomerLoanStatus = async (id, formData) => {
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);
   }
-}
+};
+
+

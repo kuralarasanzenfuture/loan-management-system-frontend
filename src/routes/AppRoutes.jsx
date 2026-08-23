@@ -38,6 +38,9 @@ import LoanCollectionPage from "../features/collectionLoan/pages/LoanCollectionP
 import CollectionDashboardPage from "../features/collectionLoan/pages/CollectionDashboardPage.jsx";
 import CollectionReportsPage from "../features/collectionLoan/reports/pages/CollectionReportsPage.jsx";
 import NotFoundPage from "../common/pages/NotFoundPage.jsx";
+import LoanReportsPage from "../features/reports/loanReports/pages/LoanReportsPage.jsx";
+import InstallmentReportsPage from "../features/reports/installmentReports/pages/InstallmentReportsPage.jsx";
+import CustomerLoanSummaryPage from "../features/reports/customerReports/pages/CustomerLoanSummaryPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -140,6 +143,10 @@ const AppRoutes = () => {
             path="/loans/:loanId/collection"
             element={<LoanCollectionPage />}
           />
+
+          <Route path="/loan-reports" element={<LoanReportsPage />} />
+          <Route path="/installment-reports" element={<InstallmentReportsPage />} />
+          <Route path="/customer-reports" element={<CustomerLoanSummaryPage />} />
 
           <Route path="/due-collections" element={<CollectionDashboardPage />} />
           <Route path="/emi-collection" element={<CollectionDashboardPage />} />

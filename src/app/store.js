@@ -16,6 +16,7 @@ import handLoanReducer from "../redux/handLoans/handLoanSlice.js";
 import personalChitReducer from "../redux/personalChits/personalChitSlice.js";
 import personalChitPaymentReducer from "../redux/personalChitPayment/personalChitPaymentSlice.js";
 import analyticsReducer from "../redux/analytics/analyticsSlice.js";
+import loanReportsReducer from "../redux/loanReports/loanReportsSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -25,6 +26,7 @@ export const store = configureStore({
     customers: customerReducer,
     loanPlanAndPenalities: loanPlanAndPenalityReducer,
     customerLoans: customerLoanReducer,
+    loanReports: loanReportsReducer,
     installments: installmentReducer,
     companyDetails: companyDetailsReducer,
     companyBanks: companyBankReducer,
