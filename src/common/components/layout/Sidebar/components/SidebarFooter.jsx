@@ -1,23 +1,51 @@
-import React, { useState } from "react";
-import { ChevronDown, Heart, ShieldAlert } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { ChevronDown, Heart, ShieldCheck, AlertTriangle } from "lucide-react";
+import { fetchPortfolioHealth } from "../../../../../redux/dashboard/dashboardSlice.js";
+
+function formatCompactCurrency(val) {
+  const num = Number(val) || 0;
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)}Cr`;
+  if (num >= 100000) return `₹${(num / 100000).toFixed(2)}L`;
+  if (num >= 1000) return `₹${(num / 1000).toFixed(1)}k`;
+  return `₹${num.toLocaleString("en-IN")}`;
+}
 
 /**
  * SidebarFooter Component
- * Displays system status, portfolio health details, or quick metrics.
+ * Displays dynamic system status and portfolio health metrics from Redux.
  * 
  * @param {boolean} collapsed - Whether the sidebar is collapsed
  */
 export default function SidebarFooter({ collapsed = false }) {
+  const dispatch = useDispatch();
   const [expanded, setExpanded] = useState(false);
+
+  const { portfolioHealth } = useSelector((state) => state.dashboard);
+
+  useEffect(() => {
+    if (!portfolioHealth) {
+      dispatch(fetchPortfolioHealth());
+    }
+  }, [dispatch, portfolioHealth]);
+
+  const onTimeRate = Number(portfolioHealth?.on_time_payment_rate) || 0;
+  const nplRatio = Number(portfolioHealth?.npl_ratio) || 0;
+  const activeCapital = Number(portfolioHealth?.active_capital) || 0;
+
+  const isHealthy = onTimeRate >= 80 && nplRatio < 5;
+  const statusColorClass = isHealthy ? "text-success bg-success" : "text-warning bg-warning";
+  const badgeBgClass = isHealthy ? "bg-success/10 text-success" : "bg-warning/10 text-warning";
+  const progressBgClass = isHealthy ? "bg-success" : "bg-warning";
 
   if (collapsed) {
     return (
       <div className="p-3 border-t border-base-300 flex justify-center">
         <div 
-          className="tooltip tooltip-right tooltip-primary cursor-pointer flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 text-success"
-          data-tip="Portfolio Health: 99.2%"
+          className={`tooltip tooltip-right tooltip-primary cursor-pointer flex items-center justify-center w-10 h-10 rounded-xl ${badgeBgClass}`}
+          data-tip={`Portfolio Health: ${onTimeRate}% on-time`}
         >
-          <Heart size={18} className="fill-success/20 stroke-[2.5]" />
+          <Heart size={18} className="fill-current/20 stroke-[2.5]" />
         </div>
       </div>
     );
@@ -27,11 +55,12 @@ export default function SidebarFooter({ collapsed = false }) {
     <div className="p-4 border-t border-base-300 shrink-0 bg-base-100">
       <div className="rounded-xl border border-base-200 bg-base-200/50 p-3 transition-all duration-300">
         <button
+          type="button"
           onClick={() => setExpanded(!expanded)}
           className="w-full flex items-center justify-between text-xs font-semibold text-base-content/80 hover:text-primary transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-success ring-4 ring-success/20 animate-ping" />
+            <span className={`flex h-2 w-2 rounded-full ${isHealthy ? "bg-success" : "bg-warning"} ring-4 ${isHealthy ? "ring-success/20" : "ring-warning/20"} animate-ping`} />
             <span>Portfolio Health</span>
           </div>
           <ChevronDown
@@ -52,21 +81,30 @@ export default function SidebarFooter({ collapsed = false }) {
           <div className="overflow-hidden space-y-2">
             <div className="flex justify-between text-[11px]">
               <span className="text-base-content/50">On-time payments</span>
-              <span className="font-bold text-success">99.2%</span>
+              <span className={`font-bold ${isHealthy ? "text-success" : "text-warning"}`}>
+                {onTimeRate}%
+              </span>
             </div>
             <div className="w-full bg-base-300 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-success h-full rounded-full" style={{ width: "99.2%" }}></div>
+              <div
+                className={`${progressBgClass} h-full rounded-full transition-all`}
+                style={{ width: `${Math.min(onTimeRate, 100)}%` }}
+              />
             </div>
             
             <div className="divider my-1.5 opacity-50" />
             
             <div className="flex justify-between text-[11px]">
               <span className="text-base-content/50">NPL Ratio</span>
-              <span className="font-semibold text-warning">0.8%</span>
+              <span className={`font-semibold ${nplRatio < 2 ? "text-success" : "text-warning"}`}>
+                {nplRatio}%
+              </span>
             </div>
             <div className="flex justify-between text-[11px]">
               <span className="text-base-content/50">Active Capital</span>
-              <span className="font-semibold text-base-content">$14.2M</span>
+              <span className="font-semibold text-base-content">
+                {formatCompactCurrency(activeCapital)}
+              </span>
             </div>
           </div>
         </div>
@@ -75,7 +113,9 @@ export default function SidebarFooter({ collapsed = false }) {
         {!expanded && (
           <div className="mt-1 flex justify-between items-center text-[11px]">
             <span className="text-base-content/50">On-time repayments</span>
-            <span className="font-bold text-success">99.2%</span>
+            <span className={`font-bold ${isHealthy ? "text-success" : "text-warning"}`}>
+              {onTimeRate}%
+            </span>
           </div>
         )}
       </div>

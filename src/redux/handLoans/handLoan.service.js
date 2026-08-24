@@ -1,8 +1,13 @@
 import api from "../../common/services/api.js";
 
-export const getHandLoans = async () => {
+export const getHandLoans = async (params = {}) => {
   try {
-    const response = await api.get("/hand-loans", { params: {} });
+    const response = await api.get("/hand-loans", {
+      params: {
+        limit: 10000,
+        ...params,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);

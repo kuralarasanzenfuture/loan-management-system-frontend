@@ -1,8 +1,13 @@
 import api from "../../common/services/api.js";
 
-export const getPersonalChits = async () => {
+export const getPersonalChits = async (params = {}) => {
   try {
-    const response = await api.get("/personal-chits", { params: {} });
+    const response = await api.get("/personal-chits", {
+      params: {
+        limit: 10000,
+        ...params,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);

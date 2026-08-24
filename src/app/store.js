@@ -17,6 +17,7 @@ import personalChitReducer from "../redux/personalChits/personalChitSlice.js";
 import personalChitPaymentReducer from "../redux/personalChitPayment/personalChitPaymentSlice.js";
 import analyticsReducer from "../redux/analytics/analyticsSlice.js";
 import loanReportsReducer from "../redux/loanReports/loanReportsSlice.js";
+import dashboardReducer from "../redux/dashboard/dashboardSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -37,10 +38,11 @@ export const store = configureStore({
     personalChits: personalChitReducer,
     personalChitPayments: personalChitPaymentReducer,
     analytics: analyticsReducer,
-  // },
-  // middleware: (getDefaultMiddleware) => {
-  //   return getDefaultMiddleware({
-  //     serializableCheck: false,
-  //   });
+    dashboard: dashboardReducer,
+    // },
+    // middleware: (getDefaultMiddleware) => {
+    //   return getDefaultMiddleware({
+    //     serializableCheck: false,
+    //   });
   },
 });

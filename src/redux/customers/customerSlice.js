@@ -10,9 +10,9 @@ import {
 // Get All Customers
 export const fetchCustomers = createAsyncThunk(
   "customers/fetchCustomers",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getAllCustomers();
+      return await getAllCustomers(params);
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }

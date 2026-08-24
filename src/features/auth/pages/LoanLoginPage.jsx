@@ -117,7 +117,7 @@ export default function LoanLoginPage() {
           <span className="llp-brand-mark">
             <ShieldCheck size={18} />
           </span>
-          Meridian Lending
+          <span className="llp-brand-text">CM MICRO FINANCE</span>
         </div>
 
         <div>

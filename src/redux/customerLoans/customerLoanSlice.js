@@ -11,9 +11,9 @@ import {
 // Get All Customer Loans
 export const fetchCustomerLoans = createAsyncThunk(
   "customerLoans/fetchCustomerLoans",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getAllCustomerLoans();
+      return await getAllCustomerLoans(params);
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }

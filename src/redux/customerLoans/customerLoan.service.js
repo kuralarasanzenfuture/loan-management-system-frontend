@@ -1,8 +1,13 @@
 import api from "../../common/services/api.js";
 
-export const getAllCustomerLoans = async () => {
+export const getAllCustomerLoans = async (params = {}) => {
   try {
-    const response = await api.get("/customer-loans");
+    const response = await api.get("/customer-loans", {
+      params: {
+        limit: 10000,
+        ...params,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);

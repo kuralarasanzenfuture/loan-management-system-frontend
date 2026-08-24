@@ -25,10 +25,10 @@ export default function SidebarBrand({ collapsed = false, onClose = () => {} }) 
           `}
         >
           <span className="font-bold text-base tracking-tight text-base-content">
-            Meridian
+            CM MICRO
           </span>
           <span className="text-[10px] font-medium text-base-content/40 tracking-wider uppercase mt-0.5">
-            Lending Platform
+            Finance PVT LTD
           </span>
         </div>
       </div>

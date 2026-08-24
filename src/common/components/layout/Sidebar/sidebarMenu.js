@@ -56,16 +56,16 @@ export const NAV_SECTIONS = [
         icon: Users,
         path: "/customers",
       },
-      {
-        label: "Customer Documents",
-        icon: FolderOpen,
-        path: "/customer-documents",
-      },
-      {
-        label: "Guarantors",
-        icon: UserCog,
-        path: "/guarantors",
-      },
+      // {
+      //   label: "Customer Documents",
+      //   icon: FolderOpen,
+      //   path: "/customer-documents",
+      // },
+      // {
+      //   label: "Guarantors",
+      //   icon: UserCog,
+      //   path: "/guarantors",
+      // },
     ],
   },
 
@@ -78,41 +78,41 @@ export const NAV_SECTIONS = [
         path: "/loan-applications",
         badge: "18",
       },
-      {
-        label: "Loan Approval",
-        icon: ClipboardCheck,
-        path: "/loan-approval",
-      },
-      {
-        label: "Active Loans",
-        icon: Landmark,
-        path: "/active-loans",
-      },
+      // {
+      //   label: "Loan Approval",
+      //   icon: ClipboardCheck,
+      //   path: "/loan-approval",
+      // },
+      // {
+      //   label: "Active Loans",
+      //   icon: Landmark,
+      //   path: "/active-loans",
+      // },
       {
         label: "Loan Plans",
         icon: PiggyBank,
         path: "/loan-plans",
       },
-      {
-        label: "Loan Types",
-        icon: Calculator,
-        path: "/loan-types",
-      },
-      {
-        label: "Interest Rates",
-        icon: BadgeDollarSign,
-        path: "/interest-rates",
-      },
-      {
-        label: "Penalty Rules",
-        icon: AlertTriangle,
-        path: "/penalty-rules",
-      },
-      {
-        label: "Loan Closure",
-        icon: FileArchive,
-        path: "/loan-closure",
-      },
+      // {
+      //   label: "Loan Types",
+      //   icon: Calculator,
+      //   path: "/loan-types",
+      // },
+      // {
+      //   label: "Interest Rates",
+      //   icon: BadgeDollarSign,
+      //   path: "/interest-rates",
+      // },
+      // {
+      //   label: "Penalty Rules",
+      //   icon: AlertTriangle,
+      //   path: "/penalty-rules",
+      // },
+      // {
+      //   label: "Loan Closure",
+      //   icon: FileArchive,
+      //   path: "/loan-closure",
+      // },
     ],
   },
 
@@ -124,26 +124,26 @@ export const NAV_SECTIONS = [
         icon: KeyRound,
         path: "/loan-collections",
       },
-      {
-        label: "EMI Collection",
-        icon: Wallet,
-        path: "/emi-collection",
-      },
-      {
-        label: "Receipts",
-        icon: Receipt,
-        path: "/receipts",
-      },
+      // {
+      //   label: "EMI Collection",
+      //   icon: Wallet,
+      //   path: "/emi-collection",
+      // },
+      // {
+      //   label: "Receipts",
+      //   icon: Receipt,
+      //   path: "/receipts",
+      // },
       {
         label: "Due Collections",
         icon: CalendarDays,
         path: "/due-collections",
       },
-      {
-        label: "Penalty Collection",
-        icon: AlertTriangle,
-        path: "/penalty-collection",
-      },
+      // {
+      //   label: "Penalty Collection",
+      //   icon: AlertTriangle,
+      //   path: "/penalty-collection",
+      // },
     ],
   },
 
@@ -198,11 +198,11 @@ export const NAV_SECTIONS = [
   {
     label: "Organization",
     items: [
-      {
-        label: "Branches",
-        icon: GitBranch,
-        path: "/branches",
-      },
+      // {
+      //   label: "Branches",
+      //   icon: GitBranch,
+      //   path: "/branches",
+      // },
       {
         label: "Companies",
         icon: Building2,

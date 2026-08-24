@@ -12,9 +12,9 @@ import {
 // Get All Hand Loans
 export const fetchHandLoans = createAsyncThunk(
   "handLoans/fetchHandLoans",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getHandLoans();
+      return await getHandLoans(params);
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }

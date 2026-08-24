@@ -7,7 +7,7 @@ import ProtectedRoute from "./ProtectedRoute.jsx";
 import LoanLoginPage from "../features/auth/pages/LoanLoginPage";
 
 import MainLayout from "../common/layouts/MainLayout.jsx";
-import DashboardPage from "../common/pages/DashboardPage.jsx";
+import DashboardPage from "../features/dashboard/pages/DashboardPage.jsx";
 import RolesPage from "../features/roles/pages/RolesPage.jsx";
 import UsersPage from "../features/users/pages/UsersPage.jsx";
 import CustomersPage from "../features/customers/pages/CustomersPage.jsx";
