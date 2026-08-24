@@ -176,7 +176,10 @@ const loanReportsSlice = createSlice({
 
         const response = action.payload;
 
-        // Support both nested object { data: { data: [...], summary: {...} } } and flat array
+        // Support various API response structures:
+        // 1. { data: { data: [...], summary: {...} } }
+        // 2. { data: [...], summary: {...} }
+        // 3. Direct array [...]
         const rawList = Array.isArray(response?.data?.data)
           ? response.data.data
           : Array.isArray(response?.data)
@@ -188,15 +191,23 @@ const loanReportsSlice = createSlice({
         state.customerSummaries = rawList.map((item) => ({
           ...item,
           id: item.id || item.customer_id,
-          total_loan: item.total_loan ?? item.total_amount ?? 0,
+          total_loans: Number(item.total_loans ?? 0),
+          total_loan: Number(item.total_loan ?? item.total_amount ?? 0),
+          total_paid: Number(item.total_paid ?? 0),
+          total_pending: Number(
+            item.total_pending ??
+              (Number(item.total_repayment ?? item.total_loan ?? item.total_amount ?? 0) - Number(item.total_paid ?? 0))
+          ),
         }));
-
-        state.customerSummaryCount =
-          response?.count ??
-          (response?.data?.summary?.total_customers ?? state.customerSummaries.length);
 
         state.customerSummaryTotals =
           response?.data?.summary || response?.summary || null;
+
+        state.customerSummaryCount =
+          response?.total_records ??
+          response?.data?.summary?.total_customers ??
+          response?.summary?.total_customers ??
+          state.customerSummaries.length;
       })
 
       .addCase(fetchCustomerLoanSummary.rejected, (state, action) => {

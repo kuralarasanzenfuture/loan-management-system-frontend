@@ -17,7 +17,10 @@ export const getLoanReports = async (params = {}) => {
 export const getLoanInstallmentsReport = async (params = {}) => {
   try {
     const response = await api.get("/customer-loans/installments-report", {
-      params,
+      params: {
+        limit: 10000,
+        ...params,
+      },
     });
 
     return response.data;
@@ -29,8 +32,11 @@ export const getLoanInstallmentsReport = async (params = {}) => {
 // Customer Loan Summary
 export const getCustomerLoanSummary = async (params = {}) => {
   try {
-    const response = await api.get("/customer-loans/customer-summary", {
-      params,
+    const response = await api.get("/customer-loans/customer-loan-reports", {
+      params: {
+        limit: 10000,
+        ...params,
+      },
     });
 
     return response.data;

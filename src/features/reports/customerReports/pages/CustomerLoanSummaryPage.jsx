@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Users, Landmark, IndianRupee, AlertTriangle } from "lucide-react";
 import {
@@ -25,11 +25,19 @@ export default function CustomerLoanSummaryPage() {
   } = useSelector((state) => state.loanReports);
 
   const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState({});
+
+  const loadData = useCallback(
+    (filters = {}) => {
+      dispatch(fetchCustomerLoanSummary({ limit: 10000, ...filters }));
+    },
+    [dispatch],
+  );
 
   useEffect(() => {
-    dispatch(fetchCustomerLoanSummary({}));
+    loadData();
     return () => dispatch(clearSummary());
-  }, [dispatch]);
+  }, [loadData, dispatch]);
 
   const safeSummaries = useMemo(() => {
     return Array.isArray(customerSummaries) ? customerSummaries : [];
@@ -37,12 +45,13 @@ export default function CustomerLoanSummaryPage() {
 
   const filteredRows = useMemo(() => {
     if (!search.trim()) return safeSummaries;
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     return safeSummaries.filter(
       (r) =>
         (r.name && r.name.toLowerCase().includes(q)) ||
         `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase().includes(q) ||
-        r.mobile?.includes(q),
+        (r.mobile && String(r.mobile).includes(q)) ||
+        (r.customer_no && String(r.customer_no).toLowerCase().includes(q)),
     );
   }, [safeSummaries, search]);
 
@@ -58,6 +67,12 @@ export default function CustomerLoanSummaryPage() {
 
   const handleSearch = (query) => {
     setSearch(query);
+    resetPage();
+  };
+
+  const handleFilterChange = (filters) => {
+    setActiveFilters(filters);
+    loadData(filters);
     resetPage();
   };
 
@@ -169,6 +184,7 @@ export default function CustomerLoanSummaryPage() {
       {/* Filters */}
       <CustomerSummaryFilters
         onSearch={handleSearch}
+        onFilterChange={handleFilterChange}
         onExport={handleExport}
         hasResults={filteredRows.length > 0}
       />
