@@ -65,7 +65,7 @@ export default function Header({
         <Breadcrumbs />
       </div>
 
-      <SearchBar />
+      {/* <SearchBar /> */}
 
       <div className="flex items-center gap-2.5 shrink-0">
         <ThemeSelector />

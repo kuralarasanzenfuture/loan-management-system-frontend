@@ -169,14 +169,79 @@ export const calculatePenalty = async (id) => {
 };
 
 // GET /installments/today?date=YYYY-MM-DD (date optional, defaults to server's today)
-export const getTodayCollections = async (date) => {
+export const getTodayCollections = async (date, status) => {
   try {
-    const params = date ? { date } : {};
-    const response = await api.get("/loan-installments/today-collections", {
-      params,
-    });
+    const targetDate = date || new Date().toISOString().slice(0, 10);
 
-    return response.data;
+    if (status && status !== "all") {
+      const response = await api.get("/loan-installments/today-collections", {
+        params: { date: targetDate, status },
+      });
+      return response.data;
+    }
+
+    // When status is "all" or omitted, fetch both unpaid and paid to guarantee complete dataset
+    const [unpaidRes, paidRes] = await Promise.allSettled([
+      api.get("/loan-installments/today-collections", {
+        params: { date: targetDate, status: "all" },
+      }),
+      api.get("/loan-installments/today-collections", {
+        params: { date: targetDate, status: "paid" },
+      }),
+    ]);
+
+    const unpaidData =
+      unpaidRes.status === "fulfilled"
+        ? unpaidRes.value?.data?.data || []
+        : [];
+    const paidData =
+      paidRes.status === "fulfilled"
+        ? paidRes.value?.data?.data || []
+        : [];
+
+    const seen = new Set();
+    const combined = [];
+    for (const item of [...unpaidData, ...paidData]) {
+      if (item && item.id && !seen.has(item.id)) {
+        seen.add(item.id);
+        combined.push(item);
+      }
+    }
+
+    const totalCollected = combined.reduce(
+      (sum, row) => sum + Number(row.paid_amount || 0),
+      0,
+    );
+    const totalDue = combined.reduce(
+      (sum, row) =>
+        sum +
+        Number(
+          row.total_due ??
+            Number(row.principal_amount || 0) +
+              Number(row.penalty_amount || 0) ??
+            row.balance_amount ??
+            0,
+        ),
+      0,
+    );
+    const totalBalance = combined.reduce(
+      (sum, row) => sum + Number(row.balance_amount || 0),
+      0,
+    );
+
+    return {
+      success: true,
+      date: targetDate,
+      count: combined.length,
+      total_collection: totalCollected,
+      summary: {
+        total_due: totalDue,
+        collected_today: totalCollected,
+        total_balance: totalBalance,
+        total_installments: combined.length,
+      },
+      data: combined,
+    };
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);
   }

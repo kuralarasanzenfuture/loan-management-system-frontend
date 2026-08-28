@@ -51,13 +51,17 @@ export default function CollectionRow({
   );
 
   const rawBalance = Number(installment.balance_amount || 0);
-  const balance = Number(Math.max(rawBalance, totalDue - paid).toFixed(2));
+
+  const isPaid =
+    installment.status === "paid" ||
+    (installment.balance_amount != null && rawBalance <= 0 && paid > 0) ||
+    (paid > 0 && totalDue > 0 && paid >= totalDue);
 
   const status =
     installment.status ||
-    (balance <= 0 ? "paid" : paid > 0 ? "partial" : "pending");
+    (isPaid ? "paid" : paid > 0 ? "partial" : "pending");
 
-  const isPaid = status === "paid" || balance <= 0;
+  const balance = isPaid ? 0 : Number(Math.max(rawBalance, totalDue - paid).toFixed(2));
 
   const handleCollect = () => {
     if (onPay) {

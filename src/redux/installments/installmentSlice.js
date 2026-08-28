@@ -210,9 +210,17 @@ export const fetchPenalty = createAsyncThunk(
 
 export const fetchTodayCollections = createAsyncThunk(
   "installments/fetchTodayCollections",
-  async (date, { rejectWithValue }) => {
+  async (arg, { rejectWithValue }) => {
     try {
-      return await getTodayCollections(date);
+      let date;
+      let status;
+      if (typeof arg === "string") {
+        date = arg;
+      } else if (arg && typeof arg === "object") {
+        date = arg.date;
+        status = arg.status;
+      }
+      return await getTodayCollections(date, status);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message ||

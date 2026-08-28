@@ -200,7 +200,7 @@ export default function CollectionDashboardPage() {
             : Number(inst.paid_amount || 0) > 0
               ? "partial"
               : "pending");
-        if (statusFilter === "pending") return st === "pending";
+        if (statusFilter === "pending") return st === "pending" || st === "overdue";
         if (statusFilter === "partial") return st === "partial";
         if (statusFilter === "paid") return st === "paid";
         return true;

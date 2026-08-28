@@ -18,7 +18,6 @@ import {
 import BankTransactionTable from "../components/BankTransactionTable.jsx";
 import BankTransactionFormModal from "../components/BankTransactionFormModal.jsx";
 import ReverseTransactionModal from "../components/ReverseTransactionModal.jsx";
-import BankAccountScroller from "../components/BankAccountScroller.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
 import {
@@ -35,7 +34,7 @@ const TYPE_FILTERS = [
 /**
  * BankTransactionsPage
  * Can be used in two ways:
- * 1. As a standalone page at /bank-transactions — allows selecting any bank or viewing all
+ * 1. As a standalone page at /bank-transactions — reads bankId from URL param
  * 2. Embedded inside CompanyBankViewPage — receives bankId and bankLabel as props
  *
  * Props:
@@ -44,28 +43,17 @@ const TYPE_FILTERS = [
  */
 export default function BankTransactionsPage({
   bankId: bankIdProp,
-  bankLabel: bankLabelProp,
+  bankLabel,
 }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { bankId: urlBankId } = useParams();
-
-  const [selectedBankId, setSelectedBankId] = useState(
-    bankIdProp ?? urlBankId ?? null
-  );
-  const [selectedBank, setSelectedBank] = useState(null);
-
-  useEffect(() => {
-    if (bankIdProp !== undefined) {
-      setSelectedBankId(bankIdProp);
-    }
-  }, [bankIdProp]);
-
-  const bankId = selectedBankId;
+  // Support standalone route /bank-transactions (no bankId prop)
+  const { bankId: bankTransactionBankId } = useParams();
+  const bankId = bankIdProp ?? bankTransactionBankId ?? null;
 
   const { bankTransactions, summary, loading, error } = useSelector(
-    (state) => state.bankTransactions || {}
+    (state) => state.bankTransactions,
   );
 
   const [typeFilter, setTypeFilter] = useState("all");
@@ -87,7 +75,7 @@ export default function BankTransactionsPage({
       ...(dateFrom && { date_from: dateFrom }),
       ...(dateTo && { date_to: dateTo }),
     }),
-    [bankId, typeFilter, referenceFilter, dateFrom, dateTo]
+    [bankId, typeFilter, referenceFilter, dateFrom, dateTo],
   );
 
   useEffect(() => {
@@ -100,10 +88,9 @@ export default function BankTransactionsPage({
 
   // Client-side filter as a safety net
   const filteredTransactions = useMemo(() => {
-    if (!bankTransactions || !Array.isArray(bankTransactions)) return [];
     if (!bankId) return bankTransactions;
     return bankTransactions.filter(
-      (t) => String(t.company_bank_id) === String(bankId)
+      (t) => String(t.company_bank_id) === String(bankId),
     );
   }, [bankTransactions, bankId]);
 
@@ -120,7 +107,6 @@ export default function BankTransactionsPage({
     dispatch(clearBankTransactionError());
     setFormModal(true);
   };
-
   const handleCloseForm = () => {
     setFormModal(false);
     dispatch(clearBankTransactionError());
@@ -150,7 +136,7 @@ export default function BankTransactionsPage({
         reverseTransaction({
           id: reverseTarget.id,
           company_bank_id: reverseTarget.company_bank_id,
-        })
+        }),
       );
       if (reverseTransaction.fulfilled.match(action)) {
         setReverseTarget(null);
@@ -164,39 +150,26 @@ export default function BankTransactionsPage({
     }
   };
 
-  const currentBankLabel = useMemo(() => {
-    if (selectedBank) {
-      const last4 = selectedBank.account_number
-        ? ` •••• ${selectedBank.account_number.slice(-4)}`
-        : "";
-      return `${selectedBank.bank_name || "Bank Account"}${last4}`;
-    }
-    if (bankLabelProp) return bankLabelProp;
-    if (bankId) return `Bank Account #${bankId}`;
-    return "All Bank Accounts";
-  }, [selectedBank, bankLabelProp, bankId]);
-
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <Receipt size={20} className="text-primary" />
             Transactions
           </h1>
           <p className="text-sm text-base-content/50 mt-1">
-            {currentBankLabel}
+            {bankLabel ||
+              (bankId ? `Bank Account #${bankId}` : "All bank transactions")}
           </p>
         </div>
         <button
-          className="btn btn-primary btn-sm gap-1.5 w-full sm:w-auto"
+          className="btn btn-primary btn-sm gap-1.5"
           onClick={handleOpenCreate}
           disabled={!bankId}
           title={
-            !bankId
-              ? "Select a bank account above to record transactions"
-              : undefined
+            !bankId ? "Select a bank account to record transactions" : undefined
           }
         >
           <Plus size={16} />
@@ -204,24 +177,19 @@ export default function BankTransactionsPage({
         </button>
       </div>
 
-      {/* Interactive Bank Account Scroller */}
-      <BankAccountScroller
-        activeBankId={bankId}
-        onSelectBank={
-          !bankIdProp
-            ? (bank) => {
-                setSelectedBankId(bank ? bank.id : null);
-                setSelectedBank(bank || null);
-              }
-            : undefined
-        }
-        showAllOption={!bankIdProp}
-      />
+      {!bankId && (
+        <div className="alert alert-warning text-sm py-2 mb-4">
+          <span>
+            Please navigate to a specific bank account to view and record its
+            transactions.
+          </span>
+        </div>
+      )}
 
       {error && !formModal && !reverseTarget && (
         <div className="alert alert-error text-sm py-2 mb-4">
           <span>
-            {typeof error === "string" ? error : error?.message || "Something went wrong."}
+            {typeof error === "string" ? error : "Something went wrong."}
           </span>
         </div>
       )}
@@ -256,7 +224,9 @@ export default function BankTransactionsPage({
               <Wallet size={18} />
             </span>
             <div>
-              <div className="text-xs text-base-content/50">Closing balance</div>
+              <div className="text-xs text-base-content/50">
+                Closing balance
+              </div>
               <div className="text-xl font-semibold leading-tight">
                 {formatCurrency(summary?.closing_balance)}
               </div>
@@ -283,11 +253,11 @@ export default function BankTransactionsPage({
           ))}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={referenceFilter}
             onChange={(e) => setReferenceFilter(e.target.value)}
-            className="select select-bordered select-sm rounded-lg bg-base-100 min-w-0 flex-1 sm:flex-none"
+            className="select select-bordered select-sm rounded-lg bg-base-100"
           >
             <option value="all">All reference types</option>
             {Object.entries(REFERENCE_TYPE_LABELS).map(([value, label]) => (
@@ -296,24 +266,22 @@ export default function BankTransactionsPage({
               </option>
             ))}
           </select>
-          <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="input input-bordered input-sm rounded-lg bg-base-100 min-w-0 flex-1 sm:flex-none sm:w-36"
-            />
-            <span className="text-xs text-base-content/30 shrink-0">to</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="input input-bordered input-sm rounded-lg bg-base-100 min-w-0 flex-1 sm:flex-none sm:w-36"
-            />
-          </div>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="input input-bordered input-sm rounded-lg bg-base-100"
+          />
+          <span className="text-xs text-base-content/30">to</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="input input-bordered input-sm rounded-lg bg-base-100"
+          />
           {(dateFrom || dateTo) && (
             <button
-              className="btn btn-ghost btn-sm btn-square shrink-0"
+              className="btn btn-ghost btn-sm btn-square"
               onClick={() => {
                 setDateFrom("");
                 setDateTo("");
@@ -349,7 +317,7 @@ export default function BankTransactionsPage({
       <BankTransactionFormModal
         open={formModal}
         bankId={bankId}
-        bankLabel={currentBankLabel}
+        bankLabel={bankLabel}
         loading={formSubmitting}
         error={formModal ? error : null}
         onClose={handleCloseForm}

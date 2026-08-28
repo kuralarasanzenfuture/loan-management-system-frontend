@@ -9,7 +9,8 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
+  // baseURL: "http://localhost:5000/api",
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
   // baseURL: "https://fpnqchft-5000.inc1.devtunnels.ms/api",
   timeout: 30000,
 });
