@@ -250,6 +250,11 @@ export const NAV_SECTIONS = [
         path: "/role-permissions",
       },
       {
+        label: "user Permissions",
+        icon: KeyRound,
+        path: "/user-permissions",
+      },
+      {
         label: "Audit Logs",
         icon: Activity,
         path: "/audit-logs",

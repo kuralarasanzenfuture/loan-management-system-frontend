@@ -133,6 +133,7 @@ export default function UsersPage() {
         setFormModal(null);
       }
     } finally {
+      dispatch(fetchUsers());
       setFormSubmitting(false);
     }
   };

@@ -41,6 +41,8 @@ import NotFoundPage from "../common/pages/NotFoundPage.jsx";
 import LoanReportsPage from "../features/reports/loanReports/pages/LoanReportsPage.jsx";
 import InstallmentReportsPage from "../features/reports/installmentReports/pages/InstallmentReportsPage.jsx";
 import CustomerLoanSummaryPage from "../features/reports/customerReports/pages/CustomerLoanSummaryPage.jsx";
+import RolePermissionsPage from "../features/permissions/pages/RolePermissionsPage.jsx";
+import UserPermissionsPage from "../features/permissions/pages/UserPermissionsPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -145,14 +147,29 @@ const AppRoutes = () => {
           />
 
           <Route path="/loan-reports" element={<LoanReportsPage />} />
-          <Route path="/installment-reports" element={<InstallmentReportsPage />} />
-          <Route path="/customer-reports" element={<CustomerLoanSummaryPage />} />
+          <Route
+            path="/installment-reports"
+            element={<InstallmentReportsPage />}
+          />
+          <Route
+            path="/customer-reports"
+            element={<CustomerLoanSummaryPage />}
+          />
 
-          <Route path="/due-collections" element={<CollectionDashboardPage />} />
+          <Route
+            path="/due-collections"
+            element={<CollectionDashboardPage />}
+          />
           <Route path="/emi-collection" element={<CollectionDashboardPage />} />
           <Route path="/collection" element={<CollectionDashboardPage />} />
 
-          <Route path = "/reports/loan-collections" element={<CollectionReportsPage />} />
+          <Route
+            path="/reports/loan-collections"
+            element={<CollectionReportsPage />}
+          />
+
+          <Route path="/role-permissions" element={<RolePermissionsPage />} />
+          <Route path="/user-permissions" element={<UserPermissionsPage />} />
 
           {/* Profile & Settings now live inside MainLayout so they get the
               shared header, sidebar, and correct dark-mode background. */}

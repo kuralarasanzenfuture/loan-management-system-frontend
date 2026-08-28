@@ -20,7 +20,7 @@ export const getUserById = async (id) => {
 
 export const createUser = async (formData) => {
   try {
-    const response = await api.post("/users", formData);
+    const response = await api.post("/users/register", formData);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);

@@ -18,6 +18,9 @@ import personalChitPaymentReducer from "../redux/personalChitPayment/personalChi
 import analyticsReducer from "../redux/analytics/analyticsSlice.js";
 import loanReportsReducer from "../redux/loanReports/loanReportsSlice.js";
 import dashboardReducer from "../redux/dashboard/dashboardSlice.js";
+import modulesActionsReducer from "../redux/modulesActions/modulesActionsSlice.js";
+import rolePermissionReducer from "../redux/rolePermissions/rolePermissionSlice.js";
+import userPermissionReducer from "../redux/userPermissions/userPermissionSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -39,6 +42,9 @@ export const store = configureStore({
     personalChitPayments: personalChitPaymentReducer,
     analytics: analyticsReducer,
     dashboard: dashboardReducer,
+    modulesActions: modulesActionsReducer,
+    rolePermissions: rolePermissionReducer,
+    userPermissions: userPermissionReducer,
     // },
     // middleware: (getDefaultMiddleware) => {
     //   return getDefaultMiddleware({
