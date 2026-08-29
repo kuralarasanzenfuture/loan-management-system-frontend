@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import {
   ShieldCheck,
   Shield,
@@ -8,6 +9,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Users,
+  ArrowLeft,
 } from "lucide-react";
 import { fetchModulesActionsTree } from "../../../redux/modulesActions/modulesActionsSlice.js";
 import { fetchRoles } from "../../../redux/roles/roleSlice.js";
@@ -24,18 +26,12 @@ import {
   getTreeStats,
 } from "../utils/permissionHelpers.js";
 
-function getRoleInitials(name = "") {
-  if (!name) return "R";
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
 export default function RolePermissionsPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { roleId: paramRoleId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { tree = [], treeLoading } = useSelector(
     (state) => state.modulesActions || {}
@@ -52,7 +48,17 @@ export default function RolePermissionsPage() {
     saveSuccess,
   } = useSelector((state) => state.rolePermissions || {});
 
-  const [selectedRoleId, setSelectedRoleId] = useState("");
+  // Extract initial role ID from route params, query params (?roleId=...), or state
+  const initialRoleId = useMemo(() => {
+    return (
+      paramRoleId ||
+      searchParams.get("roleId") ||
+      location.state?.roleId ||
+      ""
+    );
+  }, [paramRoleId, searchParams, location.state]);
+
+  const [selectedRoleId, setSelectedRoleId] = useState(initialRoleId);
   const [allowedIds, setAllowedIds] = useState(new Set());
   const [originalAllowedIds, setOriginalAllowedIds] = useState(new Set());
 
@@ -61,6 +67,18 @@ export default function RolePermissionsPage() {
     dispatch(fetchModulesActionsTree());
     dispatch(fetchRoles());
   }, [dispatch]);
+
+  // Sync if incoming URL parameter changes
+  useEffect(() => {
+    const incoming =
+      paramRoleId ||
+      searchParams.get("roleId") ||
+      location.state?.roleId;
+
+    if (incoming && String(incoming) !== String(selectedRoleId)) {
+      setSelectedRoleId(String(incoming));
+    }
+  }, [paramRoleId, searchParams, location.state]);
 
   const selectedRole = useMemo(
     () => roles.find((r) => String(r.id) === String(selectedRoleId)),
@@ -115,6 +133,15 @@ export default function RolePermissionsPage() {
     return getTreeStats(tree, allowedIds);
   }, [tree, allowedIds]);
 
+  const handleRoleSelectChange = (newId) => {
+    setSelectedRoleId(newId);
+    if (newId) {
+      setSearchParams({ roleId: newId });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   const handleSave = async () => {
     if (isAdminRole) return;
 
@@ -147,6 +174,16 @@ export default function RolePermissionsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <button
+              type="button"
+              onClick={() => navigate("/roles")}
+              className="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-primary pl-0"
+              title="Back to Roles list"
+            >
+              <ArrowLeft size={14} /> Back to Roles
+            </button>
+          </div>
           <h1 className="text-xl font-bold flex items-center gap-2 text-base-content">
             <ShieldCheck size={22} className="text-primary" />
             Role Permissions
@@ -168,7 +205,7 @@ export default function RolePermissionsPage() {
             </label>
             <select
               value={selectedRoleId}
-              onChange={(e) => setSelectedRoleId(e.target.value)}
+              onChange={(e) => handleRoleSelectChange(e.target.value)}
               className="select select-bordered select-sm rounded-xl w-full font-medium"
             >
               <option value="" disabled>

@@ -1,16 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import {
   UserCog,
   Shield,
-  ShieldAlert,
-  Sparkles,
-  Info,
   Crown,
-  UserCheck,
+  Info,
   CheckCircle2,
   AlertCircle,
-  Search,
+  ArrowLeft,
 } from "lucide-react";
 import { fetchModulesActionsTree } from "../../../redux/modulesActions/modulesActionsSlice.js";
 import { fetchUsers } from "../../../redux/users/userSlice.js";
@@ -40,8 +38,12 @@ function getInitials(name = "") {
 
 export default function UserPermissionsPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { userId: paramUserId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const { tree, treeLoading } = useSelector((state) => state.modulesActions || {});
+  const { tree = [], treeLoading } = useSelector((state) => state.modulesActions || {});
   const { users = [], loading: usersLoading } = useSelector((state) => state.users || {});
   const {
     permissions: userPermissions = [],
@@ -56,8 +58,17 @@ export default function UserPermissionsPage() {
     (state) => state.rolePermissions || {}
   );
 
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [userSearch, setUserSearch] = useState("");
+  // Extract initial user ID from route params, query params (?userId=...), or state
+  const initialUserId = useMemo(() => {
+    return (
+      paramUserId ||
+      searchParams.get("userId") ||
+      location.state?.userId ||
+      ""
+    );
+  }, [paramUserId, searchParams, location.state]);
+
+  const [selectedUserId, setSelectedUserId] = useState(initialUserId);
   const [allowedIds, setAllowedIds] = useState(new Set());
   const [originalAllowedIds, setOriginalAllowedIds] = useState(new Set());
 
@@ -66,6 +77,18 @@ export default function UserPermissionsPage() {
     dispatch(fetchModulesActionsTree());
     dispatch(fetchUsers());
   }, [dispatch]);
+
+  // Sync if incoming URL parameter changes
+  useEffect(() => {
+    const incoming =
+      paramUserId ||
+      searchParams.get("userId") ||
+      location.state?.userId;
+
+    if (incoming && String(incoming) !== String(selectedUserId)) {
+      setSelectedUserId(String(incoming));
+    }
+  }, [paramUserId, searchParams, location.state]);
 
   const selectedUser = useMemo(
     () => users.find((u) => String(u.id) === String(selectedUserId)),
@@ -128,6 +151,15 @@ export default function UserPermissionsPage() {
     return getUserPermissionStats(tree, allowedIds, roleAllowedIds);
   }, [tree, allowedIds, roleAllowedIds]);
 
+  const handleUserSelectChange = (newId) => {
+    setSelectedUserId(newId);
+    if (newId) {
+      setSearchParams({ userId: newId });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   const handleSave = async () => {
     if (isAdminUser) return;
 
@@ -159,23 +191,21 @@ export default function UserPermissionsPage() {
     setAllowedIds(new Set(roleAllowedIds));
   };
 
-  // Filter user list for quick search
-  const filteredUsers = useMemo(() => {
-    if (!userSearch.trim()) return users;
-    const q = userSearch.toLowerCase();
-    return users.filter(
-      (u) =>
-        u.username?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        u.role_name?.toLowerCase().includes(q)
-    );
-  }, [users, userSearch]);
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <button
+              type="button"
+              onClick={() => navigate("/users")}
+              className="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-primary pl-0"
+              title="Back to Users list"
+            >
+              <ArrowLeft size={14} /> Back to Users
+            </button>
+          </div>
           <h1 className="text-xl font-bold flex items-center gap-2 text-base-content">
             <UserCog size={22} className="text-primary" />
             User Permissions
@@ -197,7 +227,7 @@ export default function UserPermissionsPage() {
             </label>
             <select
               value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
+              onChange={(e) => handleUserSelectChange(e.target.value)}
               className="select select-bordered select-sm rounded-xl w-full font-medium"
             >
               <option value="" disabled>

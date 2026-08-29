@@ -398,7 +398,11 @@ import {
   LogOut,
   Check,
 } from "lucide-react";
-import { THEMES, THEME_LABELS, ThemeSwatch } from "../../config/Themeconfig.jsx";
+import {
+  THEMES,
+  THEME_LABELS,
+  ThemeSwatch,
+} from "../../../config/Themeconfig.jsx";
 
 const TABS = [
   { key: "security", label: "Security", icon: ShieldCheck },

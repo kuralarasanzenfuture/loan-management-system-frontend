@@ -118,11 +118,31 @@ export default function PermissionMatrix({
     return tree.map(filterModule).filter(Boolean);
   }, [tree, search, filterMode, allowedIds, roleAllowedIds]);
 
-  const handleToggleAction = (actionId, checked) => {
+  const handleToggleAction = (action, checked, isCtrl = false) => {
     if (readOnly) return;
     const next = new Set(allowedIds);
-    if (checked) next.add(actionId);
-    else next.delete(actionId);
+    const actionId = typeof action === "object" ? action.id : action;
+
+    if (isCtrl && typeof action === "object") {
+      // Ctrl+Click: bulk toggle all matching actions with same name across all modules
+      const targetName = (action.name || action.action_name || "").trim().toLowerCase();
+      const walk = (modules) => {
+        modules.forEach((m) => {
+          (m.actions || []).forEach((a) => {
+            const aName = (a.name || a.action_name || "").trim().toLowerCase();
+            if (aName === targetName) {
+              if (checked) next.add(a.id);
+              else next.delete(a.id);
+            }
+          });
+          if (m.children?.length) walk(m.children);
+        });
+      };
+      walk(tree);
+    } else {
+      if (checked) next.add(actionId);
+      else next.delete(actionId);
+    }
     onChange(next);
   };
 

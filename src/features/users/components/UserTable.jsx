@@ -1,5 +1,6 @@
 import React from "react";
-import { Pencil, Trash2, UserRound, Phone, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Pencil, Trash2, UserRound, Phone, Mail, KeyRound } from "lucide-react";
 
 const STATUS_STYLES = {
   active: "badge-success badge-outline",
@@ -10,12 +11,12 @@ const STATUS_STYLES = {
 /**
  * UserTable
  * Presentational table — receives already-filtered/paginated users.
- * Matches schema: { id, username, email, mobile, status, role_id, role, last_login }
+ * Supports native navigation and Ctrl+Click / Cmd+Click (open in new tab).
  *
  * Props:
  * - users (array)
  * - loading (bool)
- * - roleMap (object)  : { [role_id]: roleName } for display, since users only store role_id
+ * - roleMap (object)  : { [role_id]: roleName } for display
  * - onEdit (fn)   : called with the user object
  * - onDelete (fn) : called with the user object
  */
@@ -62,106 +63,128 @@ export default function UserTable({
             <th className="font-medium w-36">Role</th>
             <th className="font-medium w-28">Status</th>
             <th className="font-medium w-36">Last Login</th>
-            <th className="text-right font-medium w-28">Actions</th>
+            <th className="text-right font-medium w-36">Actions</th>
           </tr>
         </thead>
 
         <tbody>
-          {users.map((user, index) => (
-            <tr
-              key={user.id}
-              className="border-b border-base-200 last:border-0 hover:bg-base-200/50 transition-colors"
-            >
-              <td className="text-base-content/40">{index + 1}</td>
+          {users.map((user, index) => {
+            const permPath = `/user-permissions/${user.id}`;
 
-              <td>
-                <div className="flex items-center gap-3 py-1">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary shrink-0 uppercase text-xs font-bold">
-                    {user.username?.slice(0, 2) || <UserRound size={16} />}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-sm">{user.username}</div>
-                    <div className="text-[11px] text-base-content/40">
-                      ID: {user.id}
+            return (
+              <tr
+                key={user.id}
+                className="border-b border-base-200 last:border-0 hover:bg-base-200/50 transition-colors"
+              >
+                <td className="text-base-content/40">{index + 1}</td>
+
+                <td>
+                  <Link
+                    to={permPath}
+                    state={{ userId: user.id }}
+                    className="flex items-center gap-3 py-1 group no-underline text-inherit"
+                    title="Click or Ctrl+Click to open user permissions in new tab"
+                  >
+                    <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10 text-primary shrink-0 uppercase text-xs font-bold group-hover:bg-primary group-hover:text-primary-content transition-colors">
+                      {user.username?.slice(0, 2) || <UserRound size={16} />}
                     </div>
+                    <div>
+                      <div className="font-bold text-sm group-hover:text-primary transition-colors">
+                        {user.username}
+                      </div>
+                      <div className="text-[11px] text-base-content/40">
+                        ID: #{user.id}
+                      </div>
+                    </div>
+                  </Link>
+                </td>
+
+                <td>
+                  <div className="flex flex-col gap-0.5 text-xs text-base-content/60">
+                    {user.email && (
+                      <span className="flex items-center gap-1.5">
+                        <Mail size={12} className="text-base-content/30" />
+                        {user.email}
+                      </span>
+                    )}
+                    {user.mobile && (
+                      <span className="flex items-center gap-1.5">
+                        <Phone size={12} className="text-base-content/30" />
+                        {user.mobile}
+                      </span>
+                    )}
+                    {!user.email && !user.mobile && (
+                      <span className="text-base-content/30">
+                        No contact info
+                      </span>
+                    )}
                   </div>
-                </div>
-              </td>
+                </td>
 
-              <td>
-                <div className="flex flex-col gap-0.5 text-xs text-base-content/60">
-                  {user.email && (
-                    <span className="flex items-center gap-1.5">
-                      <Mail size={12} className="text-base-content/30" />
-                      {user.email}
-                    </span>
-                  )}
-                  {user.mobile && (
-                    <span className="flex items-center gap-1.5">
-                      <Phone size={12} className="text-base-content/30" />
-                      {user.mobile}
-                    </span>
-                  )}
-                  {!user.email && !user.mobile && (
-                    <span className="text-base-content/30">
-                      No contact info
-                    </span>
-                  )}
-                </div>
-              </td>
+                <td>
+                  <span className="badge badge-ghost badge-sm font-medium">
+                    {user.role_name || roleMap[user.role_id] || `Role #${user.role_id}`}
+                  </span>
+                </td>
 
-              <td>
-                <span className="badge badge-ghost badge-sm font-medium">
-                  {/* {roleMap[user.role_id] || `Role #${user.role_id}`} */}
-                  {user.role_name}
-                </span>
-              </td>
-
-              <td>
-                <span
-                  className={`badge gap-1.5 font-medium ${STATUS_STYLES[user.status] || "badge-ghost"}`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                  {user.status
-                    ? user.status.charAt(0).toUpperCase() + user.status.slice(1)
-                    : "Unknown"}
-                </span>
-              </td>
-
-              <td className="text-xs text-base-content/50">
-                {user.last_login ? (
-                  new Date(user.last_login).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })
-                ) : (
-                  <span className="text-base-content/30">Never</span>
-                )}
-              </td>
-
-              <td>
-                <div className="flex justify-end gap-1.5">
-                  <button
-                    className="btn btn-ghost btn-sm btn-square"
-                    onClick={() => onEdit(user)}
-                    aria-label={`Edit ${user.username}`}
-                    title="Edit user"
+                <td>
+                  <span
+                    className={`badge gap-1.5 font-medium ${STATUS_STYLES[user.status] || "badge-ghost"}`}
                   >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
-                    onClick={() => onDelete(user)}
-                    aria-label={`Delete ${user.username}`}
-                    title="Delete user"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    {user.status
+                      ? user.status.charAt(0).toUpperCase() + user.status.slice(1)
+                      : "Unknown"}
+                  </span>
+                </td>
+
+                <td className="text-xs text-base-content/50">
+                  {user.last_login ? (
+                    new Date(user.last_login).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  ) : (
+                    <span className="text-base-content/30">Never</span>
+                  )}
+                </td>
+
+                <td>
+                  <div className="flex justify-end gap-1">
+                    {/* Direct Navigate to User Permissions — supports Ctrl+Click */}
+                    <Link
+                      to={permPath}
+                      state={{ userId: user.id }}
+                      className="btn btn-ghost btn-sm btn-square text-primary hover:bg-primary/10"
+                      aria-label={`Configure permissions for ${user.username}`}
+                      title="Configure User Permissions (Ctrl+Click to open in new tab)"
+                    >
+                      <KeyRound size={15} />
+                    </Link>
+
+                    <button
+                      className="btn btn-ghost btn-sm btn-square"
+                      onClick={() => onEdit(user)}
+                      aria-label={`Edit ${user.username}`}
+                      title="Edit user"
+                    >
+                      <Pencil size={15} />
+                    </button>
+
+                    <button
+                      className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                      onClick={() => onDelete(user)}
+                      aria-label={`Delete ${user.username}`}
+                      title="Delete user"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

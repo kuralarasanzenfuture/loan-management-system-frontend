@@ -1,28 +1,33 @@
-import { useState } from "react";
+import React, { useEffect } from "react";
 import "./App.css";
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
+import { applyFont, FONT_STORAGE_KEY } from "./features/settings/components/PreferencesTab.jsx";
 
 function App() {
-  const [count, setCount] = useState(0);
+  // Initialize stored theme, font, density, and reduce-motion on app load
+  useEffect(() => {
+    // 1. Theme
+    const savedTheme = localStorage.getItem("meridian-theme") || "meridian-dark";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+
+    // 2. Font
+    const savedFont = localStorage.getItem(FONT_STORAGE_KEY) || "inter";
+    applyFont(savedFont);
+
+    // 3. Density
+    const savedDensity = localStorage.getItem("meridian-density") || "comfortable";
+    document.documentElement.setAttribute("data-density", savedDensity);
+
+    // 4. Reduce motion
+    const savedReduceMotion = localStorage.getItem("meridian-reduce-motion") === "true";
+    document.documentElement.classList.toggle("reduce-motion", savedReduceMotion);
+  }, []);
 
   return (
-    <>
-      <BrowserRouter>
-        {/* <AppInitializer> */}
-        <AppRoutes />
-        {/* </AppInitializer> */}
-
-        {/* <h1 className="text-3xl font-bold underline">Hello world!</h1> */}
-      </BrowserRouter>
-      {/* <h1 className="text-3xl font-bold underline text-center">Hello world!</h1>
-
-      <div className="bg-primary text-primary-content/60">
-        Primary-content color with 60% opacity
-      </div>
-
-      <button className="btn btn-primary">Button</button> */}
-    </>
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
 

@@ -21,8 +21,8 @@ import {
  * - allowedIds (Set)         : Currently allowed action IDs
  * - roleAllowedIds (Set)     : (Optional) Action IDs granted by the user's role
  * - roleName (string)        : (Optional) Name of the user's role (e.g. 'Manager')
- * - onToggleAction (fn)      : (actionId, checked) => void
- * - onToggleModule (fn)      : (module, checked) => void
+ * - onToggleAction (fn)      : (action, checked, isCtrl) => void
+ * - onToggleModule (fn)      : (module, checked, isCtrl) => void
  * - depth (number)
  * - defaultOpen (bool)
  * - readOnly (bool)          : If true, checkboxes are disabled (e.g. for Admin users)
@@ -61,6 +61,16 @@ export default function PermissionModuleRow({
   const actionCount = module.actions?.length || 0;
   const allowedCount = (module.actions || []).filter((a) => allowedIds.has(a.id)).length;
 
+  const handleToggleModuleClick = (e) => {
+    const isCtrl = Boolean(e.ctrlKey || e.metaKey);
+    onToggleModule(module, e.target.checked, isCtrl);
+  };
+
+  const handleActionChange = (action, checked, e) => {
+    const isCtrl = Boolean(e.ctrlKey || e.metaKey);
+    onToggleAction(action, checked, isCtrl);
+  };
+
   return (
     <div className="border-b border-base-200/60 last:border-b-0 py-1 transition-all">
       {/* Module Header Bar */}
@@ -74,7 +84,9 @@ export default function PermissionModuleRow({
         {canExpand ? (
           <button
             type="button"
-            onClick={() => setOpen((v) => !v)}
+            onClick={(e) => {
+              setOpen((v) => !v);
+            }}
             className="btn btn-ghost btn-xs btn-square shrink-0 text-base-content/70 hover:bg-base-300/70 rounded-lg"
             title={open ? "Collapse" : "Expand"}
           >
@@ -94,11 +106,15 @@ export default function PermissionModuleRow({
           type="checkbox"
           checked={checkState === "all"}
           disabled={readOnly}
-          onChange={(e) => onToggleModule(module, e.target.checked)}
+          onChange={handleToggleModuleClick}
           className={`checkbox checkbox-sm checkbox-primary rounded-md shrink-0 ${
             readOnly ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
           }`}
-          title={readOnly ? "Admin permissions cannot be modified" : "Toggle all permissions in this module"}
+          title={
+            readOnly
+              ? "Admin permissions cannot be modified"
+              : "Click to toggle module. Ctrl+Click for deep toggle."
+          }
         />
 
         {/* Module Title & Code (Clickable to toggle expand/collapse) */}
@@ -210,20 +226,24 @@ export default function PermissionModuleRow({
                 return (
                   <label
                     key={action.id}
+                    onClick={(e) => {
+                      if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        handleActionChange(action, !checked, e);
+                      }
+                    }}
                     className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all duration-150 ${cardStyle}`}
                     title={
                       readOnly
                         ? "Admin permissions are permanent and cannot be modified"
-                        : action.name
+                        : `${action.name} (Ctrl+Click to toggle all "${action.name}" actions)`
                     }
                   >
                     <input
                       type="checkbox"
                       checked={checked}
                       disabled={readOnly}
-                      onChange={(e) =>
-                        onToggleAction(action.id, e.target.checked)
-                      }
+                      onChange={(e) => handleActionChange(action, e.target.checked, e)}
                       className={`checkbox checkbox-xs rounded-md ${
                         checked ? "checkbox-primary" : "checkbox-ghost"
                       } ${readOnly ? "cursor-not-allowed" : "cursor-pointer"}`}

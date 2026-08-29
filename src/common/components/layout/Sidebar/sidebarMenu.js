@@ -147,31 +147,31 @@ export const NAV_SECTIONS = [
     ],
   },
 
-  {
-    label: "Finance",
-    items: [
-      {
-        label: "Income",
-        icon: Banknote,
-        path: "/income",
-      },
-      {
-        label: "Expenses",
-        icon: CreditCard,
-        path: "/expenses",
-      },
-      {
-        label: "Cash Book",
-        icon: PiggyBank,
-        path: "/cash-book",
-      },
-      {
-        label: "Transactions",
-        icon: History,
-        path: "/transactions",
-      },
-    ],
-  },
+  // {
+  //   label: "Finance",
+  //   items: [
+  //     {
+  //       label: "Income",
+  //       icon: Banknote,
+  //       path: "/income",
+  //     },
+  //     {
+  //       label: "Expenses",
+  //       icon: CreditCard,
+  //       path: "/expenses",
+  //     },
+  //     {
+  //       label: "Cash Book",
+  //       icon: PiggyBank,
+  //       path: "/cash-book",
+  //     },
+  //     {
+  //       label: "Transactions",
+  //       icon: History,
+  //       path: "/transactions",
+  //     },
+  //   ],
+  // },
 
   {
     label: "Hand Loans",
@@ -250,38 +250,38 @@ export const NAV_SECTIONS = [
         path: "/role-permissions",
       },
       {
-        label: "user Permissions",
+        label: "User Permissions",
         icon: KeyRound,
         path: "/user-permissions",
       },
-      {
-        label: "Audit Logs",
-        icon: Activity,
-        path: "/audit-logs",
-      },
+      // {
+      //   label: "Audit Logs",
+      //   icon: Activity,
+      //   path: "/audit-logs",
+      // },
     ],
   },
 
-  {
-    label: "Communication",
-    items: [
-      {
-        label: "SMS",
-        icon: Smartphone,
-        path: "/sms",
-      },
-      {
-        label: "Email",
-        icon: Mail,
-        path: "/email",
-      },
-      {
-        label: "Notifications",
-        icon: Bell,
-        path: "/notifications",
-      },
-    ],
-  },
+  // {
+  //   label: "Communication",
+  //   items: [
+  //     {
+  //       label: "SMS",
+  //       icon: Smartphone,
+  //       path: "/sms",
+  //     },
+  //     {
+  //       label: "Email",
+  //       icon: Mail,
+  //       path: "/email",
+  //     },
+  //     {
+  //       label: "Notifications",
+  //       icon: Bell,
+  //       path: "/notifications",
+  //     },
+  //   ],
+  // },
 
   {
     label: "Reports",
@@ -306,11 +306,11 @@ export const NAV_SECTIONS = [
         icon: Users,
         path: "/customer-reports",
       },
-      {
-        label: "Financial Reports",
-        icon: Wallet,
-        path: "/reports/finance",
-      },
+      // {
+      //   label: "Financial Reports",
+      //   icon: Wallet,
+      //   path: "/reports/finance",
+      // },
     ],
   },
 
@@ -322,16 +322,16 @@ export const NAV_SECTIONS = [
         icon: Settings,
         path: "/settings",
       },
-      {
-        label: "Database Backup",
-        icon: Database,
-        path: "/database-backup",
-      },
-      {
-        label: "Activity Logs",
-        icon: ScrollText,
-        path: "/activity-logs",
-      },
+      // {
+      //   label: "Database Backup",
+      //   icon: Database,
+      //   path: "/database-backup",
+      // },
+      // {
+      //   label: "Activity Logs",
+      //   icon: ScrollText,
+      //   path: "/activity-logs",
+      // },
     ],
   },
 ];

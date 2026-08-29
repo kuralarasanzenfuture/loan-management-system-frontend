@@ -14,7 +14,7 @@ import CustomersPage from "../features/customers/pages/CustomersPage.jsx";
 // import CustomerViewPage from "../features/customers/pages/CustomerViewPage.jsx";
 import CustomerViewPage from "../features/customers/pages/CustomerViewPage-new.jsx";
 import ProfilePage from "../common/pages/ProfilePage.jsx";
-import SettingsPage from "../common/pages/SettingsPage.jsx";
+import SettingsPage from "../features/settings/pages/SettingsPage.jsx";
 import LoanPlansPage from "../features/loanPlan/pages/LoanPlansPage.jsx";
 import LoanPlanViewPage from "../features/loanPlan/pages/LoanPlanViewPage.jsx";
 import CustomerLoansPage from "../features/customerLoans/pages/CustomerLoansPage.jsx";
@@ -169,7 +169,15 @@ const AppRoutes = () => {
           />
 
           <Route path="/role-permissions" element={<RolePermissionsPage />} />
+          <Route
+            path="/role-permissions/:roleId"
+            element={<RolePermissionsPage />}
+          />
           <Route path="/user-permissions" element={<UserPermissionsPage />} />
+          <Route
+            path="/user-permissions/:userId"
+            element={<UserPermissionsPage />}
+          />
 
           {/* Profile & Settings now live inside MainLayout so they get the
               shared header, sidebar, and correct dark-mode background. */}
