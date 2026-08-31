@@ -31,6 +31,8 @@ import InstallmentTable from "../components/InstallmentTable.jsx";
 import InstallmentPaymentModal from "../components/InstallmentPaymentModal.jsx";
 import CustomerLoanFormModal from "../components/CustomerLoanFormModal.jsx";
 import { formatCurrency } from "../utils/loanCalculations.js";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 const STATUS_STYLES = {
   active: "badge-info badge-outline",
@@ -49,6 +51,15 @@ export default function LoanViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────────
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.LOAN_APPLICATION_VIEW) || can(PERMISSIONS.LOAN_VIEW);
+  const canEdit = can(PERMISSIONS.LOAN_APPLICATION_EDIT) || can(PERMISSIONS.LOAN_EDIT);
+  const canCollect =
+    can(PERMISSIONS.LOAN_COLLECTION_CREATE) ||
+    can(PERMISSIONS.LOAN_COLLECTION_VIEW) ||
+    can(PERMISSIONS.LOAN_VIEW);
 
   const {
     customerLoan: loan,
@@ -125,10 +136,11 @@ export default function LoanViewPage() {
   };
 
   const handlePaymentSubmit = async (formData) => {
+    if (!canCollect) return;
     setPaymentSubmitting(true);
     try {
       const action = await dispatch(
-        editInstallment({ id: paymentTarget.id, formData }),
+        editInstallment({ id: paymentTarget.id, formData })
       );
       if (editInstallment.fulfilled.match(action)) {
         setPaymentTarget(null);
@@ -140,10 +152,11 @@ export default function LoanViewPage() {
   };
 
   const handleEditSubmit = async (formData) => {
+    if (!canEdit) return;
     setEditSubmitting(true);
     try {
       const action = await dispatch(
-        editCustomerLoan({ id: loan.id, formData }),
+        editCustomerLoan({ id: loan.id, formData })
       );
       if (editCustomerLoan.fulfilled.match(action)) {
         setEditModalOpen(false);
@@ -206,20 +219,27 @@ export default function LoanViewPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate(`/loan-collections/${loan.id}`)}
-            className="btn btn-outline btn-primary btn-sm gap-1.5"
-          >
-            <IndianRupee size={15} />
-            Collect
-          </button>
-          <button
-            onClick={() => setEditModalOpen(true)}
-            className="btn btn-primary btn-sm gap-1.5"
-          >
-            <Pencil size={15} />
-            Edit
-          </button>
+          {canCollect && (
+            <button
+              id="collect-loan-btn"
+              onClick={() => navigate(`/loan-collections/${loan.id}`)}
+              className="btn btn-outline btn-primary btn-sm gap-1.5"
+            >
+              <IndianRupee size={15} />
+              Collect
+            </button>
+          )}
+
+          {canEdit && (
+            <button
+              id="edit-loan-btn"
+              onClick={() => setEditModalOpen(true)}
+              className="btn btn-primary btn-sm gap-1.5 shadow-sm"
+            >
+              <Pencil size={15} />
+              Edit
+            </button>
+          )}
         </div>
       </div>
 

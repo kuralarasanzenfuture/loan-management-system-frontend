@@ -70,6 +70,19 @@ export default function CustomerLoanFormModal({
     [plans, form.loan_plan_id],
   );
 
+  const selectedCustomerObj = useMemo(
+    () => customers.find((c) => String(c.id) === String(form.customer_id)) || null,
+    [customers, form.customer_id]
+  );
+
+  const selectedCustomerName = useMemo(() => {
+    if (!selectedCustomerObj) return "";
+    return (
+      `${selectedCustomerObj.first_name || ""} ${selectedCustomerObj.last_name || ""}`.trim() ||
+      `Customer #${selectedCustomerObj.id}`
+    );
+  }, [selectedCustomerObj]);
+
   const derived = useMemo(
     () =>
       calculateLoanDerivedFields({
@@ -230,42 +243,93 @@ export default function CustomerLoanFormModal({
             )}
           </div> */}
 
+          {/* Customer search-select */}
           <div className="form-control relative">
             <label className="label pb-1">
               <span className="label-text text-xs font-semibold">
                 Customer *
               </span>
             </label>
-            <label
-              className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${fieldErrors.customer_id ? "input-error" : ""}`}
-            >
-              <Search size={14} className="text-base-content/40 shrink-0" />
-              <input
-                type="text"
-                className="grow"
-                placeholder="Search by name, mobile, or customer no…"
-                value={customerQuery}
-                onChange={(e) => {
-                  setCustomerQuery(e.target.value);
-                  setShowCustomerList(true);
-                  setForm((prev) => ({ ...prev, customer_id: "" }));
-                }}
-                onFocus={() => setShowCustomerList(true)}
-                disabled={isEdit}
-              />
-            </label>
+
+            {form.customer_id && selectedCustomerObj ? (
+              <div className="flex items-center justify-between p-2.5 rounded-xl border border-base-300 bg-base-200/50">
+                <div className="flex items-center gap-3 min-w-0">
+                  {selectedCustomerObj.photo ? (
+                    <img
+                      src={selectedCustomerObj.photo}
+                      alt={selectedCustomerName}
+                      className="w-9 h-9 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center uppercase select-none shrink-0">
+                      {selectedCustomerName.slice(0, 2).toUpperCase() || "#"}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm text-base-content truncate">
+                      {selectedCustomerName}
+                    </div>
+                    <div className="text-[11px] text-base-content/50 font-mono flex items-center gap-2">
+                      {selectedCustomerObj.customer_no && (
+                        <span>{selectedCustomerObj.customer_no}</span>
+                      )}
+                      {selectedCustomerObj.mobile && (
+                        <span>· {selectedCustomerObj.mobile}</span>
+                      )}
+                      {selectedCustomerObj.city && (
+                        <span>· {selectedCustomerObj.city}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {!isEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, customer_id: "" }));
+                      setCustomerQuery("");
+                      setShowCustomerList(true);
+                    }}
+                    className="btn btn-ghost btn-xs text-primary"
+                  >
+                    Change
+                  </button>
+                )}
+              </div>
+            ) : (
+              <label
+                className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${fieldErrors.customer_id ? "input-error" : ""}`}
+              >
+                <Search size={14} className="text-base-content/40 shrink-0" />
+                <input
+                  type="text"
+                  className="grow text-sm"
+                  placeholder="Search by name, mobile, or customer no…"
+                  value={customerQuery}
+                  onChange={(e) => {
+                    setCustomerQuery(e.target.value);
+                    setShowCustomerList(true);
+                    setForm((prev) => ({ ...prev, customer_id: "" }));
+                  }}
+                  onFocus={() => setShowCustomerList(true)}
+                  disabled={isEdit}
+                />
+              </label>
+            )}
+
             <FieldError field="customer_id" />
 
-            {showCustomerList && !isEdit && (
-              <ul className="absolute z-20 top-full mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-base-300 bg-base-100 shadow-dropdown py-1">
+            {showCustomerList && !isEdit && !form.customer_id && (
+              <ul className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-base-300 bg-base-100 shadow-xl py-1">
                 {filteredCustomers.length === 0 ? (
-                  <li className="px-3 py-2 text-xs text-base-content/40">
-                    No matching customers
+                  <li className="px-3 py-3 text-xs text-base-content/40 text-center">
+                    No matching customers found
                   </li>
                 ) : (
                   filteredCustomers.map((c) => {
                     const fullName =
-                      `${c.first_name || ""} ${c.last_name || ""}`.trim();
+                      `${c.first_name || ""} ${c.last_name || ""}`.trim() || `Customer #${c.id}`;
                     const initials = fullName
                       ? fullName
                           .split(" ")
@@ -273,6 +337,7 @@ export default function CustomerLoanFormModal({
                           .slice(0, 2)
                           .map((w) => w[0])
                           .join("")
+                          .toUpperCase()
                       : `#${c.id}`;
 
                     return (
@@ -280,27 +345,37 @@ export default function CustomerLoanFormModal({
                         <button
                           type="button"
                           onClick={() => handleSelectCustomer(c)}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-base-200 flex items-center justify-between gap-2"
+                          className="w-full text-left px-3 py-2.5 hover:bg-base-200/70 flex items-center justify-between gap-3 transition-colors border-b border-base-200/50 last:border-0"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             {c.photo ? (
                               <img
                                 src={c.photo}
                                 alt={fullName}
-                                className="w-7 h-7 rounded-full object-cover shrink-0"
+                                className="w-8 h-8 rounded-full object-cover shrink-0"
                               />
                             ) : (
-                              <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-semibold text-[10px] flex items-center justify-center uppercase select-none shrink-0">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center uppercase select-none shrink-0">
                                 {initials}
                               </div>
                             )}
-                            <span className="font-medium truncate">
-                              {fullName || `Customer #${c.id}`}
-                            </span>
+                            <div className="min-w-0">
+                              <div className="font-semibold text-xs text-base-content truncate">
+                                {fullName}
+                              </div>
+                              <div className="text-[10px] text-base-content/50 font-mono flex items-center gap-1.5 mt-0.5">
+                                {c.customer_no && (
+                                  <span className="badge badge-ghost badge-xs font-mono">
+                                    {c.customer_no}
+                                  </span>
+                                )}
+                                {c.city && <span>{c.city}</span>}
+                              </div>
+                            </div>
                           </div>
 
-                          <span className="text-base-content/40 shrink-0">
-                            {c.mobile}
+                          <span className="text-xs font-mono text-base-content/60 shrink-0">
+                            {c.mobile || "—"}
                           </span>
                         </button>
                       </li>

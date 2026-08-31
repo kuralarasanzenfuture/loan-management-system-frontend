@@ -294,9 +294,23 @@ const protectedRoutesConfig = [
   {
     path: "/loan-applications",
     element: <CustomerLoansPage />,
-    permission: "LOAN_VIEW",
+    permission: [
+      "LOAN_APPLICATION_VIEW",
+      "LOAN_VIEW",
+      "LOAN_APPLICATIONS_VIEW",
+      "CUSTOMER_LOAN_VIEW",
+    ],
   },
-  { path: "/loans/:id", element: <LoanViewPage />, permission: "LOAN_VIEW" },
+  {
+    path: "/loans/:id",
+    element: <LoanViewPage />,
+    permission: [
+      "LOAN_APPLICATION_VIEW",
+      "LOAN_VIEW",
+      "LOAN_APPLICATIONS_VIEW",
+      "CUSTOMER_LOAN_VIEW",
+    ],
+  },
   // { path: "/loans/:id", element: <div >View Loan</div> },
   {
     path: "/loan-approval",
@@ -403,37 +417,37 @@ const protectedRoutesConfig = [
   {
     path: "/loan-collections",
     element: <LoanCollectionPage />,
-    permission: "COLLECTION_VIEW",
+    permission: ["LOAN_COLLECTION_VIEW", "COLLECTION_VIEW"],
   },
   {
     path: "/loan-collections/:loanId",
     element: <LoanCollectionPage />,
-    permission: "COLLECTION_VIEW",
+    permission: ["LOAN_COLLECTION_VIEW", "COLLECTION_VIEW"],
   },
   {
     path: "/loans/:loanId/collections",
     element: <LoanCollectionPage />,
-    permission: "COLLECTION_VIEW",
+    permission: ["LOAN_COLLECTION_VIEW", "COLLECTION_VIEW"],
   },
   {
     path: "/loans/:loanId/collection",
     element: <LoanCollectionPage />,
-    permission: "COLLECTION_VIEW",
+    permission: ["LOAN_COLLECTION_VIEW", "COLLECTION_VIEW"],
   },
   {
     path: "/due-collections",
     element: <CollectionDashboardPage />,
-    permission: "COLLECTION_VIEW",
+    permission: ["DUE_COLLECTION_VIEW", "COLLECTION_VIEW"],
   },
   {
     path: "/emi-collection",
     element: <CollectionDashboardPage />,
-    permission: "COLLECTION_VIEW",
+    permission: ["DUE_COLLECTION_VIEW", "COLLECTION_VIEW"],
   },
   {
     path: "/collection",
     element: <CollectionDashboardPage />,
-    permission: "COLLECTION_VIEW",
+    permission: ["DUE_COLLECTION_VIEW", "COLLECTION_VIEW"],
   },
 
   // Reports

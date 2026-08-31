@@ -529,16 +529,105 @@ const MODULE_ALIASES = {
     "LOAN_APPLICATIONS",
     "LOAN_APPS",
     "LOAN_APP",
+    "LOAN",
+    "LOANS",
+    "CUSTOMER_LOAN",
+    "CUSTOMER_LOANS",
+    "ACTIVE_LOAN",
+    "ACTIVE_LOANS",
+  ],
+  MOD_LOAN_APPLICATIONS: [
+    "LOAN_APPLICATION",
+    "LOAN_APPLICATIONS",
+    "LOAN_APPS",
+    "LOAN_APP",
+    "LOAN",
+    "LOANS",
+    "CUSTOMER_LOAN",
+    "CUSTOMER_LOANS",
+    "ACTIVE_LOAN",
+    "ACTIVE_LOANS",
   ],
   MOD_LOAN_PLANS: ["LOAN_PLAN", "LOAN_PLANS"],
   MOD_LOAN_APPROVAL: ["LOAN_APPROVAL"],
-  MOD_ACTIVE_LOANS: ["LOAN", "LOANS", "ACTIVE_LOANS"],
-  MOD_LOANS: ["LOAN", "LOANS"],
+  MOD_ACTIVE_LOANS: [
+    "LOAN",
+    "LOANS",
+    "ACTIVE_LOAN",
+    "ACTIVE_LOANS",
+    "LOAN_APPLICATION",
+    "LOAN_APPLICATIONS",
+    "LOAN_APPS",
+  ],
+  MOD_LOANS: [
+    "LOAN",
+    "LOANS",
+    "LOAN_APPLICATION",
+    "LOAN_APPLICATIONS",
+    "LOAN_APPS",
+    "LOAN_APP",
+    "CUSTOMER_LOAN",
+    "CUSTOMER_LOANS",
+    "ACTIVE_LOAN",
+    "ACTIVE_LOANS",
+  ],
+  MOD_CUSTOMER_LOANS: [
+    "CUSTOMER_LOAN",
+    "CUSTOMER_LOANS",
+    "LOAN",
+    "LOANS",
+    "LOAN_APPLICATION",
+    "LOAN_APPLICATIONS",
+    "LOAN_APPS",
+  ],
   MOD_HAND_LOANS: ["HAND_LOAN", "HAND_LOANS"],
   MOD_PERSONAL_CHITS: ["PERSONAL_CHIT", "PERSONAL_CHITS"],
-  MOD_LOAN_COLLECTIONS: ["LOAN_COLLECTION", "LOAN_COLLECTIONS"],
-  MOD_DUE_COLLECTIONS: ["DUE_COLLECTION", "DUE_COLLECTIONS"],
-  MOD_EMI_COLLECTION: ["EMI_COLLECTION", "DUE_COLLECTION", "LOAN_COLLECTION"],
+  MOD_LOAN_COLLECTIONS: [
+    "LOAN_COLLECTION",
+    "LOAN_COLLECTIONS",
+    "COLLECTION",
+    "COLLECTIONS",
+    "COLLECTION_LOAN",
+    "COLLECTION_LOANS",
+    "LOAN_COLLECTION_VIEW",
+  ],
+  MOD_DUE_COLLECTIONS: [
+    "DUE_COLLECTION",
+    "DUE_COLLECTIONS",
+    "EMI_COLLECTION",
+    "EMI_COLLECTIONS",
+    "DUE",
+    "DUES",
+    "COLLECTION",
+    "COLLECTIONS",
+    "DUE_COLLECTION_VIEW",
+  ],
+  MOD_EMI_COLLECTION: [
+    "EMI_COLLECTION",
+    "EMI_COLLECTIONS",
+    "DUE_COLLECTION",
+    "DUE_COLLECTIONS",
+    "LOAN_COLLECTION",
+    "LOAN_COLLECTIONS",
+    "COLLECTION",
+    "COLLECTIONS",
+  ],
+  MOD_COLLECTION: [
+    "COLLECTION",
+    "COLLECTIONS",
+    "LOAN_COLLECTION",
+    "LOAN_COLLECTIONS",
+    "DUE_COLLECTION",
+    "DUE_COLLECTIONS",
+  ],
+  MOD_COLLECTIONS: [
+    "COLLECTION",
+    "COLLECTIONS",
+    "LOAN_COLLECTION",
+    "LOAN_COLLECTIONS",
+    "DUE_COLLECTION",
+    "DUE_COLLECTIONS",
+  ],
   MOD_COMPANIES: ["COMPANY", "COMPANIES"],
   MOD_BANK_ACCOUNTS: ["BANK_ACCOUNT", "BANK_ACCOUNTS"],
   MOD_BANK_TRANSACTIONS: ["BANK_TRANSACTION", "BANK_TRANSACTIONS"],
@@ -622,6 +711,93 @@ export const isAdmin = (user) => {
   return isExplicitAdminRole || isExplicitAdminIdentity || isFlaggedAdmin;
 };
 
+// Canonical action synonyms dictionary
+export const ACTION_SYNONYMS = {
+  VIEW: ["VIEW", "READ", "LIST", "SHOW", "GET", "INDEX", "DETAILS"],
+  CREATE: ["CREATE", "ADD", "INSERT", "NEW", "POST", "STORE"],
+  EDIT: ["EDIT", "UPDATE", "MODIFY", "PUT", "PATCH", "CHANGE"],
+  DELETE: ["DELETE", "REMOVE", "DESTROY", "DEL", "DROP"],
+};
+
+/**
+ * Returns all action synonyms for a given action string.
+ */
+export const getActionVariants = (rawAct) => {
+  const act = normalizePermissionKey(rawAct);
+  if (!act) return [];
+  const variants = new Set([act]);
+  for (const [canonical, synonyms] of Object.entries(ACTION_SYNONYMS)) {
+    if (act === canonical || synonyms.includes(act)) {
+      variants.add(canonical);
+      synonyms.forEach((s) => variants.add(s));
+    }
+  }
+  return Array.from(variants);
+};
+
+/**
+ * Returns all module code variants for a given module string.
+ */
+export const getModuleVariants = (rawMod) => {
+  const mod = normalizePermissionKey(rawMod);
+  if (!mod) return [];
+  const withoutMod = mod.replace(/^MOD_/, "");
+  const withMod = `MOD_${withoutMod}`;
+  const variants = new Set([mod, withoutMod, withMod]);
+
+  // Check alias dictionary
+  for (const [key, aliases] of Object.entries(MODULE_ALIASES)) {
+    const keyClean = key.replace(/^MOD_/, "");
+    if (
+      mod === key ||
+      mod === keyClean ||
+      withoutMod === keyClean ||
+      aliases.includes(mod) ||
+      aliases.includes(withoutMod)
+    ) {
+      variants.add(key);
+      variants.add(keyClean);
+      aliases.forEach((a) => {
+        variants.add(a);
+        variants.add(a.replace(/^MOD_/, ""));
+        variants.add(`MOD_${a.replace(/^MOD_/, "")}`);
+      });
+    }
+  }
+  return Array.from(variants);
+};
+
+/**
+ * Deconstructs and expands any permission key (e.g. "CUSTOMER_VIEW" or "MOD_CUSTOMERS_CREATE")
+ * into all possible aliases and action synonyms.
+ */
+export const expandPermissionVariants = (permKey) => {
+  const normalized = normalizePermissionKey(permKey);
+  if (!normalized) return [];
+
+  const results = new Set([normalized]);
+
+  // Try splitting into Module and Action
+  const lastUnderscore = normalized.lastIndexOf("_");
+  if (lastUnderscore > 0) {
+    const modPart = normalized.slice(0, lastUnderscore);
+    const actPart = normalized.slice(lastUnderscore + 1);
+
+    const modVariants = getModuleVariants(modPart);
+    const actVariants = getActionVariants(actPart);
+
+    if (modVariants.length > 0 && actVariants.length > 0) {
+      for (const m of modVariants) {
+        for (const a of actVariants) {
+          results.add(`${m}_${a}`);
+        }
+      }
+    }
+  }
+
+  return Array.from(results);
+};
+
 /**
  * Helper to recursively extract permission string codes from nested structures,
  * arrays of objects, or key-value permission maps.
@@ -630,16 +806,16 @@ const collectCodes = (source, acc = new Set()) => {
   if (!source) return acc;
 
   if (typeof source === "string") {
-    const normalized = normalizePermissionKey(source);
-    if (normalized) acc.add(normalized);
+    const variants = expandPermissionVariants(source);
+    variants.forEach((v) => acc.add(v));
     return acc;
   }
 
   if (Array.isArray(source)) {
     for (const item of source) {
       if (typeof item === "string") {
-        const normalized = normalizePermissionKey(item);
-        if (normalized) acc.add(normalized);
+        const variants = expandPermissionVariants(item);
+        variants.forEach((v) => acc.add(v));
       } else if (item && typeof item === "object") {
         const isAllowed =
           item.is_allowed === undefined ||
@@ -655,38 +831,17 @@ const collectCodes = (source, acc = new Set()) => {
 
           // 1. Direct code
           if (typeof actionCode === "string") {
-            const normalizedAction = normalizePermissionKey(actionCode);
-            if (normalizedAction) acc.add(normalizedAction);
+            const variants = expandPermissionVariants(actionCode);
+            variants.forEach((v) => acc.add(v));
           }
 
           // 2. Combined module + action
           if (moduleCode && actionCode) {
-            const rawMod = normalizePermissionKey(moduleCode);
-            const rawAct = normalizePermissionKey(actionCode);
+            const modVariants = getModuleVariants(moduleCode);
+            const actVariants = getActionVariants(actionCode);
 
-            // Expand action synonyms
-            const actionVariants = [rawAct];
-            if (rawAct === "UPDATE" || rawAct === "MODIFY")
-              actionVariants.push("EDIT");
-            if (rawAct === "EDIT") actionVariants.push("UPDATE");
-            if (rawAct === "ADD" || rawAct === "NEW" || rawAct === "INSERT")
-              actionVariants.push("CREATE");
-            if (rawAct === "CREATE") actionVariants.push("ADD");
-            if (rawAct === "REMOVE" || rawAct === "DESTROY")
-              actionVariants.push("DELETE");
-            if (rawAct === "DELETE") actionVariants.push("REMOVE");
-            if (rawAct === "READ" || rawAct === "SHOW" || rawAct === "LIST")
-              actionVariants.push("VIEW");
-            if (rawAct === "VIEW") actionVariants.push("READ", "LIST");
-
-            const moduleVariants = [
-              rawMod,
-              rawMod.replace(/^MOD_/, ""),
-              ...(MODULE_ALIASES[rawMod] || []),
-            ];
-
-            for (const m of moduleVariants) {
-              for (const a of actionVariants) {
+            for (const m of modVariants) {
+              for (const a of actVariants) {
                 acc.add(`${m}_${a}`);
               }
             }
@@ -703,8 +858,8 @@ const collectCodes = (source, acc = new Set()) => {
         value === true || value === 1 || value === "1" || value === "true";
 
       if (isAllowed) {
-        const normalized = normalizePermissionKey(key);
-        if (normalized) acc.add(normalized);
+        const variants = expandPermissionVariants(key);
+        variants.forEach((v) => acc.add(v));
       } else if (Array.isArray(value) || typeof value === "object") {
         collectCodes(value, acc);
       }
@@ -776,11 +931,16 @@ export const hasPermission = (user, requiredPermission, matchMode = "any") => {
 
   const userPerms = extractUserPermissions(user);
 
+  const checkSinglePermission = (permKey) => {
+    const variants = expandPermissionVariants(permKey);
+    return variants.some((v) => userPerms.has(v));
+  };
+
   if (matchMode === "all") {
-    return normalizedRequired.every((perm) => userPerms.has(perm));
+    return normalizedRequired.every(checkSinglePermission);
   }
 
-  return normalizedRequired.some((perm) => userPerms.has(perm));
+  return normalizedRequired.some(checkSinglePermission);
 };
 
 /**

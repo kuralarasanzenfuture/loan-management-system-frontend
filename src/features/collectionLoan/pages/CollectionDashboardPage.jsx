@@ -28,6 +28,8 @@ import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
 import { formatCurrency } from "../utils/collectionHelpers.js";
 import PaymentSuccessModal from "../components/PaymentSuccessModal.jsx";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 const TABS = [
   { key: "today", label: "Today's Due", icon: Calendar },
@@ -44,6 +46,15 @@ const STATUS_FILTERS = [
 export default function CollectionDashboardPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────────
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.DUE_COLLECTION_VIEW) || can(PERMISSIONS.COLLECTION_VIEW);
+  const canCollect =
+    can(PERMISSIONS.DUE_COLLECTION_CREATE) ||
+    can(PERMISSIONS.LOAN_COLLECTION_CREATE) ||
+    can(PERMISSIONS.COLLECTION_CREATE) ||
+    canView;
 
   const {
     todayCollections = [],
@@ -449,7 +460,11 @@ export default function CollectionDashboardPage() {
           installments={pagedList}
           loading={loading}
           showDaysOverdue={activeTab === "overdue"}
-          onPay={handleOpenPay}
+          canCollect={canCollect}
+          onPay={(inst) => {
+            if (!canCollect) return;
+            handleOpenPay(inst);
+          }}
           emptyMessage={
             activeTab === "today"
               ? isToday

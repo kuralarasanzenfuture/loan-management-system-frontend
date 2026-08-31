@@ -20,6 +20,7 @@ import {
 export default function CollectionRow({
   installment,
   showDaysOverdue = false,
+  canCollect = true,
   onPay,
 }) {
   const navigate = useNavigate();
@@ -152,11 +153,10 @@ export default function CollectionRow({
       <td>
         <div className="flex items-center justify-end gap-1.5">
           {isPaid ? (
-            // <span className="badge badge-success  text-success p-2 badge-sm gap-1 text-[11px]">
-            <span className="badge bg-success/25 text-success border border-success/30 p-2 badge-sm gap-1 text-[11px]">
+            <span className="badge bg-success/25 text-success border border-success/30 p-2 badge-sm gap-1 text-[11px] font-medium">
               <CheckCircle2 size={12} /> Paid
             </span>
-          ) : (
+          ) : canCollect ? (
             <button
               onClick={handleCollect}
               className="btn btn-primary btn-xs rounded-lg gap-1 font-medium shadow-xs"
@@ -165,6 +165,8 @@ export default function CollectionRow({
               <IndianRupee size={12} />
               Collect
             </button>
+          ) : (
+            <span className="text-xs text-base-content/40 italic py-1">Due</span>
           )}
 
           {installment.loan_id && (

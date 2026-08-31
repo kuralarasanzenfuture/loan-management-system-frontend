@@ -26,11 +26,27 @@ import LoanInstallmentTable from "../components/LoanInstallmentTable.jsx";
 import PayInstallmentModal from "../components/PayInstallmentModal.jsx";
 import ApplyPenaltyModal from "../components/ApplyPenaltyModal.jsx";
 import { formatCurrency } from "../utils/collectionHelpers.js";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 export default function LoanCollectionPage() {
   const { loanId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────────
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.LOAN_COLLECTION_VIEW) || can(PERMISSIONS.COLLECTION_VIEW);
+  const canCollect =
+    can(PERMISSIONS.LOAN_COLLECTION_CREATE) ||
+    can(PERMISSIONS.COLLECTION_CREATE) ||
+    can(PERMISSIONS.LOAN_COLLECTION_VIEW) ||
+    canView;
+  const canApplyPenalty =
+    can(PERMISSIONS.LOAN_COLLECTION_EDIT) ||
+    can(PERMISSIONS.LOAN_EDIT) ||
+    can(PERMISSIONS.LOAN_APPROVAL_ACTION) ||
+    canCollect;
 
   const {
     installments,
@@ -279,15 +295,21 @@ export default function LoanCollectionPage() {
       </div>
 
       {/* Installments table */}
-      <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden">
+      <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
         <LoanInstallmentTable
           installments={installments}
           loading={installmentsLoading}
+          canCollect={canCollect}
+          canApplyPenalty={canApplyPenalty}
           onPay={(inst) => {
+            if (!canCollect) return;
             dispatch(clearInstallmentError());
             setPayTarget(inst);
           }}
-          onApplyPenalty={handleOpenPenalty}
+          onApplyPenalty={(inst) => {
+            if (!canApplyPenalty) return;
+            handleOpenPenalty(inst);
+          }}
         />
       </div>
 
