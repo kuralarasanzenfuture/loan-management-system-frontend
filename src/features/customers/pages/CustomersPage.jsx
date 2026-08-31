@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Users, CheckCircle2, Ban } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Users,
+  CheckCircle2,
+  Ban,
+  UserX,
+  RefreshCw,
+  Filter,
+} from "lucide-react";
 import {
   fetchCustomers,
   fetchCustomerById,
@@ -16,31 +25,53 @@ import CustomerDeleteModal from "../components/CustomerDeleteModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
 
+// ─── Constants ─────────────────────────────────────────────────────────────────
 const STATUS_FILTERS = [
-  { value: "all", label: "All statuses" },
+  { value: "all", label: "All" },
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
   { value: "blocked", label: "Blocked" },
 ];
 
+// ─── Stat card ──────────────────────────────────────────────────────────────────
+function StatCard({ icon: Icon, label, value, colorClass, bgClass }) {
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-base-300 bg-base-100 px-5 py-4 shadow-sm">
+      <span
+        className={`flex items-center justify-center w-11 h-11 rounded-xl shrink-0 ${bgClass} ${colorClass}`}
+      >
+        <Icon size={20} />
+      </span>
+      <div>
+        <div className="text-xs text-base-content/50 font-medium">{label}</div>
+        <div className="text-2xl font-bold leading-tight text-base-content">
+          {value}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────────
 export default function CustomersPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { customers, loading, error } = useSelector((state) => state.customers);
 
+  // ── Local UI state ────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  const [formModal, setFormModal] = useState(null);
+  const [formModal, setFormModal] = useState(null); // null = closed, {} = create, {...customer} = edit
   const [formSubmitting, setFormSubmitting] = useState(false);
-
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
+  // ── Initial load ──────────────────────────────────────────────────────────────
   useEffect(() => {
     dispatch(fetchCustomers());
   }, [dispatch]);
 
+  // ── Filtering ────────────────────────────────────────────────────────────────
   const filteredCustomers = useMemo(() => {
     let result = customers;
 
@@ -57,13 +88,14 @@ export default function CustomersPage() {
           c.mobile?.includes(q) ||
           c.customer_no?.toLowerCase().includes(q) ||
           c.aadhaar_no?.includes(q) ||
-          c.pan_no?.toLowerCase().includes(q),
+          c.pan_no?.toLowerCase().includes(q)
       );
     }
 
     return result;
   }, [customers, search, statusFilter]);
 
+  // ── Pagination ────────────────────────────────────────────────────────────────
   const {
     pagedData: pagedCustomers,
     currentPage,
@@ -74,15 +106,18 @@ export default function CustomersPage() {
     reset: resetPage,
   } = usePagination({ data: filteredCustomers, initialSize: 10 });
 
-  const activeCount = useMemo(
-    () => customers.filter((c) => c.status === "active").length,
-    [customers],
-  );
-  const blockedCount = useMemo(
-    () => customers.filter((c) => c.status === "blocked").length,
-    [customers],
+  // ── Stat aggregates ───────────────────────────────────────────────────────────
+  const stats = useMemo(
+    () => ({
+      total: customers.length,
+      active: customers.filter((c) => c.status === "active").length,
+      inactive: customers.filter((c) => c.status === "inactive").length,
+      blocked: customers.filter((c) => c.status === "blocked").length,
+    }),
+    [customers]
   );
 
+  // ── Search & filter handlers ──────────────────────────────────────────────────
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     resetPage();
@@ -93,26 +128,32 @@ export default function CustomersPage() {
     resetPage();
   };
 
+  // ── CRUD handlers ─────────────────────────────────────────────────────────────
+
+  /** Open Create modal */
   const handleOpenCreate = () => {
     dispatch(clearCustomerError());
     setFormModal({});
   };
 
+  /** Open Edit modal — fetches fresh data first so all fields are populated */
   const handleOpenEdit = async (customer) => {
     dispatch(clearCustomerError());
     const res = await dispatch(fetchCustomerById(customer.id));
-    if (fetchCustomerById.fulfilled.match(res)) {
-      setFormModal(res.payload.data || res.payload);
-    } else {
-      setFormModal(customer);
-    }
+    setFormModal(
+      fetchCustomerById.fulfilled.match(res)
+        ? res.payload.data ?? res.payload
+        : customer
+    );
   };
 
+  /** Close form modal and clear any stale errors */
   const handleCloseForm = () => {
     setFormModal(null);
     dispatch(clearCustomerError());
   };
 
+  /** Create or update a customer */
   const handleFormSubmit = async (formData) => {
     setFormSubmitting(true);
     try {
@@ -121,12 +162,12 @@ export default function CustomersPage() {
         ? await dispatch(editCustomer({ id: formModal.id, formData }))
         : await dispatch(addCustomer(formData));
 
-      const wasFulfilled = isEdit
+      const succeeded = isEdit
         ? editCustomer.fulfilled.match(action)
         : addCustomer.fulfilled.match(action);
 
-      if (wasFulfilled) {
-        setFormModal(null);
+      if (succeeded) {
+        handleCloseForm();
         dispatch(fetchCustomers());
       }
     } finally {
@@ -134,6 +175,13 @@ export default function CustomersPage() {
     }
   };
 
+  /** Open delete confirmation modal */
+  const handleOpenDelete = (customer) => {
+    dispatch(clearCustomerError());
+    setDeleteTarget(customer);
+  };
+
+  /** Execute delete after confirmation */
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleteSubmitting(true);
@@ -148,113 +196,130 @@ export default function CustomersPage() {
     }
   };
 
+  // ── Navigate to view page ─────────────────────────────────────────────────────
+  const handleView = (customer) => {
+    navigate(`/customers/${customer.id}`);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div>
-      {/* Page header */}
-      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+    <div className="space-y-5">
+      {/* ── Page Header ─────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2">
+          <h1 className="text-xl font-bold flex items-center gap-2 text-base-content">
             <Users size={20} className="text-primary" />
             Customers
           </h1>
-          <p className="text-sm text-base-content/50 mt-1">
-            Manage borrower profiles, KYC, and contact details.
+          <p className="text-sm text-base-content/50 mt-0.5">
+            Manage borrower profiles, KYC documents and contact details.
           </p>
         </div>
-        <button
-          className="btn btn-primary btn-sm gap-1.5"
-          onClick={handleOpenCreate}
-        >
-          <Plus size={16} />
-          New customer
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="btn btn-ghost btn-sm gap-1.5"
+            onClick={() => dispatch(fetchCustomers())}
+            title="Refresh list"
+          >
+            <RefreshCw size={14} />
+            Refresh
+          </button>
+          <button
+            id="create-customer-btn"
+            className="btn btn-primary btn-sm gap-1.5"
+            onClick={handleOpenCreate}
+          >
+            <Plus size={16} />
+            New Customer
+          </button>
+        </div>
       </div>
 
-      {error && !formModal && (
-        <div className="alert alert-error text-sm py-2 mb-4">
-          <span>
-            {typeof error === "string" ? error : "Something went wrong."}
-          </span>
+      {/* ── Global error (outside any modal) ────────────────────────────────── */}
+      {error && !formModal && !deleteTarget && (
+        <div className="alert alert-error text-sm py-2 rounded-xl">
+          <span>{typeof error === "string" ? error : "Something went wrong."}</span>
         </div>
       )}
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
-          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
-            <Users size={18} />
-          </span>
-          <div>
-            <div className="text-xs text-base-content/50">Total customers</div>
-            <div className="text-2xl font-semibold leading-tight">
-              {customers.length}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
-          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 text-success shrink-0">
-            <CheckCircle2 size={18} />
-          </span>
-          <div>
-            <div className="text-xs text-base-content/50">Active</div>
-            <div className="text-2xl font-semibold leading-tight text-success">
-              {activeCount}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
-          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-error/10 text-error shrink-0">
-            <Ban size={18} />
-          </span>
-          <div>
-            <div className="text-xs text-base-content/50">Blocked</div>
-            <div className="text-2xl font-semibold leading-tight text-error">
-              {blockedCount}
-            </div>
-          </div>
-        </div>
+      {/* ── Stat Cards ──────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard
+          icon={Users}
+          label="Total Customers"
+          value={stats.total}
+          colorClass="text-primary"
+          bgClass="bg-primary/10"
+        />
+        <StatCard
+          icon={CheckCircle2}
+          label="Active"
+          value={stats.active}
+          colorClass="text-success"
+          bgClass="bg-success/10"
+        />
+        <StatCard
+          icon={UserX}
+          label="Inactive"
+          value={stats.inactive}
+          colorClass="text-warning"
+          bgClass="bg-warning/10"
+        />
+        <StatCard
+          icon={Ban}
+          label="Blocked"
+          value={stats.blocked}
+          colorClass="text-error"
+          bgClass="bg-error/10"
+        />
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-        <label className="input input-sm input-bordered flex items-center gap-2 w-full max-w-xs bg-base-100">
+      {/* ── Toolbar: Search + Status filter ─────────────────────────────────── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <label className="input input-sm input-bordered flex items-center gap-2 w-full max-w-sm bg-base-100 rounded-xl border-base-300">
           <Search size={14} className="text-base-content/40 shrink-0" />
           <input
             type="text"
-            className="grow"
+            className="grow text-sm"
             placeholder="Search name, mobile, Aadhaar, PAN…"
             value={search}
             onChange={handleSearchChange}
+            id="customer-search-input"
           />
         </label>
 
-        <div className="join">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              className={`join-item btn btn-sm ${
-                statusFilter === f.value
-                  ? "btn-primary"
-                  : "btn-ghost bg-base-100 border-base-300"
-              }`}
-              onClick={() => handleStatusFilterChange(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-base-content/50 font-medium flex items-center gap-1">
+            <Filter size={12} />
+            Status
+          </span>
+          <div className="join border border-base-300 rounded-xl overflow-hidden">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                id={`status-filter-${f.value}`}
+                className={`join-item btn btn-sm px-3 ${
+                  statusFilter === f.value
+                    ? "btn-primary font-bold"
+                    : "btn-ghost text-base-content/60 hover:text-base-content"
+                }`}
+                onClick={() => handleStatusFilterChange(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Table + Pagination */}
-      <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden">
+      {/* ── Table + Pagination ───────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
         <CustomerTable
           customers={pagedCustomers}
           loading={loading}
-          onView={(c) => navigate(`/customers/${c.id}`)}
+          onView={handleView}
           onEdit={handleOpenEdit}
-          onDelete={setDeleteTarget}
+          onDelete={handleOpenDelete}
         />
 
         {totalItems > 0 && (
@@ -268,7 +333,7 @@ export default function CustomersPage() {
         )}
       </div>
 
-      {/* Create / edit modal */}
+      {/* ── Create / Edit Modal ──────────────────────────────────────────────── */}
       <CustomerFormModal
         open={Boolean(formModal)}
         initialData={formModal?.id ? formModal : null}
@@ -278,14 +343,17 @@ export default function CustomersPage() {
         onSubmit={handleFormSubmit}
       />
 
-      {/* Delete confirm modal */}
+      {/* ── Delete Confirm Modal ─────────────────────────────────────────────── */}
       <CustomerDeleteModal
         open={Boolean(deleteTarget)}
         customer={deleteTarget}
         loading={deleteSubmitting}
-        error={error}
+        error={deleteTarget ? error : null}
         onConfirm={handleConfirmDelete}
-        onClose={() => setDeleteTarget(null)}
+        onClose={() => {
+          setDeleteTarget(null);
+          dispatch(clearCustomerError());
+        }}
       />
     </div>
   );
