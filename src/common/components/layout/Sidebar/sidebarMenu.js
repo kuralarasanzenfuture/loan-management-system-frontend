@@ -2,34 +2,23 @@ import {
   LayoutDashboard,
   BarChart3,
   Users,
+  FileText,
+  PiggyBank,
+  KeyRound,
+  CalendarDays,
+  Building2,
+  Banknote,
+  ScrollText,
+  Database,
+  Landmark,
   UserCog,
   ShieldCheck,
-  Building2,
-  GitBranch,
-  Wallet,
-  Landmark,
-  FileText,
-  ClipboardCheck,
   Receipt,
-  CalendarDays,
-  BadgeDollarSign,
-  AlertTriangle,
-  Bell,
-  FolderOpen,
-  FileArchive,
-  CreditCard,
-  Banknote,
-  Calculator,
-  PiggyBank,
-  History,
   Settings,
-  Database,
-  Activity,
-  KeyRound,
-  ScrollText,
-  Mail,
-  Smartphone,
+  HandCoins,
+  Wallet,
 } from "lucide-react";
+import { PERMISSIONS } from "../../../../constants/permissions.js";
 
 export const NAV_SECTIONS = [
   {
@@ -39,11 +28,13 @@ export const NAV_SECTIONS = [
         label: "Dashboard",
         icon: LayoutDashboard,
         path: "/dashboard",
+        permission: PERMISSIONS.DASHBOARD_VIEW,
       },
       {
         label: "Analytics",
         icon: BarChart3,
         path: "/analytics",
+        permission: PERMISSIONS.ANALYTICS_VIEW,
       },
     ],
   },
@@ -55,17 +46,8 @@ export const NAV_SECTIONS = [
         label: "Customers",
         icon: Users,
         path: "/customers",
+        permission: PERMISSIONS.CUSTOMER_VIEW,
       },
-      // {
-      //   label: "Customer Documents",
-      //   icon: FolderOpen,
-      //   path: "/customer-documents",
-      // },
-      // {
-      //   label: "Guarantors",
-      //   icon: UserCog,
-      //   path: "/guarantors",
-      // },
     ],
   },
 
@@ -76,43 +58,27 @@ export const NAV_SECTIONS = [
         label: "Loan Applications",
         icon: FileText,
         path: "/loan-applications",
+        permission: PERMISSIONS.LOAN_APPLICATION_VIEW,
         badge: "18",
       },
-      // {
-      //   label: "Loan Approval",
-      //   icon: ClipboardCheck,
-      //   path: "/loan-approval",
-      // },
-      // {
-      //   label: "Active Loans",
-      //   icon: Landmark,
-      //   path: "/active-loans",
-      // },
       {
         label: "Loan Plans",
         icon: PiggyBank,
         path: "/loan-plans",
+        permission: PERMISSIONS.LOAN_PLAN_VIEW,
       },
-      // {
-      //   label: "Loan Types",
-      //   icon: Calculator,
-      //   path: "/loan-types",
-      // },
-      // {
-      //   label: "Interest Rates",
-      //   icon: BadgeDollarSign,
-      //   path: "/interest-rates",
-      // },
-      // {
-      //   label: "Penalty Rules",
-      //   icon: AlertTriangle,
-      //   path: "/penalty-rules",
-      // },
-      // {
-      //   label: "Loan Closure",
-      //   icon: FileArchive,
-      //   path: "/loan-closure",
-      // },
+      {
+        label: "Hand Loans",
+        icon: HandCoins,
+        path: "/hand-loans",
+        permission: PERMISSIONS.HAND_LOAN_VIEW,
+      },
+      {
+        label: "Personal Chits",
+        icon: Wallet,
+        path: "/personal-chits",
+        permission: PERMISSIONS.PERSONAL_CHIT_VIEW,
+      },
     ],
   },
 
@@ -123,74 +89,13 @@ export const NAV_SECTIONS = [
         label: "Loan Collections",
         icon: KeyRound,
         path: "/loan-collections",
+        permission: PERMISSIONS.LOAN_COLLECTION_VIEW,
       },
-      // {
-      //   label: "EMI Collection",
-      //   icon: Wallet,
-      //   path: "/emi-collection",
-      // },
-      // {
-      //   label: "Receipts",
-      //   icon: Receipt,
-      //   path: "/receipts",
-      // },
       {
         label: "Due Collections",
         icon: CalendarDays,
         path: "/due-collections",
-      },
-      // {
-      //   label: "Penalty Collection",
-      //   icon: AlertTriangle,
-      //   path: "/penalty-collection",
-      // },
-    ],
-  },
-
-  // {
-  //   label: "Finance",
-  //   items: [
-  //     {
-  //       label: "Income",
-  //       icon: Banknote,
-  //       path: "/income",
-  //     },
-  //     {
-  //       label: "Expenses",
-  //       icon: CreditCard,
-  //       path: "/expenses",
-  //     },
-  //     {
-  //       label: "Cash Book",
-  //       icon: PiggyBank,
-  //       path: "/cash-book",
-  //     },
-  //     {
-  //       label: "Transactions",
-  //       icon: History,
-  //       path: "/transactions",
-  //     },
-  //   ],
-  // },
-
-  {
-    label: "Hand Loans",
-    items: [
-      {
-        label: "Hand Loans",
-        icon: PiggyBank,
-        path: "/hand-loans",
-      },
-    ],
-  },
-
-  {
-    label: "personal Chits",
-    items: [
-      {
-        label: "Personal Chits",
-        icon: PiggyBank,
-        path: "/personal-chits",
+        permission: PERMISSIONS.DUE_COLLECTION_VIEW,
       },
     ],
   },
@@ -198,35 +103,35 @@ export const NAV_SECTIONS = [
   {
     label: "Organization",
     items: [
-      // {
-      //   label: "Branches",
-      //   icon: GitBranch,
-      //   path: "/branches",
-      // },
       {
         label: "Companies",
         icon: Building2,
         path: "/companies-details",
+        permission: PERMISSIONS.COMPANY_VIEW,
       },
       {
-        label: "bank Accounts",
+        label: "Bank Accounts",
         icon: Banknote,
         path: "/bank-accounts",
+        permission: PERMISSIONS.BANK_ACCOUNT_VIEW,
       },
       {
-        label: "bank Transactions",
+        label: "Bank Transactions",
         icon: ScrollText,
         path: "/bank-transactions",
+        permission: PERMISSIONS.BANK_TRANSACTION_VIEW,
       },
       {
-        label: "Assets categories",
+        label: "Asset Categories",
         icon: Database,
         path: "/asset-categories",
+        permission: PERMISSIONS.ASSET_CATEGORY_VIEW,
       },
       {
         label: "Assets",
         icon: Landmark,
         path: "/assets",
+        permission: PERMISSIONS.ASSET_VIEW,
       },
     ],
   },
@@ -238,50 +143,28 @@ export const NAV_SECTIONS = [
         label: "Users",
         icon: UserCog,
         path: "/users",
+        permission: PERMISSIONS.USER_VIEW,
       },
       {
         label: "Roles",
         icon: ShieldCheck,
         path: "/roles",
+        permission: PERMISSIONS.ROLE_VIEW,
       },
       {
         label: "Role Permissions",
         icon: KeyRound,
         path: "/role-permissions",
+        permission: PERMISSIONS.ROLE_PERMISSION_VIEW,
       },
       {
         label: "User Permissions",
         icon: KeyRound,
         path: "/user-permissions",
+        permission: PERMISSIONS.USER_PERMISSION_VIEW,
       },
-      // {
-      //   label: "Audit Logs",
-      //   icon: Activity,
-      //   path: "/audit-logs",
-      // },
     ],
   },
-
-  // {
-  //   label: "Communication",
-  //   items: [
-  //     {
-  //       label: "SMS",
-  //       icon: Smartphone,
-  //       path: "/sms",
-  //     },
-  //     {
-  //       label: "Email",
-  //       icon: Mail,
-  //       path: "/email",
-  //     },
-  //     {
-  //       label: "Notifications",
-  //       icon: Bell,
-  //       path: "/notifications",
-  //     },
-  //   ],
-  // },
 
   {
     label: "Reports",
@@ -290,27 +173,26 @@ export const NAV_SECTIONS = [
         label: "Loan Reports",
         icon: BarChart3,
         path: "/loan-reports",
+        permission: PERMISSIONS.LOAN_REPORT_VIEW,
       },
       {
         label: "Loan Installment Reports",
         icon: CalendarDays,
         path: "/installment-reports",
+        permission: PERMISSIONS.LOAN_INSTALLMENT_REPORT_VIEW,
       },
       {
         label: "Collection Reports",
         icon: Receipt,
         path: "/reports/loan-collections",
+        permission: PERMISSIONS.COLLECTION_REPORT_VIEW,
       },
       {
         label: "Customer Reports",
         icon: Users,
         path: "/customer-reports",
+        permission: PERMISSIONS.CUSTOMER_REPORT_VIEW,
       },
-      // {
-      //   label: "Financial Reports",
-      //   icon: Wallet,
-      //   path: "/reports/finance",
-      // },
     ],
   },
 
@@ -321,17 +203,8 @@ export const NAV_SECTIONS = [
         label: "Settings",
         icon: Settings,
         path: "/settings",
+        permission: PERMISSIONS.SETTINGS_VIEW,
       },
-      // {
-      //   label: "Database Backup",
-      //   icon: Database,
-      //   path: "/database-backup",
-      // },
-      // {
-      //   label: "Activity Logs",
-      //   icon: ScrollText,
-      //   path: "/activity-logs",
-      // },
     ],
   },
 ];

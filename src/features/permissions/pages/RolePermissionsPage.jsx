@@ -48,8 +48,7 @@ export default function RolePermissionsPage() {
     saveSuccess,
   } = useSelector((state) => state.rolePermissions || {});
 
-  // Extract initial role ID from route params, query params (?roleId=...), or state
-  const initialRoleId = useMemo(() => {
+  const activeRoleId = useMemo(() => {
     return (
       paramRoleId ||
       searchParams.get("roleId") ||
@@ -58,7 +57,7 @@ export default function RolePermissionsPage() {
     );
   }, [paramRoleId, searchParams, location.state]);
 
-  const [selectedRoleId, setSelectedRoleId] = useState(initialRoleId);
+  const [selectedRoleId, setSelectedRoleId] = useState(activeRoleId);
   const [allowedIds, setAllowedIds] = useState(new Set());
   const [originalAllowedIds, setOriginalAllowedIds] = useState(new Set());
 
@@ -70,15 +69,10 @@ export default function RolePermissionsPage() {
 
   // Sync if incoming URL parameter changes
   useEffect(() => {
-    const incoming =
-      paramRoleId ||
-      searchParams.get("roleId") ||
-      location.state?.roleId;
-
-    if (incoming && String(incoming) !== String(selectedRoleId)) {
-      setSelectedRoleId(String(incoming));
+    if (activeRoleId !== selectedRoleId) {
+      setSelectedRoleId(activeRoleId);
     }
-  }, [paramRoleId, searchParams, location.state]);
+  }, [activeRoleId]);
 
   const selectedRole = useMemo(
     () => roles.find((r) => String(r.id) === String(selectedRoleId)),
@@ -136,9 +130,9 @@ export default function RolePermissionsPage() {
   const handleRoleSelectChange = (newId) => {
     setSelectedRoleId(newId);
     if (newId) {
-      setSearchParams({ roleId: newId });
+      navigate(`/role-permissions/${newId}`);
     } else {
-      setSearchParams({});
+      navigate("/role-permissions");
     }
   };
 

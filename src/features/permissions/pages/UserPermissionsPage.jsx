@@ -6,6 +6,7 @@ import {
   Shield,
   Crown,
   Info,
+  Sparkles,
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
@@ -58,8 +59,7 @@ export default function UserPermissionsPage() {
     (state) => state.rolePermissions || {}
   );
 
-  // Extract initial user ID from route params, query params (?userId=...), or state
-  const initialUserId = useMemo(() => {
+  const activeUserId = useMemo(() => {
     return (
       paramUserId ||
       searchParams.get("userId") ||
@@ -68,7 +68,7 @@ export default function UserPermissionsPage() {
     );
   }, [paramUserId, searchParams, location.state]);
 
-  const [selectedUserId, setSelectedUserId] = useState(initialUserId);
+  const [selectedUserId, setSelectedUserId] = useState(activeUserId);
   const [allowedIds, setAllowedIds] = useState(new Set());
   const [originalAllowedIds, setOriginalAllowedIds] = useState(new Set());
 
@@ -80,15 +80,10 @@ export default function UserPermissionsPage() {
 
   // Sync if incoming URL parameter changes
   useEffect(() => {
-    const incoming =
-      paramUserId ||
-      searchParams.get("userId") ||
-      location.state?.userId;
-
-    if (incoming && String(incoming) !== String(selectedUserId)) {
-      setSelectedUserId(String(incoming));
+    if (activeUserId !== selectedUserId) {
+      setSelectedUserId(activeUserId);
     }
-  }, [paramUserId, searchParams, location.state]);
+  }, [activeUserId]);
 
   const selectedUser = useMemo(
     () => users.find((u) => String(u.id) === String(selectedUserId)),
@@ -154,9 +149,9 @@ export default function UserPermissionsPage() {
   const handleUserSelectChange = (newId) => {
     setSelectedUserId(newId);
     if (newId) {
-      setSearchParams({ userId: newId });
+      navigate(`/user-permissions/${newId}`);
     } else {
-      setSearchParams({});
+      navigate("/user-permissions");
     }
   };
 
@@ -290,19 +285,19 @@ export default function UserPermissionsPage() {
               {/* Quick Counter Badges */}
               {!isAdminUser && (
                 <div className="hidden lg:flex items-center gap-2 shrink-0">
-                  <div className="text-center px-2.5 py-1 bg-base-100 rounded-xl border border-base-300/80">
-                    <div className="text-[10px] text-base-content/40 font-semibold uppercase">
+                  <div className="text-center px-3 py-1 bg-base-100 rounded-xl border border-base-300">
+                    <div className="text-[10px] text-base-content/50 font-semibold uppercase">
                       From Role
                     </div>
-                    <div className="text-xs font-bold text-indigo-600">
+                    <div className="text-xs font-bold text-primary">
                       {stats.inherited}
                     </div>
                   </div>
-                  <div className="text-center px-2.5 py-1 bg-base-100 rounded-xl border border-base-300/80">
-                    <div className="text-[10px] text-base-content/40 font-semibold uppercase">
+                  <div className="text-center px-3 py-1 bg-base-100 rounded-xl border border-base-300">
+                    <div className="text-[10px] text-base-content/50 font-semibold uppercase">
                       Overrides
                     </div>
-                    <div className="text-xs font-bold text-emerald-600">
+                    <div className="text-xs font-bold text-success">
                       +{stats.overrides}
                     </div>
                   </div>
@@ -315,15 +310,15 @@ export default function UserPermissionsPage() {
 
       {/* Admin Protection Banner */}
       {selectedUser && isAdminUser && (
-        <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4.5 text-amber-950 dark:text-amber-200 flex items-start gap-3.5 shadow-sm">
-          <div className="p-2 bg-amber-500 text-white rounded-xl shrink-0 mt-0.5 shadow-sm">
+        <div className="rounded-2xl border border-warning/30 bg-warning/10 p-4 text-base-content flex items-start gap-3.5 shadow-sm">
+          <div className="p-2 bg-warning text-warning-content rounded-xl shrink-0 mt-0.5 shadow-sm">
             <Crown size={18} />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-amber-900 dark:text-amber-100 flex items-center gap-1.5">
+            <h4 className="text-sm font-bold flex items-center gap-1.5">
               Administrator Account (Protected)
             </h4>
-            <p className="text-xs mt-1 text-amber-800/90 dark:text-amber-200/80 leading-relaxed">
+            <p className="text-xs mt-1 text-base-content/70 leading-relaxed">
               <strong>{selectedUser.username}</strong> holds an <strong>ADMIN</strong> role. System administrators have full, unrestricted permissions across all platform modules by default. Permission overrides cannot and should not be modified for Admin accounts.
             </p>
           </div>
@@ -332,13 +327,21 @@ export default function UserPermissionsPage() {
 
       {/* Regular User Override Info Banner */}
       {selectedUser && !isAdminUser && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 dark:bg-indigo-950/20 dark:border-indigo-900/60 p-4 text-xs text-indigo-900 dark:text-indigo-200 flex items-start gap-3">
-          <Info size={16} className="text-indigo-600 shrink-0 mt-0.5" />
+        <div className="rounded-2xl border border-base-300 bg-base-100/90 p-4 text-xs text-base-content/80 flex items-start gap-3 shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+            <Info size={16} />
+          </div>
           <div className="leading-relaxed">
-            Viewing permissions for <strong>{selectedUser.username}</strong>. Permissions shown in{" "}
-            <span className="font-bold text-indigo-700 dark:text-indigo-300">purple</span> are inherited from their{" "}
-            <strong>{selectedUser.role_name || "assigned role"}</strong>. You can toggle any action to grant a custom{" "}
-            <span className="font-bold text-emerald-700 dark:text-emerald-300">user override</span> or revoke a role permission specifically for this user.
+            Viewing permissions for <strong className="text-base-content font-bold">{selectedUser.username}</strong>. Permissions tagged with{" "}
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold border border-primary/20">
+              <Shield size={10} /> Role
+            </span>{" "}
+            are inherited from their{" "}
+            <strong className="text-base-content">{selectedUser.role_name || "assigned role"}</strong>. You can toggle any action to grant a custom{" "}
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-success/10 text-success font-semibold border border-success/20">
+              <Sparkles size={10} /> Override
+            </span>{" "}
+            or revoke access specifically for this user.
           </div>
         </div>
       )}

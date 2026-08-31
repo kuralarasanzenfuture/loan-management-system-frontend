@@ -205,38 +205,38 @@ export default function PermissionMatrix({
 
       {/* Legend & Stats Banner (when role comparison is active) */}
       {roleAllowedIds && (
-        <div className="px-5 py-3 bg-base-200/40 border-b border-base-200 flex items-center justify-between flex-wrap gap-3">
+        <div className="px-5 py-3 bg-base-200/50 border-b border-base-200 flex items-center justify-between flex-wrap gap-3">
           {/* Legend Badges */}
           <div className="flex items-center gap-2 flex-wrap text-xs">
-            <span className="text-[11px] font-bold text-base-content/40 uppercase tracking-wider mr-1">
+            <span className="text-[11px] font-bold text-base-content/50 uppercase tracking-wider mr-1">
               Legend:
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-semibold dark:bg-indigo-950/40 dark:border-indigo-800 dark:text-indigo-300">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-primary/25 bg-primary/10 text-primary text-xs font-semibold">
               <Shield size={12} />
               From Role ({roleName || "Role"})
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-semibold dark:bg-emerald-950/40 dark:border-emerald-700 dark:text-emerald-200">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-success/30 bg-success/10 text-success text-xs font-semibold">
               <Sparkles size={12} />
               Custom User Override (+Grant)
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-error/30 bg-error/10 text-error text-xs font-semibold">
               <Ban size={12} />
               Revoked Role Access
             </span>
           </div>
 
           {/* Quick Counter */}
-          <div className="flex items-center gap-3 text-xs font-medium text-base-content/60">
+          <div className="flex items-center gap-3 text-xs font-medium text-base-content/70">
             <span>
-              Total Allowed: <strong className="text-base-content">{stats.allowed || stats.checked}</strong> / {stats.total}
+              Total Allowed: <strong className="text-base-content font-bold">{stats.allowed || stats.checked}</strong> / {stats.total}
             </span>
             {stats.overrides > 0 && (
-              <span className="badge badge-success badge-sm font-bold gap-1">
+              <span className="badge badge-success badge-sm font-bold gap-1 text-white">
                 +{stats.overrides} custom
               </span>
             )}
             {stats.revoked > 0 && (
-              <span className="badge badge-error badge-sm font-bold gap-1">
+              <span className="badge badge-error badge-sm font-bold gap-1 text-white">
                 -{stats.revoked} revoked
               </span>
             )}
@@ -247,7 +247,7 @@ export default function PermissionMatrix({
       {/* Toolbar: Search, Filter Tabs, Action Buttons */}
       <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 border-b border-base-200 bg-base-100">
         <div className="flex items-center gap-2 flex-1 min-w-[240px] max-w-md">
-          <label className="input input-sm input-bordered flex items-center gap-2 rounded-xl bg-base-100 w-full">
+          <label className="input input-sm input-bordered flex items-center gap-2 rounded-xl bg-base-100 w-full border-base-300">
             <Search size={14} className="text-base-content/40 shrink-0" />
             <input
               type="text"
@@ -261,14 +261,14 @@ export default function PermissionMatrix({
 
         {/* Filter Tabs if role permissions are present */}
         {roleAllowedIds && (
-          <div className="join bg-base-200/60 p-0.5 rounded-xl text-xs">
+          <div className="join bg-base-200/70 p-0.5 rounded-xl text-xs border border-base-300">
             <button
               type="button"
               onClick={() => setFilterMode("all")}
               className={`join-item btn btn-xs rounded-lg ${
                 filterMode === "all"
-                  ? "btn-primary shadow-sm"
-                  : "btn-ghost text-base-content/60 hover:text-base-content"
+                  ? "btn-primary font-bold shadow-sm"
+                  : "btn-ghost text-base-content/70 hover:text-base-content"
               }`}
             >
               All ({stats.total})
@@ -278,8 +278,8 @@ export default function PermissionMatrix({
               onClick={() => setFilterMode("granted")}
               className={`join-item btn btn-xs rounded-lg ${
                 filterMode === "granted"
-                  ? "btn-primary shadow-sm"
-                  : "btn-ghost text-base-content/60 hover:text-base-content"
+                  ? "btn-primary font-bold shadow-sm"
+                  : "btn-ghost text-base-content/70 hover:text-base-content"
               }`}
             >
               Allowed ({stats.allowed})
@@ -290,8 +290,8 @@ export default function PermissionMatrix({
                 onClick={() => setFilterMode("overrides")}
                 className={`join-item btn btn-xs rounded-lg ${
                   filterMode === "overrides"
-                    ? "btn-success text-white shadow-sm"
-                    : "btn-ghost text-emerald-600 font-semibold"
+                    ? "btn-success text-white font-bold shadow-sm"
+                    : "btn-ghost text-success font-semibold hover:bg-success/10"
                 }`}
               >
                 Overrides ({stats.overrides})
@@ -303,8 +303,8 @@ export default function PermissionMatrix({
                 onClick={() => setFilterMode("revoked")}
                 className={`join-item btn btn-xs rounded-lg ${
                   filterMode === "revoked"
-                    ? "btn-error text-white shadow-sm"
-                    : "btn-ghost text-rose-600 font-semibold"
+                    ? "btn-error text-white font-bold shadow-sm"
+                    : "btn-ghost text-error font-semibold hover:bg-error/10"
                 }`}
               >
                 Revoked ({stats.revoked})
@@ -339,7 +339,7 @@ export default function PermissionMatrix({
                 <button
                   type="button"
                   onClick={onResetToRole}
-                  className="btn btn-ghost btn-xs rounded-lg gap-1 text-indigo-600 font-semibold hover:bg-indigo-50"
+                  className="btn btn-ghost btn-xs rounded-lg gap-1 text-primary font-semibold hover:bg-primary/10"
                   title="Reset to role default permissions"
                 >
                   <Undo size={12} />

@@ -172,16 +172,16 @@ export default function PermissionModuleRow({
                   : false;
 
                 // Determine classification tag and styling
-                let cardStyle = "border-base-300 bg-base-100/80 text-base-content/70 hover:bg-base-200/60";
+                let cardStyle = "border-base-300 bg-base-100 text-base-content/70 hover:bg-base-200/50 hover:border-base-300";
                 let badge = null;
 
                 if (roleAllowedIds) {
                   if (checked && hasRoleGrant) {
                     // Inherited from Role
                     cardStyle =
-                      "border-indigo-300/90 bg-indigo-50/80 text-indigo-950 shadow-sm shadow-indigo-500/5 dark:bg-indigo-950/30 dark:border-indigo-800 dark:text-indigo-200 font-medium";
+                      "border-primary/30 bg-primary/10 text-base-content font-medium hover:border-primary/50 shadow-sm";
                     badge = (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-100/90 text-indigo-800 dark:bg-indigo-900/70 dark:text-indigo-300 px-1.5 py-0.5 rounded-md ml-auto shrink-0 border border-indigo-200 dark:border-indigo-800">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-primary/15 text-primary px-2 py-0.5 rounded-lg border border-primary/25 ml-auto shrink-0">
                         <Shield size={10} />
                         {roleName || "Role"}
                       </span>
@@ -189,9 +189,9 @@ export default function PermissionModuleRow({
                   } else if (checked && !hasRoleGrant) {
                     // Custom User Override (Added Grant)
                     cardStyle =
-                      "border-emerald-400 bg-emerald-50/90 text-emerald-950 shadow-sm shadow-emerald-500/10 ring-1 ring-emerald-400/50 dark:bg-emerald-950/40 dark:border-emerald-700 dark:text-emerald-200 font-bold";
+                      "border-success/40 bg-success/10 text-base-content font-semibold hover:border-success/60 ring-1 ring-success/25 shadow-sm";
                     badge = (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-900/80 dark:text-emerald-200 px-1.5 py-0.5 rounded-md ml-auto shrink-0 border border-emerald-300 dark:border-emerald-700">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-success/20 text-success px-2 py-0.5 rounded-lg border border-success/30 ml-auto shrink-0">
                         <Sparkles size={10} />
                         Override
                       </span>
@@ -199,21 +199,21 @@ export default function PermissionModuleRow({
                   } else if (!checked && hasRoleGrant) {
                     // Revoked Override (Role had it, but user revoked it)
                     cardStyle =
-                      "border-rose-300/80 bg-rose-50/70 text-rose-800 dark:bg-rose-950/30 dark:border-rose-900 dark:text-rose-300 opacity-80";
+                      "border-error/30 bg-error/5 text-base-content/50 line-through hover:border-error/50 opacity-75";
                     badge = (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/70 dark:text-rose-300 px-1.5 py-0.5 rounded-md ml-auto shrink-0 border border-rose-200 dark:border-rose-800">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-error/15 text-error px-2 py-0.5 rounded-lg border border-error/25 ml-auto shrink-0 not-italic no-underline">
                         <Ban size={10} />
                         Revoked
                       </span>
                     );
                   } else {
                     // Not granted
-                    cardStyle = "border-base-300/80 bg-base-100/50 text-base-content/50 hover:bg-base-200/50";
+                    cardStyle = "border-base-300/80 bg-base-100/50 text-base-content/50 hover:bg-base-200/50 hover:border-base-300";
                   }
                 } else {
                   // Standard Role matrix mode
                   if (checked) {
-                    cardStyle = "border-primary/40 bg-primary/5 text-primary font-semibold shadow-sm";
+                    cardStyle = "border-primary/40 bg-primary/10 text-base-content font-semibold shadow-sm";
                   }
                 }
 

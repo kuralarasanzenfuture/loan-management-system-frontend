@@ -2,10 +2,11 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   login,
   getMe,
-  refreshToken as refreshTokenService, // renamed to avoid conflict if needed, though you import it as refreshToken
+  refreshToken as refreshTokenService,
   logout,
   logoutAllDevices,
 } from "./auth.service.js";
+import { getUserPermissions } from "../userPermissions/userPermission.service.js";
 
 // -------------------- Helpers --------------------
 
@@ -19,7 +20,62 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials, { rejectWithValue }) => {
     try {
-      return await login(credentials);
+      const response = await login(credentials);
+
+      const token =
+        response.accessToken ||
+        response.access_token ||
+        response.data?.accessToken ||
+        response.data?.access_token;
+      const refreshToken =
+        response.refreshToken ||
+        response.refresh_token ||
+        response.data?.refreshToken ||
+        response.data?.refresh_token;
+      const sessionId =
+        response.session_id ||
+        response.sessionId ||
+        response.data?.session_id ||
+        response.data?.sessionId;
+
+      if (token) {
+        localStorage.setItem("accessToken", token);
+      }
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
+      }
+      if (sessionId) {
+        localStorage.setItem("sessionId", sessionId);
+      }
+
+      // Immediately fetch complete profile with role and permissions
+      let userData = null;
+      try {
+        const meRes = await getMe();
+        userData = unwrapUser(meRes);
+      } catch (meErr) {
+        console.warn("Could not fetch profile on login:", meErr);
+        userData = unwrapUser(response.user || response.data?.user || response);
+      }
+
+      if (userData?.id) {
+        try {
+          const permRes = await getUserPermissions(userData.id);
+          const perms = permRes?.data ?? permRes;
+          userData.permissions = Array.isArray(perms) ? perms : [];
+        } catch (permErr) {
+          console.warn("Could not load user permissions on login:", permErr);
+        }
+      }
+
+      if (userData) {
+        localStorage.setItem("user", JSON.stringify(userData));
+      }
+
+      return {
+        ...response,
+        user: userData,
+      };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Login failed");
     }
@@ -30,8 +86,24 @@ export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
-      console.log("Fetching current user with getMe API call"); // Debugging line to check when the fetch is triggered
-      return await getMe();
+      const response = await getMe();
+      const userData = unwrapUser(response);
+
+      if (userData?.id) {
+        try {
+          const permRes = await getUserPermissions(userData.id);
+          const perms = permRes?.data ?? permRes;
+          userData.permissions = Array.isArray(perms) ? perms : [];
+        } catch (permErr) {
+          console.warn("Could not load user permissions:", permErr);
+        }
+      }
+
+      if (userData) {
+        localStorage.setItem("user", JSON.stringify(userData));
+      }
+
+      return userData;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch user"

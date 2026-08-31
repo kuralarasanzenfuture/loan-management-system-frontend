@@ -1,10 +1,22 @@
 import React, { useEffect } from "react";
 import "./App.css";
 import { BrowserRouter } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import AppRoutes from "./routes/AppRoutes";
 import { applyFont, FONT_STORAGE_KEY } from "./features/settings/components/PreferencesTab.jsx";
+import { fetchCurrentUser } from "./redux/auth/authSlice.js";
 
 function App() {
+  const dispatch = useDispatch();
+  const { accessToken } = useSelector((state) => state.auth || {});
+
+  // Fetch current user on app load if token exists
+  useEffect(() => {
+    if (accessToken) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [dispatch, accessToken]);
+
   // Initialize stored theme, font, density, and reduce-motion on app load
   useEffect(() => {
     // 1. Theme

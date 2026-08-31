@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { Search, X, LayoutGrid, LogOut } from "lucide-react";
 import { NAV_SECTIONS } from "../../Sidebar/sidebarMenu.js";
 
+import usePermissions from "../../../../hooks/usePermissions.js";
+import { filterNavSections } from "../../../../utils/permissionUtils.js";
+
 /**
  * AppLauncher
  * Grid-icon-triggered overlay: search bar + multi-column list of every
@@ -11,6 +14,7 @@ import { NAV_SECTIONS } from "../../Sidebar/sidebarMenu.js";
  * whichever column has room next, matching a masonry-style mega menu.
  */
 export default function QuickSearch() {
+  const { user } = usePermissions();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
@@ -36,14 +40,22 @@ export default function QuickSearch() {
     if (!open) setQuery("");
   }, [open]);
 
+  const accessibleSections = useMemo(() => {
+    return filterNavSections(NAV_SECTIONS, user);
+  }, [user]);
+
   const filteredSections = useMemo(() => {
-    if (!query.trim()) return NAV_SECTIONS;
+    if (!query.trim()) return accessibleSections;
     const q = query.toLowerCase();
-    return NAV_SECTIONS.map((section) => ({
-      ...section,
-      items: section.items.filter((item) => item.label.toLowerCase().includes(q)),
-    })).filter((section) => section.items.length > 0);
-  }, [query]);
+    return accessibleSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) =>
+          item.label.toLowerCase().includes(q)
+        ),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [accessibleSections, query]);
 
   return (
     <>

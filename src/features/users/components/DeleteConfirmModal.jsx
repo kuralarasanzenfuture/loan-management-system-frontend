@@ -40,7 +40,7 @@ export default function DeleteConfirmModal({
           </span>
           <h3 className="font-bold text-base">Delete {itemLabel}?</h3>
           <p className="text-sm text-base-content/60">
-            Are you sure you want to delete{" "}
+            Are you sure you want to delete
             <span className="font-semibold text-base-content">
               {itemName || "this " + itemLabel}
             </span>
