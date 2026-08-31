@@ -10,6 +10,7 @@ import {
   UserX,
   RefreshCw,
   Filter,
+  ShieldAlert,
 } from "lucide-react";
 import {
   fetchCustomers,
@@ -24,6 +25,8 @@ import CustomerFormModal from "../components/CustomerFormModal.jsx";
 import CustomerDeleteModal from "../components/CustomerDeleteModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const STATUS_FILTERS = [
@@ -58,6 +61,13 @@ export default function CustomersPage() {
   const navigate = useNavigate();
   const { customers, loading, error } = useSelector((state) => state.customers);
 
+  // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────────
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.CUSTOMER_VIEW);
+  const canCreate = can(PERMISSIONS.CUSTOMER_CREATE);
+  const canEdit = can(PERMISSIONS.CUSTOMER_EDIT);
+  const canDelete = can(PERMISSIONS.CUSTOMER_DELETE);
+
   // ── Local UI state ────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -68,8 +78,10 @@ export default function CustomersPage() {
 
   // ── Initial load ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    dispatch(fetchCustomers());
-  }, [dispatch]);
+    if (canView) {
+      dispatch(fetchCustomers());
+    }
+  }, [dispatch, canView]);
 
   // ── Filtering ────────────────────────────────────────────────────────────────
   const filteredCustomers = useMemo(() => {
@@ -132,12 +144,14 @@ export default function CustomersPage() {
 
   /** Open Create modal */
   const handleOpenCreate = () => {
+    if (!canCreate) return;
     dispatch(clearCustomerError());
     setFormModal({});
   };
 
   /** Open Edit modal — fetches fresh data first so all fields are populated */
   const handleOpenEdit = async (customer) => {
+    if (!canEdit) return;
     dispatch(clearCustomerError());
     const res = await dispatch(fetchCustomerById(customer.id));
     setFormModal(
@@ -155,9 +169,12 @@ export default function CustomersPage() {
 
   /** Create or update a customer */
   const handleFormSubmit = async (formData) => {
+    const isEdit = Boolean(formModal?.id);
+    if (isEdit && !canEdit) return;
+    if (!isEdit && !canCreate) return;
+
     setFormSubmitting(true);
     try {
-      const isEdit = Boolean(formModal?.id);
       const action = isEdit
         ? await dispatch(editCustomer({ id: formModal.id, formData }))
         : await dispatch(addCustomer(formData));
@@ -177,13 +194,14 @@ export default function CustomersPage() {
 
   /** Open delete confirmation modal */
   const handleOpenDelete = (customer) => {
+    if (!canDelete) return;
     dispatch(clearCustomerError());
     setDeleteTarget(customer);
   };
 
   /** Execute delete after confirmation */
   const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || !canDelete) return;
     setDeleteSubmitting(true);
     try {
       const action = await dispatch(removeCustomer(deleteTarget.id));
@@ -198,6 +216,7 @@ export default function CustomersPage() {
 
   // ── Navigate to view page ─────────────────────────────────────────────────────
   const handleView = (customer) => {
+    if (!canView) return;
     navigate(`/customers/${customer.id}`);
   };
 
@@ -224,14 +243,17 @@ export default function CustomersPage() {
             <RefreshCw size={14} />
             Refresh
           </button>
-          <button
-            id="create-customer-btn"
-            className="btn btn-primary btn-sm gap-1.5"
-            onClick={handleOpenCreate}
-          >
-            <Plus size={16} />
-            New Customer
-          </button>
+
+          {canCreate && (
+            <button
+              id="create-customer-btn"
+              className="btn btn-primary btn-sm gap-1.5 shadow-sm"
+              onClick={handleOpenCreate}
+            >
+              <Plus size={16} />
+              New Customer
+            </button>
+          )}
         </div>
       </div>
 
@@ -317,6 +339,9 @@ export default function CustomersPage() {
         <CustomerTable
           customers={pagedCustomers}
           loading={loading}
+          canView={canView}
+          canEdit={canEdit}
+          canDelete={canDelete}
           onView={handleView}
           onEdit={handleOpenEdit}
           onDelete={handleOpenDelete}
@@ -334,27 +359,31 @@ export default function CustomersPage() {
       </div>
 
       {/* ── Create / Edit Modal ──────────────────────────────────────────────── */}
-      <CustomerFormModal
-        open={Boolean(formModal)}
-        initialData={formModal?.id ? formModal : null}
-        loading={formSubmitting}
-        error={formModal ? error : null}
-        onClose={handleCloseForm}
-        onSubmit={handleFormSubmit}
-      />
+      {formModal && (
+        <CustomerFormModal
+          open={Boolean(formModal)}
+          initialData={formModal?.id ? formModal : null}
+          loading={formSubmitting}
+          error={formModal ? error : null}
+          onClose={handleCloseForm}
+          onSubmit={handleFormSubmit}
+        />
+      )}
 
       {/* ── Delete Confirm Modal ─────────────────────────────────────────────── */}
-      <CustomerDeleteModal
-        open={Boolean(deleteTarget)}
-        customer={deleteTarget}
-        loading={deleteSubmitting}
-        error={deleteTarget ? error : null}
-        onConfirm={handleConfirmDelete}
-        onClose={() => {
-          setDeleteTarget(null);
-          dispatch(clearCustomerError());
-        }}
-      />
+      {deleteTarget && (
+        <CustomerDeleteModal
+          open={Boolean(deleteTarget)}
+          customer={deleteTarget}
+          loading={deleteSubmitting}
+          error={deleteTarget ? error : null}
+          onConfirm={handleConfirmDelete}
+          onClose={() => {
+            setDeleteTarget(null);
+            dispatch(clearCustomerError());
+          }}
+        />
+      )}
     </div>
   );
 }

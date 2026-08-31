@@ -24,6 +24,8 @@ import CustomerDeleteModal from "../components/CustomerDeleteModal.jsx";
 import CustomerOverviewTab from "../components/customer-view/CustomerOverviewTab.jsx";
 import CustomerLoansTab from "../components/customer-view/CustomerLoansTab.jsx";
 import CustomerDocumentsTab from "../components/customer-view/CustomerDocumentsTab.jsx";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 const STATUS_STYLES = {
@@ -32,7 +34,7 @@ const STATUS_STYLES = {
   blocked: "badge-error badge-outline",
 };
 
-// ─── Tab definitions (built inside the component so it has access to live counts)
+// ─── Tab definitions ────────────────────────────────────────────────────────────
 function buildTabs(customer, customerLoansList) {
   return [
     {
@@ -86,6 +88,12 @@ export default function CustomerViewPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  // ── Global Permissions ────────────────────────────────────────────────────────
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.CUSTOMER_VIEW);
+  const canEdit = can(PERMISSIONS.CUSTOMER_EDIT);
+  const canDelete = can(PERMISSIONS.CUSTOMER_DELETE);
+
   const { customer, loading, error } = useSelector((state) => state.customers);
   const { customerLoans, loading: loansLoading } = useSelector(
     (state) => state.customerLoans
@@ -99,10 +107,12 @@ export default function CustomerViewPage() {
 
   // ── Fetch data on mount ───────────────────────────────────────────────────────
   useEffect(() => {
-    dispatch(fetchCustomerById(id));
-    dispatch(fetchCustomerLoans());
+    if (canView) {
+      dispatch(fetchCustomerById(id));
+      dispatch(fetchCustomerLoans());
+    }
     return () => dispatch(clearSelectedCustomer());
-  }, [dispatch, id]);
+  }, [dispatch, id, canView]);
 
   // ── Derived data ──────────────────────────────────────────────────────────────
   const customerLoansList = useMemo(
@@ -125,6 +135,7 @@ export default function CustomerViewPage() {
   // ── Handlers ──────────────────────────────────────────────────────────────────
 
   const handleOpenEdit = () => {
+    if (!canEdit) return;
     dispatch(clearCustomerError());
     setEditModalOpen(true);
   };
@@ -135,6 +146,7 @@ export default function CustomerViewPage() {
   };
 
   const handleEditSubmit = async (formData) => {
+    if (!canEdit) return;
     setFormSubmitting(true);
     try {
       const action = await dispatch(editCustomer({ id, formData }));
@@ -148,6 +160,7 @@ export default function CustomerViewPage() {
   };
 
   const handleOpenDelete = () => {
+    if (!canDelete) return;
     dispatch(clearCustomerError());
     setDeleteModalOpen(true);
   };
@@ -158,6 +171,7 @@ export default function CustomerViewPage() {
   };
 
   const handleConfirmDelete = async () => {
+    if (!canDelete) return;
     setDeleteSubmitting(true);
     try {
       const action = await dispatch(removeCustomer(id));
@@ -264,24 +278,29 @@ export default function CustomerViewPage() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2">
-            <button
-              id="delete-customer-btn"
-              onClick={handleOpenDelete}
-              className="btn btn-ghost btn-sm gap-1.5 text-error hover:bg-error/10"
-              title="Delete customer"
-            >
-              <Trash2 size={15} />
-              Delete
-            </button>
-            <button
-              id="edit-customer-btn"
-              onClick={handleOpenEdit}
-              className="btn btn-primary btn-sm gap-1.5"
-              title="Edit customer"
-            >
-              <Pencil size={15} />
-              Edit
-            </button>
+            {canDelete && (
+              <button
+                id="delete-customer-btn"
+                onClick={handleOpenDelete}
+                className="btn btn-ghost btn-sm gap-1.5 text-error hover:bg-error/10"
+                title="Delete customer"
+              >
+                <Trash2 size={15} />
+                Delete
+              </button>
+            )}
+
+            {canEdit && (
+              <button
+                id="edit-customer-btn"
+                onClick={handleOpenEdit}
+                className="btn btn-primary btn-sm gap-1.5 shadow-sm"
+                title="Edit customer"
+              >
+                <Pencil size={15} />
+                Edit
+              </button>
+            )}
           </div>
         </div>
 
@@ -332,24 +351,28 @@ export default function CustomerViewPage() {
       )}
 
       {/* ── Edit Modal ───────────────────────────────────────────────────────── */}
-      <CustomerFormModal
-        open={editModalOpen}
-        initialData={customer}
-        loading={formSubmitting}
-        error={editModalOpen ? error : null}
-        onClose={handleCloseEdit}
-        onSubmit={handleEditSubmit}
-      />
+      {editModalOpen && canEdit && (
+        <CustomerFormModal
+          open={editModalOpen}
+          initialData={customer}
+          loading={formSubmitting}
+          error={editModalOpen ? error : null}
+          onClose={handleCloseEdit}
+          onSubmit={handleEditSubmit}
+        />
+      )}
 
       {/* ── Delete Modal ─────────────────────────────────────────────────────── */}
-      <CustomerDeleteModal
-        open={deleteModalOpen}
-        customer={customer}
-        loading={deleteSubmitting}
-        error={deleteModalOpen ? error : null}
-        onConfirm={handleConfirmDelete}
-        onClose={handleCloseDelete}
-      />
+      {deleteModalOpen && canDelete && (
+        <CustomerDeleteModal
+          open={deleteModalOpen}
+          customer={customer}
+          loading={deleteSubmitting}
+          error={deleteModalOpen ? error : null}
+          onConfirm={handleConfirmDelete}
+          onClose={handleCloseDelete}
+        />
+      )}
     </div>
   );
 }

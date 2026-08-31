@@ -1,5 +1,7 @@
 import React from "react";
 import { Pencil, Trash2, Eye, UserRound } from "lucide-react";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 // ─── Status badge map ────────────────────────────────────────────────────────────
 const STATUS_STYLES = {
@@ -14,11 +16,31 @@ const STATUS_STYLES = {
  * Props:
  * - customers (array)  — already filtered / paginated
  * - loading   (bool)
+ * - canView   (bool)   — optional explicit override
+ * - canEdit   (bool)   — optional explicit override
+ * - canDelete (bool)   — optional explicit override
  * - onView    (fn)     — called with customer object → navigate to detail page
  * - onEdit    (fn)     — called with customer object → open edit modal
  * - onDelete  (fn)     — called with customer object → open delete modal
  */
-export default function CustomerTable({ customers, loading, onView, onEdit, onDelete }) {
+export default function CustomerTable({
+  customers,
+  loading,
+  canView: canViewProp,
+  canEdit: canEditProp,
+  canDelete: canDeleteProp,
+  onView,
+  onEdit,
+  onDelete,
+}) {
+  const { can } = usePermissions();
+
+  const canView = canViewProp !== undefined ? canViewProp : can(PERMISSIONS.CUSTOMER_VIEW);
+  const canEdit = canEditProp !== undefined ? canEditProp : can(PERMISSIONS.CUSTOMER_EDIT);
+  const canDelete = canDeleteProp !== undefined ? canDeleteProp : can(PERMISSIONS.CUSTOMER_DELETE);
+
+  const hasAnyAction = canView || canEdit || canDelete;
+
   // ── Loading skeleton ──────────────────────────────────────────────────────────
   if (loading && customers.length === 0) {
     return (
@@ -61,7 +83,7 @@ export default function CustomerTable({ customers, loading, onView, onEdit, onDe
             <th className="font-semibold py-3 hidden md:table-cell">Location</th>
             <th className="font-semibold py-3 w-28 hidden sm:table-cell">Income</th>
             <th className="font-semibold py-3 w-24">Status</th>
-            <th className="font-semibold py-3 text-right w-28">Actions</th>
+            {hasAnyAction && <th className="font-semibold py-3 text-right w-28">Actions</th>}
           </tr>
         </thead>
 
@@ -74,8 +96,12 @@ export default function CustomerTable({ customers, loading, onView, onEdit, onDe
             return (
               <tr
                 key={c.id}
-                className="border-b border-base-200 last:border-0 hover:bg-base-200/40 transition-colors cursor-pointer group"
-                onClick={() => onView(c)}
+                className={`border-b border-base-200 last:border-0 hover:bg-base-200/40 transition-colors group ${
+                  canView ? "cursor-pointer" : ""
+                }`}
+                onClick={() => {
+                  if (canView && onView) onView(c);
+                }}
               >
                 {/* Index */}
                 <td className="text-base-content/40 text-xs py-3">{index + 1}</td>
@@ -95,7 +121,11 @@ export default function CustomerTable({ customers, loading, onView, onEdit, onDe
                       )}
                     </div>
                     <div>
-                      <div className="font-semibold text-sm text-base-content group-hover:text-primary transition-colors">
+                      <div
+                        className={`font-semibold text-sm text-base-content transition-colors ${
+                          canView ? "group-hover:text-primary" : ""
+                        }`}
+                      >
                         {fullName || "—"}
                       </div>
                       <div className="text-[11px] text-base-content/40 font-mono">
@@ -146,37 +176,50 @@ export default function CustomerTable({ customers, loading, onView, onEdit, onDe
                 </td>
 
                 {/* Actions — stop propagation so row click doesn't fire */}
-                <td className="py-3">
-                  <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      id={`view-customer-${c.id}`}
-                      className="btn btn-ghost btn-xs btn-square rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => onView(c)}
-                      aria-label={`View ${fullName}`}
-                      title="View details"
+                {hasAnyAction && (
+                  <td className="py-3">
+                    <div
+                      className="flex justify-end gap-1"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Eye size={14} />
-                    </button>
-                    <button
-                      id={`edit-customer-${c.id}`}
-                      className="btn btn-ghost btn-xs btn-square rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => onEdit(c)}
-                      aria-label={`Edit ${fullName}`}
-                      title="Edit customer"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      id={`delete-customer-${c.id}`}
-                      className="btn btn-ghost btn-xs btn-square rounded-lg text-error hover:bg-error/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => onDelete(c)}
-                      aria-label={`Delete ${fullName}`}
-                      title="Delete customer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
+                      {canView && (
+                        <button
+                          id={`view-customer-${c.id}`}
+                          className="btn btn-ghost btn-xs btn-square rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-base-content/70 hover:text-primary"
+                          onClick={() => onView && onView(c)}
+                          aria-label={`View ${fullName}`}
+                          title="View details"
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
+
+                      {canEdit && (
+                        <button
+                          id={`edit-customer-${c.id}`}
+                          className="btn btn-ghost btn-xs btn-square rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-base-content/70 hover:text-primary"
+                          onClick={() => onEdit && onEdit(c)}
+                          aria-label={`Edit ${fullName}`}
+                          title="Edit customer"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
+
+                      {canDelete && (
+                        <button
+                          id={`delete-customer-${c.id}`}
+                          className="btn btn-ghost btn-xs btn-square rounded-lg text-error hover:bg-error/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => onDelete && onDelete(c)}
+                          aria-label={`Delete ${fullName}`}
+                          title="Delete customer"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             );
           })}

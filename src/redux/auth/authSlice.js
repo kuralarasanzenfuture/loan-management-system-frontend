@@ -7,6 +7,7 @@ import {
   logoutAllDevices,
 } from "./auth.service.js";
 import { getUserPermissions } from "../userPermissions/userPermission.service.js";
+import { getRolePermissions } from "../rolePermissions/rolePermission.service.js";
 
 // -------------------- Helpers --------------------
 
@@ -58,6 +59,7 @@ export const loginUser = createAsyncThunk(
         userData = unwrapUser(response.user || response.data?.user || response);
       }
 
+      // Hydrate user-specific permissions
       if (userData?.id) {
         try {
           const permRes = await getUserPermissions(userData.id);
@@ -65,6 +67,17 @@ export const loginUser = createAsyncThunk(
           userData.permissions = Array.isArray(perms) ? perms : [];
         } catch (permErr) {
           console.warn("Could not load user permissions on login:", permErr);
+        }
+      }
+
+      // Hydrate role-default permissions from database
+      if (userData?.role_id) {
+        try {
+          const rolePermRes = await getRolePermissions(userData.role_id);
+          const rolePerms = rolePermRes?.data ?? rolePermRes;
+          userData.role_permissions = Array.isArray(rolePerms) ? rolePerms : [];
+        } catch (rolePermErr) {
+          console.warn("Could not load role permissions on login:", rolePermErr);
         }
       }
 
@@ -89,6 +102,7 @@ export const fetchCurrentUser = createAsyncThunk(
       const response = await getMe();
       const userData = unwrapUser(response);
 
+      // Hydrate user-specific permissions
       if (userData?.id) {
         try {
           const permRes = await getUserPermissions(userData.id);
@@ -96,6 +110,17 @@ export const fetchCurrentUser = createAsyncThunk(
           userData.permissions = Array.isArray(perms) ? perms : [];
         } catch (permErr) {
           console.warn("Could not load user permissions:", permErr);
+        }
+      }
+
+      // Hydrate role-default permissions from database
+      if (userData?.role_id) {
+        try {
+          const rolePermRes = await getRolePermissions(userData.role_id);
+          const rolePerms = rolePermRes?.data ?? rolePermRes;
+          userData.role_permissions = Array.isArray(rolePerms) ? rolePerms : [];
+        } catch (rolePermErr) {
+          console.warn("Could not load role permissions:", rolePermErr);
         }
       }
 
