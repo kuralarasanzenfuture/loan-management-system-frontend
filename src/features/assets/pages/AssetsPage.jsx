@@ -22,6 +22,8 @@ import AssetDeleteModal from "../components/AssetDeleteModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
 import { formatCurrency } from "../utils/assetHelpers.js";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All statuses" },
@@ -37,6 +39,17 @@ export default function AssetsPage() {
   const location = useLocation();
   const { assets, loading, error } = useSelector((state) => state.assets);
   const { assetCategories } = useSelector((state) => state.assetCategories);
+
+  // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────
+  const { can } = usePermissions();
+  const canView =
+    can(PERMISSIONS.ASSET_VIEW) || can(PERMISSIONS.ASSET_CATEGORY_VIEW);
+  const canCreate =
+    can(PERMISSIONS.ASSET_CREATE) || can(PERMISSIONS.ASSET_CATEGORY_CREATE);
+  const canEdit =
+    can(PERMISSIONS.ASSET_EDIT) || can(PERMISSIONS.ASSET_CATEGORY_EDIT);
+  const canDelete =
+    can(PERMISSIONS.ASSET_DELETE) || can(PERMISSIONS.ASSET_CATEGORY_DELETE);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -180,13 +193,15 @@ export default function AssetsPage() {
             Track office equipment, furniture, and other business-owned assets.
           </p>
         </div>
-        <button
-          className="btn btn-primary btn-sm gap-1.5"
-          onClick={handleOpenCreate}
-        >
-          <Plus size={16} />
-          New asset
-        </button>
+        {canCreate && (
+          <button
+            className="btn btn-primary btn-sm gap-1.5"
+            onClick={handleOpenCreate}
+          >
+            <Plus size={16} />
+            New asset
+          </button>
+        )}
       </div>
 
       {error && !formModal && (
@@ -286,6 +301,9 @@ export default function AssetsPage() {
           assets={pagedAssets}
           loading={loading}
           categoryMap={categoryMap}
+          canView={canView}
+          canEdit={canEdit}
+          canDelete={canDelete}
           onView={(a) => navigate(`/assets/${a.id}`)}
           onEdit={handleOpenEdit}
           onDelete={setDeleteTarget}

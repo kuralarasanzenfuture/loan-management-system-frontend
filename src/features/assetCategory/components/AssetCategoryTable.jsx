@@ -11,15 +11,21 @@ const STATUS_STYLES = {
  * Props:
  * - categories (array)
  * - loading (bool)
+ * - canEdit (bool)   – show Edit button
+ * - canDelete (bool) – show Delete button
  * - onEdit (fn)
  * - onDelete (fn)
  */
 export default function AssetCategoryTable({
   categories,
   loading,
+  canEdit = true,
+  canDelete = true,
   onEdit,
   onDelete,
 }) {
+  const showActions = canEdit || canDelete;
+
   if (loading && categories.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-base-content/40 gap-2">
@@ -54,7 +60,9 @@ export default function AssetCategoryTable({
             <th className="font-medium">Category</th>
             <th className="font-medium">Description</th>
             <th className="font-medium w-32">Status</th>
-            <th className="text-right font-medium w-28">Actions</th>
+            {showActions && (
+              <th className="text-right font-medium w-28">Actions</th>
+            )}
           </tr>
         </thead>
 
@@ -102,26 +110,32 @@ export default function AssetCategoryTable({
                 </span>
               </td>
 
-              <td>
-                <div className="flex justify-end gap-1.5">
-                  <button
-                    className="btn btn-ghost btn-sm btn-square"
-                    onClick={() => onEdit(cat)}
-                    aria-label={`Edit ${cat.category_name}`}
-                    title="Edit category"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
-                    onClick={() => onDelete(cat)}
-                    aria-label={`Delete ${cat.category_name}`}
-                    title="Delete category"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </td>
+              {showActions && (
+                <td>
+                  <div className="flex justify-end gap-1.5">
+                    {canEdit && (
+                      <button
+                        className="btn btn-ghost btn-sm btn-square"
+                        onClick={() => onEdit(cat)}
+                        aria-label={`Edit ${cat.category_name}`}
+                        title="Edit category"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                        onClick={() => onDelete(cat)}
+                        aria-label={`Delete ${cat.category_name}`}
+                        title="Delete category"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -129,3 +143,4 @@ export default function AssetCategoryTable({
     </div>
   );
 }
+

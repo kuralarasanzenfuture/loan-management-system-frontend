@@ -21,6 +21,8 @@ import {
   STATUS_STYLES,
   formatCurrency,
 } from "../utils/assetHelpers.js";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 function InfoRow({ label, value }) {
   return (
@@ -38,6 +40,11 @@ export default function AssetViewPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { asset, loading } = useSelector((state) => state.assets);
+
+  // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────
+  const { can } = usePermissions();
+  const canEdit =
+    can(PERMISSIONS.ASSET_EDIT) || can(PERMISSIONS.ASSET_CATEGORY_EDIT);
 
   useEffect(() => {
     dispatch(fetchAssetById(id));
@@ -100,13 +107,15 @@ export default function AssetViewPage() {
           </span>
         </div>
 
-        <button
-          onClick={() => navigate("/assets", { state: { editAsset: asset } })}
-          className="btn btn-primary btn-sm gap-1.5"
-        >
-          <Pencil size={15} />
-          Edit
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => navigate("/assets", { state: { editAsset: asset } })}
+            className="btn btn-primary btn-sm gap-1.5"
+          >
+            <Pencil size={15} />
+            Edit
+          </button>
+        )}
       </div>
 
       {/* Value strip */}

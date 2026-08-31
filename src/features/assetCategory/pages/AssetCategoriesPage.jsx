@@ -13,6 +13,8 @@ import AssetCategoryFormModal from "../components/AssetCategoryFormModal.jsx";
 import AssetCategoryDeleteModal from "../components/AssetCategoryDeleteModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All statuses" },
@@ -26,6 +28,17 @@ export default function AssetCategoriesPage() {
     (state) => state.assetCategories,
   );
 
+  // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────
+  const { can } = usePermissions();
+  const canView =
+    can(PERMISSIONS.ASSET_CATEGORY_VIEW) || can(PERMISSIONS.ASSET_VIEW);
+  const canCreate =
+    can(PERMISSIONS.ASSET_CATEGORY_CREATE) || can(PERMISSIONS.ASSET_CREATE);
+  const canEdit =
+    can(PERMISSIONS.ASSET_CATEGORY_EDIT) || can(PERMISSIONS.ASSET_EDIT);
+  const canDelete =
+    can(PERMISSIONS.ASSET_CATEGORY_DELETE) || can(PERMISSIONS.ASSET_DELETE);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -36,8 +49,10 @@ export default function AssetCategoriesPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchAssetCategories());
-  }, [dispatch]);
+    if (canView) {
+      dispatch(fetchAssetCategories());
+    }
+  }, [dispatch, canView]);
 
   const filteredCategories = useMemo(() => {
     let result = assetCategories;
@@ -85,11 +100,13 @@ export default function AssetCategoriesPage() {
   };
 
   const handleOpenCreate = () => {
+    if (!canCreate) return;
     dispatch(clearAssetCategoryError());
     setFormModal({});
   };
 
   const handleOpenEdit = (category) => {
+    if (!canEdit) return;
     dispatch(clearAssetCategoryError());
     setFormModal(category);
   };
@@ -121,7 +138,7 @@ export default function AssetCategoriesPage() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || !canDelete) return;
     setDeleteSubmitting(true);
     try {
       const action = await dispatch(removeAssetCategory(deleteTarget.id));
@@ -132,6 +149,8 @@ export default function AssetCategoriesPage() {
       setDeleteSubmitting(false);
     }
   };
+
+  if (!canView) return null;
 
   return (
     <div>
@@ -146,13 +165,15 @@ export default function AssetCategoriesPage() {
             Manage categories used to classify collateral and pledged assets.
           </p>
         </div>
-        <button
-          className="btn btn-primary btn-sm gap-1.5"
-          onClick={handleOpenCreate}
-        >
-          <Plus size={16} />
-          New category
-        </button>
+        {canCreate && (
+          <button
+            className="btn btn-primary btn-sm gap-1.5"
+            onClick={handleOpenCreate}
+          >
+            <Plus size={16} />
+            New category
+          </button>
+        )}
       </div>
 
       {error && !formModal && (
@@ -237,6 +258,8 @@ export default function AssetCategoriesPage() {
         <AssetCategoryTable
           categories={pagedCategories}
           loading={loading}
+          canEdit={canEdit}
+          canDelete={canDelete}
           onEdit={handleOpenEdit}
           onDelete={setDeleteTarget}
         />

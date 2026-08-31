@@ -386,10 +386,18 @@ const protectedRoutesConfig = [
   {
     path: "/asset-categories",
     element: <AssetCategoriesPage />,
-    permission: "ASSET_VIEW",
+    permission: ["ASSET_CATEGORY_VIEW", "ASSET_VIEW"],
   },
-  { path: "/assets", element: <AssetsPage />, permission: "ASSET_VIEW" },
-  { path: "/assets/:id", element: <AssetViewPage />, permission: "ASSET_VIEW" },
+  {
+    path: "/assets",
+    element: <AssetsPage />,
+    permission: ["ASSET_VIEW", "ASSET_CATEGORY_VIEW"],
+  },
+  {
+    path: "/assets/:id",
+    element: <AssetViewPage />,
+    permission: ["ASSET_VIEW", "ASSET_CATEGORY_VIEW"],
+  },
 
   // Hand Loans & Chits
   {

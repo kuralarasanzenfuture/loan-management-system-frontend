@@ -13,16 +13,24 @@ import {
  * - assets (array)
  * - loading (bool)
  * - categoryMap (object) : { [category_id]: category_name }
+ * - canView (bool)   – show View button
+ * - canEdit (bool)   – show Edit button
+ * - canDelete (bool) – show Delete button
  * - onView (fn) / onEdit (fn) / onDelete (fn)
  */
 export default function AssetTable({
   assets,
   loading,
   categoryMap = {},
+  canView = true,
+  canEdit = true,
+  canDelete = true,
   onView,
   onEdit,
   onDelete,
 }) {
+  const showActions = canView || canEdit || canDelete;
+
   if (loading && assets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-base-content/40 gap-2">
@@ -59,7 +67,9 @@ export default function AssetTable({
             <th className="font-medium">Value</th>
             <th className="font-medium">Condition</th>
             <th className="font-medium w-24">Status</th>
-            <th className="text-right font-medium w-32">Actions</th>
+            {showActions && (
+              <th className="text-right font-medium w-32">Actions</th>
+            )}
           </tr>
         </thead>
 
@@ -115,13 +125,9 @@ export default function AssetTable({
 
               <td className="text-xs">
                 <div className="font-semibold text-base-content">
-                  {/* {formatCurrency(asset.current_value)} */}
                   {formatCurrency(asset.purchase_price)}
                 </div>
-                <div className="text-[10px] text-base-content/40">
-                  Bought
-                  {/* {formatCurrency(asset.purchase_price)} */}
-                </div>
+                <div className="text-[10px] text-base-content/40">Bought</div>
               </td>
 
               <td>
@@ -145,31 +151,39 @@ export default function AssetTable({
                 </span>
               </td>
 
-              <td>
-                <div className="flex justify-end gap-1.5">
-                  <button
-                    className="btn btn-ghost btn-sm btn-square"
-                    onClick={() => onView(asset)}
-                    title="View"
-                  >
-                    <Eye size={15} />
-                  </button>
-                  <button
-                    className="btn btn-ghost btn-sm btn-square"
-                    onClick={() => onEdit(asset)}
-                    title="Edit"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
-                    onClick={() => onDelete(asset)}
-                    title="Delete"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </td>
+              {showActions && (
+                <td>
+                  <div className="flex justify-end gap-1.5">
+                    {canView && (
+                      <button
+                        className="btn btn-ghost btn-sm btn-square"
+                        onClick={() => onView(asset)}
+                        title="View"
+                      >
+                        <Eye size={15} />
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button
+                        className="btn btn-ghost btn-sm btn-square"
+                        onClick={() => onEdit(asset)}
+                        title="Edit"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                        onClick={() => onDelete(asset)}
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -177,3 +191,4 @@ export default function AssetTable({
     </div>
   );
 }
+
