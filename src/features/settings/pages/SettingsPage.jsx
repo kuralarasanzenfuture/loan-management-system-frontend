@@ -29,27 +29,27 @@ const TABS = [
     badge: null,
     desc: "2FA, passwords & active sessions",
   },
-  {
-    key: "notifications",
-    label: "Notifications & Alerts",
-    icon: Bell,
-    badge: null,
-    desc: "Email, SMS, in-app & DND schedules",
-  },
-  {
-    key: "system",
-    label: "System & Loan Defaults",
-    icon: Sliders,
-    badge: null,
-    desc: "Interest calculation, grace periods & enterprise links",
-  },
-  {
-    key: "data",
-    label: "Backup & Storage",
-    icon: Database,
-    badge: null,
-    desc: "Export configuration, cache cleaner & reset",
-  },
+  // {
+  //   key: "notifications",
+  //   label: "Notifications & Alerts",
+  //   icon: Bell,
+  //   badge: null,
+  //   desc: "Email, SMS, in-app & DND schedules",
+  // },
+  // {
+  //   key: "system",
+  //   label: "System & Loan Defaults",
+  //   icon: Sliders,
+  //   badge: null,
+  //   desc: "Interest calculation, grace periods & enterprise links",
+  // },
+  // {
+  //   key: "data",
+  //   label: "Backup & Storage",
+  //   icon: Database,
+  //   badge: null,
+  //   desc: "Export configuration, cache cleaner & reset",
+  // },
 ];
 
 export default function SettingsPage() {

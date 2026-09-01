@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import { NAV_SECTIONS } from "./sidebarMenu";
 import usePermissions from "../../../hooks/usePermissions.js";
@@ -17,6 +18,8 @@ export default function SidebarNav({
   onItemClick = () => {},
 }) {
   const { user } = usePermissions();
+  const dashboardOverview = useSelector((state) => state.dashboard?.overview);
+  const activeLoansCount = Number(dashboardOverview?.active_loans || 0);
 
   // Dynamically filter sections and items according to user permissions & roles
   const visibleSections = useMemo(() => {
@@ -40,6 +43,14 @@ export default function SidebarNav({
           <ul className="w-full gap-1 p-0 m-0 list-none space-y-1">
             {section.items.map((item) => {
               const Icon = item.icon;
+              const badgeValue =
+                item.path === "/loan-applications"
+                  ? activeLoansCount
+                  : item.badge;
+              const hasBadge =
+                badgeValue !== undefined &&
+                badgeValue !== null &&
+                badgeValue !== "";
 
               return (
                 <li key={item.path} className="min-w-0">
@@ -75,9 +86,9 @@ export default function SidebarNav({
                     </span>
 
                     {/* Optional Badge */}
-                    {item.badge && !collapsed && (
+                    {hasBadge && !collapsed && (
                       <span className="badge badge-sm badge-primary text-[10px] font-semibold px-2 animate-pulse shrink-0 ml-auto">
-                        {item.badge}
+                        {badgeValue}
                       </span>
                     )}
                   </NavLink>

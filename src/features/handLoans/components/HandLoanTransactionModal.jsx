@@ -160,7 +160,7 @@ export default function HandLoanTransactionModal({
                 }`}
               >
                 <span>Transaction Type:</span>
-                <span className="badge badge-sm badge-outline font-bold uppercase">
+                <span className="badge badge-sm badge-outline border-0 font-bold uppercase">
                   {t.label}
                 </span>
               </div>

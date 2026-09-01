@@ -59,7 +59,6 @@ export const NAV_SECTIONS = [
         icon: FileText,
         path: "/loan-applications",
         permission: PERMISSIONS.LOAN_APPLICATION_VIEW,
-        badge: "18",
       },
       {
         label: "Loan Plans",
