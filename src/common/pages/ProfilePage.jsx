@@ -11,6 +11,7 @@ import {
   Check,
 } from "lucide-react";
 import { changePassword } from "../../redux/users/userSlice.js";
+import { InitialsAvatar } from "../../common/utils/avatarUtils.js";
 
 const DEFAULT_USER = {
   name: "Sarah Whitfield",
@@ -20,16 +21,6 @@ const DEFAULT_USER = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// Turns "Sarah Whitfield" into "SW", "cheran" into "C", "" into "?" —
-// mirrors the same initials-badge pattern used elsewhere in the app
-// (Top Loan Officers leaderboard, Recent Loans table).
-function getInitials(name = "") {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0][0].toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -41,8 +32,7 @@ export default function ProfilePage() {
   const currentUser = {
     name: user?.username || user?.name || user?.fullName || DEFAULT_USER.name,
     email: user?.email || DEFAULT_USER.email,
-    role:
-      user?.role_name || user?.role?.name || user?.role || DEFAULT_USER.role,
+    role: user?.role_name || user?.role?.name || user?.role || DEFAULT_USER.role,
     phone: user?.phone || DEFAULT_USER.phone,
   };
 
@@ -58,9 +48,7 @@ export default function ProfilePage() {
 
   const InfoFieldError = ({ field }) =>
     infoFieldErrors[field] ? (
-      <span className="text-[11px] text-error mt-1 block">
-        {infoFieldErrors[field]}
-      </span>
+      <span className="text-[11px] text-error mt-1 block">{infoFieldErrors[field]}</span>
     ) : null;
 
   const validateInfo = () => {
@@ -94,25 +82,15 @@ export default function ProfilePage() {
   };
 
   // ---- Password form ----
-  const [pwForm, setPwForm] = useState({
-    current: "",
-    next: "",
-    confirm: "",
-  });
-  const [showPw, setShowPw] = useState({
-    current: false,
-    next: false,
-    confirm: false,
-  });
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
   const [pwFieldErrors, setPwFieldErrors] = useState({});
   const [pwSaving, setPwSaving] = useState(false);
   const [pwSaved, setPwSaved] = useState(false);
 
   const PwFieldError = ({ field }) =>
     pwFieldErrors[field] ? (
-      <span className="text-[11px] text-error mt-1 block">
-        {pwFieldErrors[field]}
-      </span>
+      <span className="text-[11px] text-error mt-1 block">{pwFieldErrors[field]}</span>
     ) : null;
 
   const validatePassword = () => {
@@ -149,9 +127,7 @@ export default function ProfilePage() {
       setPwSaved(true);
       setTimeout(() => setPwSaved(false), 2500);
     } catch (err) {
-      setPwFieldErrors({
-        current: err?.message || "Couldn't update your password.",
-      });
+      setPwFieldErrors({ current: err?.message || "Couldn't update your password." });
     } finally {
       setPwSaving(false);
     }
@@ -172,17 +148,12 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
         {/* Left: identity card */}
         <div className="rounded-2xl border border-base-300 bg-base-100 p-6 flex flex-col items-center text-center h-fit">
-          {/* Initials badge — no photo upload/storage needed, and never
-              breaks the way an unset/broken avatarUrl would. */}
-          <div className="flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-content ring-2 ring-primary/20 ring-offset-2 ring-offset-base-100">
-            <span className="text-2xl font-bold tracking-wide">
-              {getInitials(currentUser.name)}
-            </span>
-          </div>
+          {/* Multi-color deterministic avatar — same InitialsAvatar used in
+              ProfileDropdown, so this person looks identical everywhere
+              they appear in the app. */}
+          <InitialsAvatar name={currentUser.name} size="w-24 h-24" textSize="text-2xl" />
 
-          <h2 className="mt-4 font-semibold text-base text-base-content">
-            {currentUser.name}
-          </h2>
+          <h2 className="mt-4 font-semibold text-base text-base-content">{currentUser.name}</h2>
           <span className="badge badge-primary badge-outline gap-1.5 mt-2">
             <ShieldCheck size={12} />
             {currentUser.role}
@@ -206,9 +177,7 @@ export default function ProfilePage() {
         <div className="space-y-6">
           {/* Personal information */}
           <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
-            <h3 className="font-semibold text-sm mb-1 text-base-content">
-              Personal information
-            </h3>
+            <h3 className="font-semibold text-sm mb-1 text-base-content">Personal information</h3>
             <p className="text-xs text-base-content/50 mb-5">
               This is shown across the platform wherever your name appears.
             </p>
@@ -217,9 +186,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label pb-1" htmlFor="profile-name">
-                    <span className="label-text text-xs font-semibold">
-                      Full name
-                    </span>
+                    <span className="label-text text-xs font-semibold">Full name</span>
                   </label>
                   <label
                     className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${
@@ -232,9 +199,7 @@ export default function ProfilePage() {
                       type="text"
                       className="grow text-base-content"
                       value={infoForm.name}
-                      onChange={(e) =>
-                        setInfoForm((f) => ({ ...f, name: e.target.value }))
-                      }
+                      onChange={(e) => setInfoForm((f) => ({ ...f, name: e.target.value }))}
                       disabled={infoSaving}
                     />
                   </label>
@@ -243,24 +208,17 @@ export default function ProfilePage() {
 
                 <div className="form-control">
                   <label className="label pb-1" htmlFor="profile-phone">
-                    <span className="label-text text-xs font-semibold">
-                      Phone
-                    </span>
+                    <span className="label-text text-xs font-semibold">Phone</span>
                   </label>
                   <label className="input input-bordered input-sm flex items-center gap-2 rounded-lg">
-                    <Phone
-                      size={14}
-                      className="text-base-content/40 shrink-0"
-                    />
+                    <Phone size={14} className="text-base-content/40 shrink-0" />
                     <input
                       id="profile-phone"
                       type="tel"
                       className="grow text-base-content"
                       placeholder="Not set"
                       value={infoForm.phone}
-                      onChange={(e) =>
-                        setInfoForm((f) => ({ ...f, phone: e.target.value }))
-                      }
+                      onChange={(e) => setInfoForm((f) => ({ ...f, phone: e.target.value }))}
                       disabled={infoSaving}
                     />
                   </label>
@@ -269,9 +227,7 @@ export default function ProfilePage() {
 
               <div className="form-control">
                 <label className="label pb-1" htmlFor="profile-email">
-                  <span className="label-text text-xs font-semibold">
-                    Email address
-                  </span>
+                  <span className="label-text text-xs font-semibold">Email address</span>
                 </label>
                 <label
                   className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${
@@ -284,9 +240,7 @@ export default function ProfilePage() {
                     type="email"
                     className="grow text-base-content"
                     value={infoForm.email}
-                    onChange={(e) =>
-                      setInfoForm((f) => ({ ...f, email: e.target.value }))
-                    }
+                    onChange={(e) => setInfoForm((f) => ({ ...f, email: e.target.value }))}
                     disabled={infoSaving}
                   />
                 </label>
@@ -299,11 +253,7 @@ export default function ProfilePage() {
                     <Check size={13} /> Saved
                   </span>
                 )}
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={infoSaving}
-                >
+                <button type="submit" className="btn btn-primary btn-sm" disabled={infoSaving}>
                   {infoSaving ? "Saving…" : "Save changes"}
                 </button>
               </div>
@@ -312,41 +262,20 @@ export default function ProfilePage() {
 
           {/* Password */}
           <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
-            <h3 className="font-semibold text-sm mb-1 text-base-content">
-              Change password
-            </h3>
+            <h3 className="font-semibold text-sm mb-1 text-base-content">Change password</h3>
             <p className="text-xs text-base-content/50 mb-5">
-              Use at least 8 characters. We recommend a mix of letters, numbers,
-              and symbols.
+              Use at least 8 characters. We recommend a mix of letters, numbers, and symbols.
             </p>
 
-            <form
-              onSubmit={handlePasswordSubmit}
-              className="space-y-4"
-              noValidate
-            >
+            <form onSubmit={handlePasswordSubmit} className="space-y-4" noValidate>
               {[
-                {
-                  key: "current",
-                  label: "Current password",
-                  autoComplete: "current-password",
-                },
-                {
-                  key: "next",
-                  label: "New password",
-                  autoComplete: "new-password",
-                },
-                {
-                  key: "confirm",
-                  label: "Confirm new password",
-                  autoComplete: "new-password",
-                },
+                { key: "current", label: "Current password", autoComplete: "current-password" },
+                { key: "next", label: "New password", autoComplete: "new-password" },
+                { key: "confirm", label: "Confirm new password", autoComplete: "new-password" },
               ].map(({ key, label, autoComplete }) => (
                 <div className="form-control" key={key}>
                   <label className="label pb-1" htmlFor={`pw-${key}`}>
-                    <span className="label-text text-xs font-semibold">
-                      {label}
-                    </span>
+                    <span className="label-text text-xs font-semibold">{label}</span>
                   </label>
                   <label
                     className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${
@@ -359,21 +288,15 @@ export default function ProfilePage() {
                       type={showPw[key] ? "text" : "password"}
                       className="grow text-base-content"
                       value={pwForm[key]}
-                      onChange={(e) =>
-                        setPwForm((f) => ({ ...f, [key]: e.target.value }))
-                      }
+                      onChange={(e) => setPwForm((f) => ({ ...f, [key]: e.target.value }))}
                       disabled={pwSaving}
                       autoComplete={autoComplete}
                     />
                     <button
                       type="button"
                       className="text-base-content/40 hover:text-base-content/70 shrink-0"
-                      onClick={() =>
-                        setShowPw((s) => ({ ...s, [key]: !s[key] }))
-                      }
-                      aria-label={
-                        showPw[key] ? "Hide password" : "Show password"
-                      }
+                      onClick={() => setShowPw((s) => ({ ...s, [key]: !s[key] }))}
+                      aria-label={showPw[key] ? "Hide password" : "Show password"}
                     >
                       {showPw[key] ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -388,11 +311,7 @@ export default function ProfilePage() {
                     <Check size={13} /> Password updated
                   </span>
                 )}
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={pwSaving}
-                >
+                <button type="submit" className="btn btn-primary btn-sm" disabled={pwSaving}>
                   {pwSaving ? "Updating…" : "Update password"}
                 </button>
               </div>

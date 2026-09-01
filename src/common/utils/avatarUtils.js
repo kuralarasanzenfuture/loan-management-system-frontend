@@ -1,3 +1,5 @@
+import React from "react";
+
 // A varied, professional palette — deliberately not the app's primary/gold
 // so avatars don't all blur into the same color. Each name deterministically
 // hashes to the same color every time (not random per render), so a given
@@ -52,16 +54,24 @@ export function InitialsAvatar({
   ring = true,
 }) {
   const color = getAvatarColor(name);
-  return (
-    <div
-      className={`${size} rounded-full flex items-center justify-center shrink-0 ${
-        ring ? "ring-2 ring-primary/20 ring-offset-1 ring-offset-base-100" : ""
-      }`}
-      style={{ backgroundColor: color }}
-    >
-      <span className={`${textSize} font-bold text-white tracking-wide`}>
-        {getInitials(name)}
-      </span>
-    </div>
+  const ringClass = ring
+    ? "ring-2 ring-primary/20 ring-offset-1 ring-offset-base-100"
+    : "";
+
+  return React.createElement(
+    "div",
+    {
+      className: `${size} rounded-full flex items-center justify-center shrink-0 ${ringClass}`.trim(),
+      style: { backgroundColor: color },
+    },
+    React.createElement(
+      "span",
+      {
+        className: `${textSize} font-bold text-white tracking-wide`,
+      },
+      getInitials(name)
+    )
   );
 }
+
+export default InitialsAvatar;
