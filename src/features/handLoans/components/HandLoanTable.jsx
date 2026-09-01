@@ -117,7 +117,7 @@ export default function HandLoanTable({
 
                 <td>
                   <span
-                    className={`badge gap-1.5 font-medium badge-sm ${DIRECTION_STYLES[loan.loan_direction] || "badge-ghost"}`}
+                    className={`badge badge-sm gap-1.5 font-medium border-0 ${DIRECTION_STYLES[loan.loan_direction] || "badge-ghost"}`}
                   >
                     {DIRECTION_LABELS[loan.loan_direction] ||
                       loan.loan_direction}

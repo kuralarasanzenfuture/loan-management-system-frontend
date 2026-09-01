@@ -123,7 +123,7 @@ export default function ProfileDropdown() {
               <User size={15} className="text-base-content/40" /> My Profile
             </button>
           </li>
-          <li>
+          {/* <li>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -131,7 +131,7 @@ export default function ProfileDropdown() {
             >
               <CreditCard size={15} className="text-base-content/40" /> Billing
             </button>
-          </li>
+          </li> */}
           <li>
             <button
               type="button"

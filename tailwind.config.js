@@ -297,6 +297,115 @@ module.exports = {
   daisyui: {
     themes: [
       // =====================================================
+      // MERIDIAN BLUE
+      // CM MICRO FINANCE - BLUE THEME
+      // =====================================================
+      {
+        "cm-micro-blue-dark": {
+          // Main brand blue
+          primary: "#2563EB",
+          "primary-content": "#FFFFFF",
+
+          // Deep navy
+          secondary: "#0D1B3D",
+          "secondary-content": "#E6F0FF",
+
+          // Bright sky blue
+          accent: "#38BDF8",
+          "accent-content": "#0B132B",
+
+          // Neutral
+          neutral: "#0D1B3D",
+          "neutral-content": "#E6F0FF",
+
+          // Main backgrounds
+          "base-100": "#0B132B",
+          "base-200": "#0F172A",
+          "base-300": "#1E293B",
+          "base-content": "#E6EDF7",
+
+          // Information
+          info: "#3B82F6",
+          "info-content": "#FFFFFF",
+
+          // Success
+          success: "#22C55E",
+          "success-content": "#FFFFFF",
+
+          // Warning
+          warning: "#F59E0B",
+          "warning-content": "#0B132B",
+
+          // Error
+          error: "#EF4444",
+          "error-content": "#FFFFFF",
+
+          // Shape
+          "--rounded-box": "0.75rem",
+          "--rounded-btn": "0.5rem",
+          "--rounded-badge": "1.9rem",
+
+          // Animation
+          "--animation-btn": "0.25s",
+          "--animation-input": "0.2s",
+
+          // Button focus
+          "--btn-focus-scale": "0.98",
+        },
+      },
+
+      // =====================================================
+      // CM MICRO BLUE
+      // Clean Blue + White Finance Theme
+      // =====================================================
+      {
+        "cm-micro-blue": {
+          // Primary action / buttons / active navigation
+          primary: "#1769D5",
+          "primary-content": "#FFFFFF",
+
+          // Secondary navy
+          secondary: "#17345F",
+          "secondary-content": "#FFFFFF",
+
+          // Accent - subtle gold from your current branding
+          accent: "#C9A23A",
+          "accent-content": "#FFFFFF",
+
+          // Neutral
+          neutral: "#F1F5F9",
+          "neutral-content": "#172033",
+
+          // Main backgrounds
+          "base-100": "#FFFFFF",
+          "base-200": "#F7F9FC",
+          "base-300": "#E8EEF5",
+          "base-content": "#101828",
+
+          // Information
+          info: "#2F80ED",
+          "info-content": "#FFFFFF",
+
+          // Success
+          success: "#22A06B",
+          "success-content": "#FFFFFF",
+
+          // Warning
+          warning: "#D99A21",
+          "warning-content": "#FFFFFF",
+
+          // Error
+          error: "#D64545",
+          "error-content": "#FFFFFF",
+
+          // DaisyUI shape
+          "--rounded-box": "1rem",
+          "--rounded-btn": "0.5rem",
+          "--rounded-badge": "1.9rem",
+        },
+      },
+
+      // =====================================================
       // MERIDIAN LIGHT
       // =====================================================
       {

@@ -177,7 +177,7 @@ export default function LoanPlansPage() {
       {/* Page header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2 text-base-content">
+          <h1 className="text-xl font-semibold flex items-center gap-2 text-base-content">
             <Landmark size={20} className="text-primary" />
             Loan Plans & Penalties
           </h1>

@@ -190,7 +190,7 @@ export default function LoanCollectionPage() {
       {/* Header & Loan Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
+          <h1 className="text-xl font-semibold flex items-center gap-2">
             <IndianRupee size={22} className="text-primary" />
             Loan Collection
           </h1>

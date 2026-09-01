@@ -262,7 +262,7 @@ export default function CollectionDashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
+          <h1 className="text-xl font-semibold flex items-center gap-2">
             <IndianRupee size={22} className="text-primary" />
             Collection Dashboard
           </h1>

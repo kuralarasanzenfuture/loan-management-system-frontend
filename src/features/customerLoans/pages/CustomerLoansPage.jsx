@@ -245,7 +245,7 @@ export default function CustomerLoansPage() {
       {/* Page header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2 text-base-content">
+          <h1 className="text-xl font-semibold flex items-center gap-2 text-base-content">
             <HandCoins size={20} className="text-primary" />
             Customer Loans
           </h1>

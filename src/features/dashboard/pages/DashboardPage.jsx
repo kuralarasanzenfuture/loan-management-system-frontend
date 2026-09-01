@@ -256,7 +256,7 @@ export default function DashboardPage() {
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-base-content">
+          <h1 className="text-xl font-semibold text-base-content">
             Dashboard
           </h1>
           <p className="text-sm text-base-content/50 mt-1">

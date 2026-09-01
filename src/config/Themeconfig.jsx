@@ -6,6 +6,8 @@ import React from "react";
 export const THEMES = [
   "meridian-light",
   "meridian-dark",
+  "cm-micro-blue-dark",
+  "cm-micro-blue",
 
   "green",
   "mint",

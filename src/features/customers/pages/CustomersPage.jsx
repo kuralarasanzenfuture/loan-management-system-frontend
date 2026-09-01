@@ -226,7 +226,7 @@ export default function CustomersPage() {
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2 text-base-content">
+          <h1 className="text-xl font-semibold flex items-center gap-2 text-base-content">
             <Users size={20} className="text-primary" />
             Customers
           </h1>

@@ -17,15 +17,23 @@ export function PageHeader({ title, subtitle, action }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 animate-fadeUp">
       <div>
-        <h2 className="text-xl font-display font-bold">{title}</h2>
-        {subtitle && <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>}
+        <h1 className="text-xl font-semibold text-base-content">{title}</h1>
+
+        {subtitle && (
+          <p className="text-sm text-base-content/50 mt-0.5">{subtitle}</p>
+        )}
       </div>
+
       {action}
     </div>
   );
 }
 
-export function EmptyState({ title = "Nothing here yet", subtitle = "Data will appear once available.", icon: Icon }) {
+export function EmptyState({
+  title = "Nothing here yet",
+  subtitle = "Data will appear once available.",
+  icon: Icon,
+}) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-16">
       {Icon && (
