@@ -84,7 +84,7 @@ export default function Header({
         </button>
 
           <QuickSearch />
-        <NotificationBell />
+        {/* <NotificationBell /> */}
 
         <div className="divider divider-horizontal mx-0.5 h-6 self-center" />
 

@@ -20,7 +20,7 @@ function App() {
   // Initialize stored theme, font, density, and reduce-motion on app load
   useEffect(() => {
     // 1. Theme
-    const savedTheme = localStorage.getItem("meridian-theme") || "meridian-dark";
+    const savedTheme = localStorage.getItem("meridian-theme") || "cm-micro-blue";
     document.documentElement.setAttribute("data-theme", savedTheme);
 
     // 2. Font

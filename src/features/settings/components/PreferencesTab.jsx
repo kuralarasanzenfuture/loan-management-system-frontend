@@ -138,7 +138,7 @@ const THEME_CATEGORIES = [
 
 export default function PreferencesTab() {
   const [theme, setTheme] = useState(
-    () => localStorage.getItem("meridian-theme") || "meridian-dark"
+    () => localStorage.getItem("meridian-theme") || "cm-micro-blue"
   );
   const [themeFilter, setThemeFilter] = useState("all");
   const [themeSearch, setThemeSearch] = useState("");

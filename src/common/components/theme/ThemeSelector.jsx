@@ -404,7 +404,7 @@ export default function ThemeSelector() {
   const [open, setOpen] = useState(false);
 
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("meridian-theme") || "meridian-light";
+    return localStorage.getItem("meridian-theme") || "cm-micro-blue";
   });
 
   const rootRef = useRef(null);

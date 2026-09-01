@@ -39,7 +39,7 @@ export default function DataBackupTab() {
     const backupData = {
       version: "1.0.0",
       exportedAt: new Date().toISOString(),
-      theme: localStorage.getItem("meridian-theme") || "meridian-dark",
+      theme: localStorage.getItem("meridian-theme") || "cm-micro-blue",
       font: localStorage.getItem("meridian-font") || "inter",
       density: localStorage.getItem("meridian-density") || "comfortable",
       language: localStorage.getItem("meridian-language") || "en",
@@ -125,7 +125,7 @@ export default function DataBackupTab() {
   // Reset all preferences to default
   const handleConfirmReset = () => {
     const defaults = {
-      theme: "meridian-dark",
+      theme: "cm-micro-blue",
       font: "inter",
       density: "comfortable",
       language: "en",
