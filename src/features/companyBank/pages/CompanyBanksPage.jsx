@@ -12,6 +12,8 @@ import {
 import CompanyBankCard from "../components/CompanyBankCard.jsx";
 import CompanyBankFormModal from "../components/CompanyBankFormModal.jsx";
 import CompanyBankDeleteModal from "../components/CompanyBankDeleteModal.jsx";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 /**
  * CompanyBanksPage
@@ -20,11 +22,21 @@ import CompanyBankDeleteModal from "../components/CompanyBankDeleteModal.jsx";
  */
 export default function CompanyBanksPage({ companyId }) {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
   const {
     companyBanks: banks,
     loading,
     error,
   } = useSelector((state) => state.companyBanks);
+
+  const canView =
+    can(PERMISSIONS.BANK_ACCOUNT_VIEW) || can(PERMISSIONS.COMPANY_VIEW);
+  const canCreate =
+    can(PERMISSIONS.BANK_ACCOUNT_CREATE) || can(PERMISSIONS.COMPANY_EDIT);
+  const canEdit =
+    can(PERMISSIONS.BANK_ACCOUNT_EDIT) || can(PERMISSIONS.COMPANY_EDIT);
+  const canDelete =
+    can(PERMISSIONS.BANK_ACCOUNT_DELETE) || can(PERMISSIONS.COMPANY_EDIT);
 
   const [search, setSearch] = useState("");
   const [formModal, setFormModal] = useState(null);
@@ -34,8 +46,10 @@ export default function CompanyBanksPage({ companyId }) {
   const [primaryTargetId, setPrimaryTargetId] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchCompanyBanks());
-  }, [dispatch]);
+    if (canView) {
+      dispatch(fetchCompanyBanks());
+    }
+  }, [dispatch, canView]);
 
   // Filter to this company's banks (client-side unless the API supports ?company_id=)
   const companyBanksList = useMemo(
@@ -64,10 +78,12 @@ export default function CompanyBanksPage({ companyId }) {
   ).length;
 
   const handleOpenCreate = () => {
+    if (!canCreate) return;
     dispatch(clearCompanyBankError());
     setFormModal({});
   };
   const handleOpenEdit = (bank) => {
+    if (!canEdit) return;
     dispatch(clearCompanyBankError());
     setFormModal(bank);
   };
@@ -95,6 +111,7 @@ export default function CompanyBanksPage({ companyId }) {
   };
 
   const handleMakePrimary = async (bank) => {
+    if (!canEdit) return;
     setPrimaryTargetId(bank.id);
     try {
       await dispatch(makePrimaryCompanyBank(bank.id));
@@ -104,7 +121,7 @@ export default function CompanyBanksPage({ companyId }) {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || !canDelete) return;
     setDeleteSubmitting(true);
     try {
       const action = await dispatch(removeCompanyBank(deleteTarget.id));
@@ -113,6 +130,8 @@ export default function CompanyBanksPage({ companyId }) {
       setDeleteSubmitting(false);
     }
   };
+
+  if (!canView) return null;
 
   return (
     <div>
@@ -127,13 +146,15 @@ export default function CompanyBanksPage({ companyId }) {
             Manage collection, disbursement, and business bank accounts.
           </p>
         </div>
-        <button
-          className="btn btn-primary btn-sm gap-1.5"
-          onClick={handleOpenCreate}
-        >
-          <Plus size={16} />
-          Add bank account
-        </button>
+        {canCreate && (
+          <button
+            className="btn btn-primary btn-sm gap-1.5"
+            onClick={handleOpenCreate}
+          >
+            <Plus size={16} />
+            Add bank account
+          </button>
+        )}
       </div>
 
       {error && !formModal && !deleteTarget && (
@@ -217,6 +238,9 @@ export default function CompanyBanksPage({ companyId }) {
             <CompanyBankCard
               key={bank.id}
               bank={bank}
+              canView={canView}
+              canEdit={canEdit}
+              canDelete={canDelete}
               onEdit={handleOpenEdit}
               onDelete={setDeleteTarget}
               onMakePrimary={handleMakePrimary}

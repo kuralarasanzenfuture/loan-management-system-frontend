@@ -27,6 +27,8 @@ import {
 import CompanyBankFormModal from "../components/CompanyBankFormModal.jsx";
 import CompanyBankDeleteModal from "../components/CompanyBankDeleteModal.jsx";
 import BankTransactionsPage from "../../bankTransactions/pages/BankTransactionsPage.jsx";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 
 const STATUS_STYLES = {
   active: "badge-success badge-outline",
@@ -78,6 +80,11 @@ export default function CompanyBankViewPage() {
     loading,
     error,
   } = useSelector((state) => state.companyBanks);
+  const { can } = usePermissions();
+  const canEdit =
+    can(PERMISSIONS.BANK_ACCOUNT_EDIT) || can(PERMISSIONS.COMPANY_EDIT);
+  const canDelete =
+    can(PERMISSIONS.BANK_ACCOUNT_DELETE) || can(PERMISSIONS.COMPANY_EDIT);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -102,6 +109,7 @@ export default function CompanyBankViewPage() {
   };
 
   const handleEditSubmit = async (formData) => {
+    if (!canEdit) return;
     setFormSubmitting(true);
     try {
       const action = await dispatch(editCompanyBank({ id, formData }));
@@ -115,6 +123,7 @@ export default function CompanyBankViewPage() {
   };
 
   const handleMakePrimary = async () => {
+    if (!canEdit) return;
     setSettingPrimary(true);
     try {
       const action = await dispatch(makePrimaryCompanyBank(id));
@@ -127,6 +136,7 @@ export default function CompanyBankViewPage() {
   };
 
   const handleConfirmDelete = async () => {
+    if (!canDelete) return;
     setDeleteSubmitting(true);
     try {
       const action = await dispatch(removeCompanyBank(id));
@@ -149,7 +159,9 @@ export default function CompanyBankViewPage() {
 
   if (!bank) return null;
 
-  const bankLabel = `${bank.bank_name}${bank.account_number ? ` •••• ${bank.account_number.slice(-4)}` : ""}`;
+  const bankLabel = `${bank.bank_name || "Bank Account"}${
+    bank.account_number ? ` •••• ${bank.account_number.slice(-4)}` : ""
+  }`;
 
   return (
     <div className="space-y-6">
@@ -188,7 +200,7 @@ export default function CompanyBankViewPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {!bank.is_primary && (
+          {!bank.is_primary && canEdit && (
             <button
               onClick={handleMakePrimary}
               disabled={settingPrimary}
@@ -202,23 +214,27 @@ export default function CompanyBankViewPage() {
               Set as Primary
             </button>
           )}
-          <button
-            onClick={() => {
-              dispatch(clearCompanyBankError());
-              setEditModalOpen(true);
-            }}
-            className="btn btn-primary btn-sm gap-1.5"
-          >
-            <Pencil size={15} />
-            Edit
-          </button>
-          <button
-            onClick={() => setDeleteModalOpen(true)}
-            className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
-            title="Delete"
-          >
-            <Trash2 size={15} />
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => {
+                dispatch(clearCompanyBankError());
+                setEditModalOpen(true);
+              }}
+              className="btn btn-primary btn-sm gap-1.5"
+            >
+              <Pencil size={15} />
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={() => setDeleteModalOpen(true)}
+              className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+              title="Delete"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
         </div>
       </div>
 

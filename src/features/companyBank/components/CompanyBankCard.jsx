@@ -31,11 +31,17 @@ const PURPOSE_LABELS = {
  * CompanyBankCard
  * Props:
  * - bank (object)
+ * - canView (bool)
+ * - canEdit (bool)
+ * - canDelete (bool)
  * - onEdit (fn) / onDelete (fn) / onMakePrimary (fn)
  * - settingPrimary (bool) : loading state while this card's "make primary" call is in flight
  */
 export default function CompanyBankCard({
   bank,
+  canView = true,
+  canEdit = true,
+  canDelete = true,
   onEdit,
   onDelete,
   onMakePrimary,
@@ -48,7 +54,9 @@ export default function CompanyBankCard({
     : "—";
 
   const handleView = () => {
-    navigate(`/bank-accounts/${bank.id}`);
+    if (canView) {
+      navigate(`/bank-accounts/${bank.id}`);
+    }
   };
 
   return (
@@ -61,7 +69,7 @@ export default function CompanyBankCard({
     >
       {/* Header */}
       <div
-        className="flex items-start justify-between px-5 pt-5 cursor-pointer group"
+        className={`flex items-start justify-between px-5 pt-5 ${canView ? "cursor-pointer group" : ""}`}
         onClick={handleView}
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -95,58 +103,43 @@ export default function CompanyBankCard({
 
       {/* Account details */}
       <div
-        className="px-5 py-4 space-y-2 cursor-pointer"
+        className={`px-5 py-4 space-y-2 ${canView ? "cursor-pointer" : ""}`}
         onClick={handleView}
       >
-        <div className="flex justify-between text-xs">
-          <span className="text-base-content/40">Account Holder</span>
-          <span className="font-medium text-right truncate max-w-[60%]">
-            {bank.account_holder_name}
-          </span>
-        </div>
-        <div className="flex justify-between text-xs">
+        <div className="flex justify-between items-center text-xs">
           <span className="text-base-content/40">Account No.</span>
-          <span className="font-mono font-medium">{maskedAccount}</span>
+          <span className="font-mono font-semibold">{maskedAccount}</span>
         </div>
-        <div className="flex justify-between text-xs">
-          <span className="text-base-content/40">Account Type</span>
-          <span className="font-medium capitalize">
-            {bank.account_type?.replace(/_/g, " ")}
+
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-base-content/40">Holder</span>
+          <span className="font-medium truncate max-w-[140px]">
+            {bank.account_holder_name || "—"}
           </span>
         </div>
-        {bank.ifsc_code && (
-          <div className="flex justify-between text-xs">
-            <span className="text-base-content/40">IFSC</span>
-            <span className="font-mono font-medium">{bank.ifsc_code}</span>
-          </div>
-        )}
-        {bank.upi_id && (
-          <div className="flex justify-between text-xs">
-            <span className="text-base-content/40">UPI ID</span>
-            <span className="font-medium">{bank.upi_id}</span>
+
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-base-content/40">IFSC</span>
+          <span className="font-mono text-base-content/70">
+            {bank.ifsc_code || "—"}
+          </span>
+        </div>
+
+        {bank.current_balance !== undefined && (
+          <div className="flex justify-between items-center text-xs pt-1 border-t border-base-200">
+            <span className="text-base-content/40 flex items-center gap-1">
+              <IndianRupee size={11} /> Balance
+            </span>
+            <span className="font-bold text-sm text-base-content">
+              ₹{Number(bank.current_balance || 0).toLocaleString("en-IN")}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Balance strip */}
+      {/* Badges / Purpose strip */}
       <div
-        className="mx-5 rounded-xl bg-base-200/50 px-3.5 py-2.5 flex items-center justify-between cursor-pointer"
-        onClick={handleView}
-      >
-        <span className="flex items-center gap-1.5 text-[11px] text-base-content/50 font-medium">
-          <IndianRupee size={11} /> Current Balance
-        </span>
-        <span className="text-sm font-bold text-base-content">
-          ₹
-          {Number(bank.current_balance || 0).toLocaleString("en-IN", {
-            minimumFractionDigits: 2,
-          })}
-        </span>
-      </div>
-
-      {/* Purpose flags */}
-      <div
-        className="flex flex-wrap gap-1.5 px-5 mt-3 cursor-pointer"
+        className={`px-5 pb-3 flex items-center gap-1.5 flex-wrap ${canView ? "cursor-pointer" : ""}`}
         onClick={handleView}
       >
         <span className="badge badge-ghost badge-sm font-medium">
@@ -170,51 +163,61 @@ export default function CompanyBankCard({
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-between px-5 py-3.5 mt-3 border-t border-base-200">
-        {!bank.is_primary ? (
-          <button
-            type="button"
-            onClick={() => onMakePrimary(bank)}
-            disabled={settingPrimary}
-            className="btn btn-ghost btn-xs rounded-lg gap-1.5 text-base-content/50 hover:text-primary"
-          >
-            {settingPrimary ? (
-              <span className="loading loading-spinner loading-xs" />
-            ) : (
-              <Star size={12} />
-            )}
-            Set as primary
-          </button>
-        ) : (
-          <span className="text-[11px] text-base-content/30">
-            Primary account
-          </span>
-        )}
+      {(canEdit || canDelete || canView) && (
+        <div className="flex items-center justify-between px-5 py-3.5 mt-3 border-t border-base-200">
+          {!bank.is_primary ? (
+            canEdit ? (
+              <button
+                type="button"
+                onClick={() => onMakePrimary(bank)}
+                disabled={settingPrimary}
+                className="btn btn-ghost btn-xs rounded-lg gap-1.5 text-base-content/50 hover:text-primary"
+              >
+                {settingPrimary ? (
+                  <span className="loading loading-spinner loading-xs" />
+                ) : (
+                  <Star size={12} />
+                )}
+                Set as primary
+              </button>
+            ) : <span />
+          ) : (
+            <span className="text-[11px] text-base-content/30">
+              Primary account
+            </span>
+          )}
 
-        <div className="flex items-center gap-1">
-          <button
-            className="btn btn-ghost btn-xs btn-square text-info hover:bg-info/10"
-            onClick={handleView}
-            title="View Details"
-          >
-            <Eye size={13} />
-          </button>
-          <button
-            className="btn btn-ghost btn-xs btn-square"
-            onClick={() => onEdit(bank)}
-            title="Edit"
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            className="btn btn-ghost btn-xs btn-square text-error hover:bg-error/10"
-            onClick={() => onDelete(bank)}
-            title="Delete"
-          >
-            <Trash2 size={13} />
-          </button>
+          <div className="flex items-center gap-1">
+            {canView && (
+              <button
+                className="btn btn-ghost btn-xs btn-square text-info hover:bg-info/10"
+                onClick={handleView}
+                title="View Details"
+              >
+                <Eye size={13} />
+              </button>
+            )}
+            {canEdit && (
+              <button
+                className="btn btn-ghost btn-xs btn-square"
+                onClick={() => onEdit(bank)}
+                title="Edit"
+              >
+                <Pencil size={13} />
+              </button>
+            )}
+            {canDelete && (
+              <button
+                className="btn btn-ghost btn-xs btn-square text-error hover:bg-error/10"
+                onClick={() => onDelete(bank)}
+                title="Delete"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

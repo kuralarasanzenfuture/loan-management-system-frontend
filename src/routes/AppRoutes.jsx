@@ -364,22 +364,22 @@ const protectedRoutesConfig = [
   {
     path: "/bank-accounts",
     element: <CompanyBanksPage />,
-    permission: "BANK_VIEW",
+    permission: ["BANK_ACCOUNT_VIEW", "BANK_VIEW", "COMPANY_BANK_VIEW", "COMPANY_VIEW"],
   },
   {
     path: "/bank-accounts/:id",
     element: <CompanyBankViewPage />,
-    permission: "BANK_VIEW",
+    permission: ["BANK_ACCOUNT_VIEW", "BANK_VIEW", "COMPANY_BANK_VIEW", "COMPANY_VIEW"],
   },
   {
     path: "/bank-transactions",
     element: <BankTransactionsPage />,
-    permission: "BANK_VIEW",
+    permission: ["BANK_TRANSACTION_VIEW", "BANK_VIEW", "BANK_ACCOUNT_VIEW", "COMPANY_VIEW"],
   },
   {
     path: "/bank-transactions/:id",
     element: <BankTransactionViewPage />,
-    permission: "BANK_VIEW",
+    permission: ["BANK_TRANSACTION_VIEW", "BANK_VIEW", "BANK_ACCOUNT_VIEW", "COMPANY_VIEW"],
   },
 
   // Assets & Categories

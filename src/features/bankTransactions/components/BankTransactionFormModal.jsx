@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { X, Loader2, Receipt, ArrowDownLeft, ArrowUpRight, Landmark } from "lucide-react";
 import { REFERENCE_TYPE_LABELS, PAYMENT_METHOD_LABELS } from "../utils/transactionHelpers.js";
+import { fetchCompanyBanks } from "../../../redux/companyBanks/companyBankSlice.js";
 
 const emptyForm = {
+  company_bank_id: "",
   transaction_date: new Date().toISOString().slice(0, 16),
   transaction_type: "credit",
   amount: "",
@@ -19,25 +22,40 @@ const emptyForm = {
  * BankTransactionFormModal
  * Props:
  * - open (bool)
- * - bankId (number)      : company_bank_id — required (NOT NULL in schema)
- * - bankLabel (string)   : e.g. "HDFC Bank •••• 6789" for display
+ * - bankId (number|null)  : company_bank_id — if provided, locked; otherwise selectable
+ * - bankLabel (string)    : e.g. "HDFC Bank •••• 6789" for display
  * - loading (bool)
  * - error (string|object|null)
  * - onClose (fn)
  * - onSubmit (fn)
  */
 export default function BankTransactionFormModal({ open, bankId, bankLabel, loading, error, onClose, onSubmit }) {
+  const dispatch = useDispatch();
+  const { companyBanks = [], banks: legacyBanks = [] } = useSelector(
+    (state) => state.companyBanks || {}
+  );
+  const banks = companyBanks.length > 0 ? companyBanks : legacyBanks;
+
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (open) {
-      setForm({ ...emptyForm, transaction_date: new Date().toISOString().slice(0, 16) });
+      if (!banks || banks.length === 0) {
+        dispatch(fetchCompanyBanks());
+      }
+      setForm({
+        ...emptyForm,
+        company_bank_id: bankId || (banks[0]?.id ? String(banks[0].id) : ""),
+        transaction_date: new Date().toISOString().slice(0, 16),
+      });
       setFieldErrors({});
     }
-  }, [open]);
+  }, [open, bankId, dispatch, banks]);
 
   if (!open) return null;
+
+  const targetBankId = bankId || form.company_bank_id;
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -46,11 +64,11 @@ export default function BankTransactionFormModal({ open, bankId, bankLabel, load
 
   const validate = () => {
     const errors = {};
-    if (!bankId) errors.company_bank_id = "No bank account selected — cannot record a transaction";
+    if (!targetBankId) errors.company_bank_id = "Please select a bank account";
     if (!form.transaction_date) errors.transaction_date = "Select a date and time";
     if (!form.amount || Number(form.amount) <= 0) errors.amount = "Enter a valid amount";
     if (!form.reference_type) errors.reference_type = "Select a reference type";
-    if (form.payment_method === "cheque" && !form.cheque_number.trim())
+    if (form.payment_method === "cheque" && !form.cheque_number?.trim())
       errors.cheque_number = "Cheque number is required for cheque payments";
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -61,7 +79,7 @@ export default function BankTransactionFormModal({ open, bankId, bankLabel, load
     if (!validate()) return;
 
     const payload = {
-      company_bank_id: bankId,
+      company_bank_id: Number(targetBankId),
       transaction_date: form.transaction_date.replace("T", " ") + ":00",
       transaction_type: form.transaction_type,
       amount: Number(form.amount),
@@ -95,18 +113,34 @@ export default function BankTransactionFormModal({ open, bankId, bankLabel, load
           </button>
         </div>
 
-        {/* Bank account context — read-only display of company_bank_id target */}
-        <div className="flex items-center gap-2 mb-4 mt-1">
-          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 text-primary shrink-0">
-            <Landmark size={13} />
-          </span>
-          {bankId ? (
+        {/* Bank account selection/context */}
+        {bankId ? (
+          <div className="flex items-center gap-2 mb-4 mt-1">
+            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 text-primary shrink-0">
+              <Landmark size={13} />
+            </span>
             <p className="text-xs text-base-content/60 font-medium">{bankLabel || `Bank Account #${bankId}`}</p>
-          ) : (
-            <p className="text-xs text-error font-medium">No bank account selected</p>
-          )}
-        </div>
-        <FieldError field="company_bank_id" />
+          </div>
+        ) : (
+          <div className="form-control mb-3 mt-1">
+            <label className="label pb-1">
+              <span className="label-text text-xs font-semibold">Select Bank Account *</span>
+            </label>
+            <select
+              value={form.company_bank_id}
+              onChange={handleChange("company_bank_id")}
+              className={`select select-bordered select-sm rounded-lg w-full ${fieldErrors.company_bank_id ? "select-error" : ""}`}
+            >
+              <option value="" disabled>Choose bank account…</option>
+              {banks.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.bank_name} {b.account_number ? `(•••• ${b.account_number.slice(-4)})` : ""}
+                </option>
+              ))}
+            </select>
+            <FieldError field="company_bank_id" />
+          </div>
+        )}
 
         {error && (
           <div className="alert alert-error text-sm py-2 mb-4">

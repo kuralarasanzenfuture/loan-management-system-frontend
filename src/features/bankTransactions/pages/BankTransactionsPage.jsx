@@ -21,6 +21,8 @@ import ReverseTransactionModal from "../components/ReverseTransactionModal.jsx";
 import BankAccountScroller from "../components/BankAccountScroller.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 import {
   formatCurrency,
   REFERENCE_TYPE_LABELS,
@@ -48,6 +50,7 @@ export default function BankTransactionsPage({
 }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { can } = usePermissions();
 
   const { bankId: urlBankId } = useParams();
 
@@ -67,6 +70,19 @@ export default function BankTransactionsPage({
   const { bankTransactions, summary, loading, error } = useSelector(
     (state) => state.bankTransactions || {}
   );
+
+  const canView =
+    can(PERMISSIONS.BANK_TRANSACTION_VIEW) ||
+    can(PERMISSIONS.BANK_ACCOUNT_VIEW) ||
+    can(PERMISSIONS.COMPANY_VIEW);
+  const canCreate =
+    can(PERMISSIONS.BANK_TRANSACTION_CREATE) ||
+    can(PERMISSIONS.BANK_ACCOUNT_CREATE) ||
+    can(PERMISSIONS.COMPANY_EDIT);
+  const canReverse =
+    can(PERMISSIONS.BANK_TRANSACTION_DELETE) ||
+    can(PERMISSIONS.BANK_ACCOUNT_DELETE) ||
+    can(PERMISSIONS.COMPANY_EDIT);
 
   const [typeFilter, setTypeFilter] = useState("all");
   const [referenceFilter, setReferenceFilter] = useState("all");
@@ -91,20 +107,27 @@ export default function BankTransactionsPage({
   );
 
   useEffect(() => {
+    if (!canView) return;
     dispatch(fetchBankTransactions(queryParams));
     if (bankId) {
       dispatch(fetchBankTransactionSummary({ company_bank_id: bankId }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, JSON.stringify(queryParams)]);
+  }, [dispatch, canView, JSON.stringify(queryParams)]);
 
-  // Client-side filter as a safety net
+  // Client-side filter as a safety net to ensure only transactions of this specific bank are displayed
   const filteredTransactions = useMemo(() => {
     if (!bankTransactions || !Array.isArray(bankTransactions)) return [];
     if (!bankId) return bankTransactions;
-    return bankTransactions.filter(
-      (t) => String(t.company_bank_id) === String(bankId)
-    );
+    return bankTransactions.filter((t) => {
+      const txBankId =
+        t.company_bank_id ??
+        t.bank_id ??
+        t.bank_account_id ??
+        t.companyBankId ??
+        t.company_bank?.id;
+      return String(txBankId) === String(bankId);
+    });
   }, [bankTransactions, bankId]);
 
   const {
@@ -117,6 +140,7 @@ export default function BankTransactionsPage({
   } = usePagination({ data: filteredTransactions, initialSize: 15 });
 
   const handleOpenCreate = () => {
+    if (!canCreate) return;
     dispatch(clearBankTransactionError());
     setFormModal(true);
   };
@@ -143,7 +167,7 @@ export default function BankTransactionsPage({
   };
 
   const handleReverseConfirm = async () => {
-    if (!reverseTarget) return;
+    if (!reverseTarget || !canReverse) return;
     setReverseSubmitting(true);
     try {
       const action = await dispatch(
@@ -164,6 +188,8 @@ export default function BankTransactionsPage({
     }
   };
 
+  if (!canView) return null;
+
   const currentBankLabel = useMemo(() => {
     if (selectedBank) {
       const last4 = selectedBank.account_number
@@ -183,40 +209,34 @@ export default function BankTransactionsPage({
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <Receipt size={20} className="text-primary" />
-            Transactions
+            {bankIdProp ? "Bank Transactions Ledger" : "Transactions"}
           </h1>
           <p className="text-sm text-base-content/50 mt-1">
             {currentBankLabel}
           </p>
         </div>
-        <button
-          className="btn btn-primary btn-sm gap-1.5 w-full sm:w-auto"
-          onClick={handleOpenCreate}
-          disabled={!bankId}
-          title={
-            !bankId
-              ? "Select a bank account above to record transactions"
-              : undefined
-          }
-        >
-          <Plus size={16} />
-          New transaction
-        </button>
+        {canCreate && (
+          <button
+            className="btn btn-primary btn-sm gap-1.5 w-full sm:w-auto"
+            onClick={handleOpenCreate}
+          >
+            <Plus size={16} />
+            New transaction
+          </button>
+        )}
       </div>
 
-      {/* Interactive Bank Account Scroller */}
-      <BankAccountScroller
-        activeBankId={bankId}
-        onSelectBank={
-          !bankIdProp
-            ? (bank) => {
-                setSelectedBankId(bank ? bank.id : null);
-                setSelectedBank(bank || null);
-              }
-            : undefined
-        }
-        showAllOption={!bankIdProp}
-      />
+      {/* Interactive Bank Account Scroller (only rendered on standalone page, hidden when embedded inside a specific bank view) */}
+      {!bankIdProp && (
+        <BankAccountScroller
+          activeBankId={bankId}
+          onSelectBank={(bank) => {
+            setSelectedBankId(bank ? bank.id : null);
+            setSelectedBank(bank || null);
+          }}
+          showAllOption={true}
+        />
+      )}
 
       {error && !formModal && !reverseTarget && (
         <div className="alert alert-error text-sm py-2 mb-4">
@@ -331,8 +351,10 @@ export default function BankTransactionsPage({
         <BankTransactionTable
           transactions={pagedTransactions}
           loading={loading}
+          canView={canView}
+          canReverse={canReverse}
           onView={(t) => navigate(`/bank-transactions/${t.id}`)}
-          onReverse={setReverseTarget}
+          onReverse={canReverse ? setReverseTarget : undefined}
         />
         {totalItems > 0 && (
           <Pagination

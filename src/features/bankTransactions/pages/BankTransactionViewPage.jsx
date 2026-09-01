@@ -16,6 +16,8 @@ import {
   clearBankTransactionError,
 } from "../../../redux/bankTransactions/bankTransactionSlice.js";
 import ReverseTransactionModal from "../components/ReverseTransactionModal.jsx";
+import usePermissions from "../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../constants/permissions.js";
 import {
   REFERENCE_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -44,6 +46,12 @@ export default function BankTransactionViewPage() {
     error,
   } = useSelector((state) => state.bankTransactions);
 
+  const { can } = usePermissions();
+  const canReverse =
+    can(PERMISSIONS.BANK_TRANSACTION_DELETE) ||
+    can(PERMISSIONS.BANK_ACCOUNT_DELETE) ||
+    can(PERMISSIONS.COMPANY_EDIT);
+
   const [reverseOpen, setReverseOpen] = useState(false);
   const [reverseSubmitting, setReverseSubmitting] = useState(false);
 
@@ -53,6 +61,7 @@ export default function BankTransactionViewPage() {
   }, [dispatch, id]);
 
   const handleReverseConfirm = async () => {
+    if (!canReverse) return;
     setReverseSubmitting(true);
     try {
       const action = await dispatch(
@@ -118,7 +127,7 @@ export default function BankTransactionViewPage() {
           )}
         </div>
 
-        {!isReversed && (
+        {!isReversed && canReverse && (
           <button
             onClick={() => {
               dispatch(clearBankTransactionError());

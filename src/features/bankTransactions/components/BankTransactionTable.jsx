@@ -18,15 +18,21 @@ import {
  * Props:
  * - transactions (array)
  * - loading (bool)
+ * - canView (bool)
+ * - canReverse (bool)
  * - onView (fn)
  * - onReverse (fn)
  */
 export default function BankTransactionTable({
   transactions,
   loading,
+  canView = true,
+  canReverse = true,
   onView,
   onReverse,
 }) {
+  const showActions = canView || canReverse;
+
   if (loading && transactions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-base-content/40 gap-2">
@@ -63,7 +69,9 @@ export default function BankTransactionTable({
             <th className="font-medium">Method</th>
             <th className="font-medium text-right">Amount</th>
             <th className="font-medium text-right">Balance After</th>
-            <th className="text-right font-medium w-24">Actions</th>
+            {showActions && (
+              <th className="text-right font-medium w-24">Actions</th>
+            )}
           </tr>
         </thead>
 
@@ -95,8 +103,15 @@ export default function BankTransactionTable({
                       )}
                     </span>
                     <div>
-                      <div className="font-semibold text-sm font-mono">
-                        {txn.transaction_no}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-sm font-mono">
+                          {txn.transaction_no}
+                        </span>
+                        {(txn.bank_name || txn.company_bank?.bank_name) && (
+                          <span className="badge badge-ghost badge-xs text-[10px] opacity-75">
+                            {txn.bank_name || txn.company_bank?.bank_name}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-base-content/40 truncate max-w-[220px]">
                         {txn.description || "—"}
@@ -143,26 +158,30 @@ export default function BankTransactionTable({
                   {formatCurrency(txn.balance_after)}
                 </td>
 
-                <td>
-                  <div className="flex justify-end gap-1.5">
-                    <button
-                      className="btn btn-ghost btn-sm btn-square"
-                      onClick={() => onView(txn)}
-                      title="View"
-                    >
-                      <Eye size={15} />
-                    </button>
-                    {!isReversed && (
-                      <button
-                        className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
-                        onClick={() => onReverse(txn)}
-                        title="Reverse transaction"
-                      >
-                        <Undo2 size={15} />
-                      </button>
-                    )}
-                  </div>
-                </td>
+                {showActions && (
+                  <td>
+                    <div className="flex justify-end gap-1.5">
+                      {canView && (
+                        <button
+                          className="btn btn-ghost btn-sm btn-square"
+                          onClick={() => onView?.(txn)}
+                          title="View"
+                        >
+                          <Eye size={15} />
+                        </button>
+                      )}
+                      {!isReversed && canReverse && onReverse && (
+                        <button
+                          className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                          onClick={() => onReverse(txn)}
+                          title="Reverse transaction"
+                        >
+                          <Undo2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             );
           })}
