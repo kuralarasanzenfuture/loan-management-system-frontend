@@ -23,7 +23,7 @@ export const setUserPermissions = async (formData) => {
 export const getUserPermissions = async (userId) => {
   try {
     const response = await api.get(`/user-permissions/user/${userId}`);
-    console.table(response.data);
+    // console.table(response.data);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);

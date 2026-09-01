@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   ShieldCheck,
   Smartphone,
@@ -16,6 +17,7 @@ import {
   Copy,
   RefreshCw,
 } from "lucide-react";
+import { changePassword } from "../../../redux/users/userSlice.js";
 
 const INITIAL_SESSIONS = [
   {
@@ -72,9 +74,11 @@ const SECURITY_LOGS = [
 ];
 
 export default function SecurityTab() {
+  const dispatch = useDispatch();
+
   // 2FA state
   const [twoFactor, setTwoFactor] = useState(
-    () => localStorage.getItem("meridian-2fa") === "true"
+    () => localStorage.getItem("meridian-2fa") === "true",
   );
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
@@ -129,7 +133,7 @@ export default function SecurityTab() {
     }
   };
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     const errors = {};
     if (!pwForm.current) errors.current = "Current password is required";
@@ -146,13 +150,32 @@ export default function SecurityTab() {
     if (Object.keys(errors).length > 0) return;
 
     setPwLoading(true);
-    setTimeout(() => {
-      setPwLoading(false);
+    try {
+      await dispatch(
+        changePassword({
+          current_password: pwForm.current,
+          new_password: pwForm.newPw,
+        }),
+      ).unwrap();
+
       setPwSuccess(true);
       setPwForm({ current: "", newPw: "", confirmPw: "" });
       showToast("Password changed successfully!");
       setTimeout(() => setPwSuccess(false), 3000);
-    }, 800);
+    } catch (err) {
+      // A rejected change-password call almost always means the current
+      // password was wrong, so anchoring the server's error message there
+      // (rather than a generic top-of-form banner) points the user at the
+      // actual field to fix — same pattern as ProfilePage.jsx.
+      const message =
+        typeof err === "string"
+          ? err
+          : err?.message || "Couldn't update your password.";
+      setPwErrors({ current: message });
+      showToast(message);
+    } finally {
+      setPwLoading(false);
+    }
   };
 
   const handleToggle2FA = () => {
@@ -288,6 +311,7 @@ export default function SecurityTab() {
                 onChange={(e) =>
                   setPwForm((f) => ({ ...f, current: e.target.value }))
                 }
+                disabled={pwLoading}
                 className={`input input-bordered input-sm w-full pr-10 rounded-lg ${
                   pwErrors.current ? "input-error" : ""
                 }`}
@@ -325,6 +349,7 @@ export default function SecurityTab() {
                 onChange={(e) =>
                   setPwForm((f) => ({ ...f, newPw: e.target.value }))
                 }
+                disabled={pwLoading}
                 className={`input input-bordered input-sm w-full pr-10 rounded-lg ${
                   pwErrors.newPw ? "input-error" : ""
                 }`}
@@ -333,9 +358,7 @@ export default function SecurityTab() {
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content/70"
-                onClick={() =>
-                  setShowPw((s) => ({ ...s, newPw: !s.newPw }))
-                }
+                onClick={() => setShowPw((s) => ({ ...s, newPw: !s.newPw }))}
               >
                 {showPw.newPw ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
@@ -380,6 +403,7 @@ export default function SecurityTab() {
                 onChange={(e) =>
                   setPwForm((f) => ({ ...f, confirmPw: e.target.value }))
                 }
+                disabled={pwLoading}
                 className={`input input-bordered input-sm w-full pr-10 rounded-lg ${
                   pwErrors.confirmPw ? "input-error" : ""
                 }`}
@@ -535,7 +559,8 @@ export default function SecurityTab() {
               Set Up Two-Factor Authentication
             </h3>
             <p className="text-xs text-base-content/60 mt-1">
-              Scan this QR code with Google Authenticator, Microsoft Authenticator, or Authy.
+              Scan this QR code with Google Authenticator, Microsoft
+              Authenticator, or Authy.
             </p>
 
             <div className="my-5 flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-base-300">
@@ -583,7 +608,9 @@ export default function SecurityTab() {
                 maxLength={6}
                 placeholder="123456"
                 value={twoFactorCode}
-                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setTwoFactorCode(e.target.value.replace(/\D/g, ""))
+                }
                 className="input input-bordered input-sm tracking-widest text-center font-mono font-bold text-base rounded-lg"
               />
             </div>

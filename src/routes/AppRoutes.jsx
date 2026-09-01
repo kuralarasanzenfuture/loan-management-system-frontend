@@ -324,27 +324,58 @@ const protectedRoutesConfig = [
   },
 
   // Roles & Users
-  { path: "/roles", element: <RolesPage />, permission: "ROLE_VIEW" },
-  { path: "/users", element: <UsersPage />, permission: "USER_VIEW" },
+  // { path: "/roles", element: <RolesPage />, permission: "ROLE_VIEW" },
+  // { path: "/users", element: <UsersPage />, permission: "USER_VIEW" },
+  // {
+  //   path: "/role-permissions",
+  //   element: <RolePermissionsPage />,
+  //   permission: "ROLE_VIEW",
+  // },
+  // {
+  //   path: "/role-permissions/:roleId",
+  //   element: <RolePermissionsPage />,
+  //   permission: "ROLE_VIEW",
+  // },
+  // {
+  //   path: "/user-permissions",
+  //   element: <UserPermissionsPage />,
+  //   permission: "USER_VIEW",
+  // },
+  // {
+  //   path: "/user-permissions/:userId",
+  //   element: <UserPermissionsPage />,
+  //   permission: "USER_VIEW",
+  // },
+
+  {
+    path: "/roles",
+    element: <RolesPage />,
+    roles: ["ADMIN", "SUPER_ADMIN"],
+  },
+  {
+    path: "/users",
+    element: <UsersPage />,
+    roles: ["ADMIN", "SUPER_ADMIN"],
+  },
   {
     path: "/role-permissions",
     element: <RolePermissionsPage />,
-    permission: "ROLE_VIEW",
+    roles: ["ADMIN", "SUPER_ADMIN"],
   },
   {
     path: "/role-permissions/:roleId",
     element: <RolePermissionsPage />,
-    permission: "ROLE_VIEW",
+    roles: ["ADMIN", "SUPER_ADMIN"],
   },
   {
     path: "/user-permissions",
     element: <UserPermissionsPage />,
-    permission: "USER_VIEW",
+    roles: ["ADMIN", "SUPER_ADMIN"],
   },
   {
     path: "/user-permissions/:userId",
     element: <UserPermissionsPage />,
-    permission: "USER_VIEW",
+    roles: ["ADMIN", "SUPER_ADMIN"],
   },
 
   // Company Details
@@ -364,22 +395,42 @@ const protectedRoutesConfig = [
   {
     path: "/bank-accounts",
     element: <CompanyBanksPage />,
-    permission: ["BANK_ACCOUNT_VIEW", "BANK_VIEW", "COMPANY_BANK_VIEW", "COMPANY_VIEW"],
+    permission: [
+      "BANK_ACCOUNT_VIEW",
+      "BANK_VIEW",
+      "COMPANY_BANK_VIEW",
+      "COMPANY_VIEW",
+    ],
   },
   {
     path: "/bank-accounts/:id",
     element: <CompanyBankViewPage />,
-    permission: ["BANK_ACCOUNT_VIEW", "BANK_VIEW", "COMPANY_BANK_VIEW", "COMPANY_VIEW"],
+    permission: [
+      "BANK_ACCOUNT_VIEW",
+      "BANK_VIEW",
+      "COMPANY_BANK_VIEW",
+      "COMPANY_VIEW",
+    ],
   },
   {
     path: "/bank-transactions",
     element: <BankTransactionsPage />,
-    permission: ["BANK_TRANSACTION_VIEW", "BANK_VIEW", "BANK_ACCOUNT_VIEW", "COMPANY_VIEW"],
+    permission: [
+      "BANK_TRANSACTION_VIEW",
+      "BANK_VIEW",
+      "BANK_ACCOUNT_VIEW",
+      "COMPANY_VIEW",
+    ],
   },
   {
     path: "/bank-transactions/:id",
     element: <BankTransactionViewPage />,
-    permission: ["BANK_TRANSACTION_VIEW", "BANK_VIEW", "BANK_ACCOUNT_VIEW", "COMPANY_VIEW"],
+    permission: [
+      "BANK_TRANSACTION_VIEW",
+      "BANK_VIEW",
+      "BANK_ACCOUNT_VIEW",
+      "COMPANY_VIEW",
+    ],
   },
 
   // Assets & Categories
@@ -462,22 +513,22 @@ const protectedRoutesConfig = [
   {
     path: "/loan-reports",
     element: <LoanReportsPage />,
-    permission: "REPORT_VIEW",
+    permission: "LOAN_REPORT_VIEW",
   },
   {
     path: "/installment-reports",
     element: <InstallmentReportsPage />,
-    permission: "REPORT_VIEW",
+    permission: "LOAN_INSTALLMENT_REPORT_VIEW",
   },
   {
     path: "/customer-reports",
     element: <CustomerLoanSummaryPage />,
-    permission: "REPORT_VIEW",
+    permission: "CUSTOMER_REPORT_VIEW",
   },
   {
     path: "/reports/loan-collections",
     element: <CollectionReportsPage />,
-    permission: "REPORT_VIEW",
+    permission: "COLLECTION_REPORT_VIEW",
   },
 
   // Profile & Settings (Authenticated, no specific permission required)
@@ -498,10 +549,15 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute />}>
         {/* Main Application Layout */}
         <Route element={<MainLayout />}>
-          {protectedRoutesConfig.map(({ path, element, permission }) => (
+          {protectedRoutesConfig.map(({ path, element, permission, roles }) => (
             <Route
               key={path}
-              element={<ProtectedRoute requiredPermission={permission} />}
+              element={
+                <ProtectedRoute
+                  requiredPermission={permission}
+                  requiredRole={roles}
+                />
+              }
             >
               <Route path={path} element={element} />
             </Route>

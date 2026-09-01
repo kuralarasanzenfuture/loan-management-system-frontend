@@ -6,6 +6,7 @@ import {
   IndianRupee,
   TrendingUp,
   AlertTriangle,
+  ShieldOff,
 } from "lucide-react";
 import {
   fetchLoanReports,
@@ -15,9 +16,14 @@ import LoanReportFilters from "../components/LoanReportFilters.jsx";
 import LoanStatusBreakdownChart from "../components/LoanStatusBreakdownChart.jsx";
 import CollectionTrendChart from "../components/CollectionTrendChart.jsx";
 import { formatCurrency } from "../utils/loanReportHelpers.js";
+import usePermissions from "../../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../../constants/permissions.js";
 
 export default function LoanReportsPage() {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.LOAN_REPORT_VIEW);
+
   const {
     loanReportsSummary: summary,
     loanReportsCharts: charts,
@@ -32,10 +38,12 @@ export default function LoanReportsPage() {
   };
 
   useEffect(() => {
-    dispatch(fetchLoanReports(defaultParams));
+    if (canView) {
+      dispatch(fetchLoanReports(defaultParams));
+    }
     return () => dispatch(clearLoanReports());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
+  }, [dispatch, canView]);
 
   const handleApplyFilters = (params) => {
     dispatch(fetchLoanReports(params));
@@ -71,112 +79,121 @@ export default function LoanReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold flex items-center gap-2">
-          <FileBarChart2 size={20} className="text-primary" />
-          Loan Reports
-        </h1>
-        <p className="text-sm text-base-content/50 mt-1">
-          Portfolio performance, collections, and outstanding balances.
-        </p>
-      </div>
-
-      {error && (
-        <div className="alert alert-error text-sm py-2">
-          <span>
-            {typeof error === "string" ? error : "Something went wrong."}
-          </span>
-        </div>
-      )}
-
-      {/* Filters */}
-      <LoanReportFilters
-        onApply={handleApplyFilters}
-        onExport={handleExport}
-        hasResults={Boolean(summary)}
-      />
-
-      {loading && !summary ? (
-        <div className="flex flex-col items-center justify-center py-24 text-base-content/40 gap-2">
-          <span className="loading loading-spinner loading-md" />
-          <p className="text-sm">Loading reports…</p>
+      {!canView ? (
+        <div className="flex flex-col items-center justify-center py-24 text-base-content/40 gap-3">
+          <ShieldOff size={40} />
+          <p className="text-sm font-medium">You don't have permission to view Loan Reports.</p>
         </div>
       ) : (
         <>
-          {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
-              <div className="flex items-center gap-2 text-xs text-base-content/50 mb-1">
-                <Landmark size={13} /> Total Loans
-              </div>
-              <div className="text-xl font-bold leading-tight">
-                {summary?.total_loans ?? 0}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
-              <div className="flex items-center gap-2 text-xs text-base-content/50 mb-1">
-                <IndianRupee size={13} /> Disbursed
-              </div>
-              <div className="text-lg font-bold leading-tight">
-                {formatCurrency(summary?.total_disbursed)}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
-              <div className="flex items-center gap-2 text-xs text-base-content/50 mb-1">
-                <TrendingUp size={13} /> Expected
-              </div>
-              <div className="text-lg font-bold leading-tight">
-                {formatCurrency(summary?.total_expected)}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-success/20 bg-success/5 px-5 py-4">
-              <div className="flex items-center gap-2 text-xs text-base-content/60 mb-1">
-                <IndianRupee size={13} /> Collected
-              </div>
-              <div className="text-lg font-bold leading-tight text-success">
-                {formatCurrency(summary?.total_collected)}
-              </div>
-              <div className="text-[10px] text-base-content/40 mt-0.5">
-                {collectionRate}% of expected
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-error/20 bg-error/5 px-5 py-4">
-              <div className="flex items-center gap-2 text-xs text-base-content/60 mb-1">
-                <AlertTriangle size={13} /> Outstanding
-              </div>
-              <div className="text-lg font-bold leading-tight text-error">
-                {formatCurrency(summary?.total_outstanding)}
-              </div>
-            </div>
+          {/* Header */}
+          <div>
+            <h1 className="text-xl font-semibold flex items-center gap-2">
+              <FileBarChart2 size={20} className="text-primary" />
+              Loan Reports
+            </h1>
+            <p className="text-sm text-base-content/50 mt-1">
+              Portfolio performance, collections, and outstanding balances.
+            </p>
           </div>
 
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
-              <h3 className="font-bold text-sm tracking-tight mb-1">
-                Loan Status Breakdown
-              </h3>
-              <p className="text-[11px] text-base-content/40 mb-4">
-                Distribution of loans by current status
-              </p>
-              <LoanStatusBreakdownChart data={charts?.status_breakdown} />
+          {error && (
+            <div className="alert alert-error text-sm py-2">
+              <span>
+                {typeof error === "string" ? error : "Something went wrong."}
+              </span>
             </div>
+          )}
 
-            <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
-              <h3 className="font-bold text-sm tracking-tight mb-1">
-                Collection Trend
-              </h3>
-              <p className="text-[11px] text-base-content/40 mb-4">
-                Daily repayments collected in this period
-              </p>
-              <CollectionTrendChart data={charts?.collection_trend} />
+          {/* Filters */}
+          <LoanReportFilters
+            onApply={handleApplyFilters}
+            onExport={handleExport}
+            hasResults={Boolean(summary)}
+          />
+
+          {loading && !summary ? (
+            <div className="flex flex-col items-center justify-center py-24 text-base-content/40 gap-2">
+              <span className="loading loading-spinner loading-md" />
+              <p className="text-sm">Loading reports…</p>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
+                  <div className="flex items-center gap-2 text-xs text-base-content/50 mb-1">
+                    <Landmark size={13} /> Total Loans
+                  </div>
+                  <div className="text-xl font-bold leading-tight">
+                    {summary?.total_loans ?? 0}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
+                  <div className="flex items-center gap-2 text-xs text-base-content/50 mb-1">
+                    <IndianRupee size={13} /> Disbursed
+                  </div>
+                  <div className="text-lg font-bold leading-tight">
+                    {formatCurrency(summary?.total_disbursed)}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
+                  <div className="flex items-center gap-2 text-xs text-base-content/50 mb-1">
+                    <TrendingUp size={13} /> Expected
+                  </div>
+                  <div className="text-lg font-bold leading-tight">
+                    {formatCurrency(summary?.total_expected)}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-success/20 bg-success/5 px-5 py-4">
+                  <div className="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+                    <IndianRupee size={13} /> Collected
+                  </div>
+                  <div className="text-lg font-bold leading-tight text-success">
+                    {formatCurrency(summary?.total_collected)}
+                  </div>
+                  <div className="text-[10px] text-base-content/40 mt-0.5">
+                    {collectionRate}% of expected
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-error/20 bg-error/5 px-5 py-4">
+                  <div className="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+                    <AlertTriangle size={13} /> Outstanding
+                  </div>
+                  <div className="text-lg font-bold leading-tight text-error">
+                    {formatCurrency(summary?.total_outstanding)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
+                  <h3 className="font-bold text-sm tracking-tight mb-1">
+                    Loan Status Breakdown
+                  </h3>
+                  <p className="text-[11px] text-base-content/40 mb-4">
+                    Distribution of loans by current status
+                  </p>
+                  <LoanStatusBreakdownChart data={charts?.status_breakdown} />
+                </div>
+
+                <div className="rounded-2xl border border-base-300 bg-base-100 p-6">
+                  <h3 className="font-bold text-sm tracking-tight mb-1">
+                    Collection Trend
+                  </h3>
+                  <p className="text-[11px] text-base-content/40 mb-4">
+                    Daily repayments collected in this period
+                  </p>
+                  <CollectionTrendChart data={charts?.collection_trend} />
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

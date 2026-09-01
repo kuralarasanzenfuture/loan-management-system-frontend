@@ -18,7 +18,7 @@ import {
   HandCoins,
   Wallet,
 } from "lucide-react";
-import { PERMISSIONS } from "../../../../constants/permissions.js";
+import { PERMISSIONS, ROLES } from "../../../../constants/permissions.js";
 
 export const NAV_SECTIONS = [
   {
@@ -136,6 +136,36 @@ export const NAV_SECTIONS = [
     ],
   },
 
+  // {
+  //   label: "Administration",
+  //   items: [
+  //     {
+  //       label: "Users",
+  //       icon: UserCog,
+  //       path: "/users",
+  //       permission: PERMISSIONS.USER_VIEW,
+  //     },
+  //     {
+  //       label: "Roles",
+  //       icon: ShieldCheck,
+  //       path: "/roles",
+  //       permission: PERMISSIONS.ROLE_VIEW,
+  //     },
+  //     {
+  //       label: "Role Permissions",
+  //       icon: KeyRound,
+  //       path: "/role-permissions",
+  //       permission: PERMISSIONS.ROLE_PERMISSION_VIEW,
+  //     },
+  //     {
+  //       label: "User Permissions",
+  //       icon: KeyRound,
+  //       path: "/user-permissions",
+  //       permission: PERMISSIONS.USER_PERMISSION_VIEW,
+  //     },
+  //   ],
+  // },
+
   {
     label: "Administration",
     items: [
@@ -143,25 +173,25 @@ export const NAV_SECTIONS = [
         label: "Users",
         icon: UserCog,
         path: "/users",
-        permission: PERMISSIONS.USER_VIEW,
+        roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN],
       },
       {
         label: "Roles",
         icon: ShieldCheck,
         path: "/roles",
-        permission: PERMISSIONS.ROLE_VIEW,
+        roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN],
       },
       {
         label: "Role Permissions",
         icon: KeyRound,
         path: "/role-permissions",
-        permission: PERMISSIONS.ROLE_PERMISSION_VIEW,
+        roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN],
       },
       {
         label: "User Permissions",
         icon: KeyRound,
         path: "/user-permissions",
-        permission: PERMISSIONS.USER_PERMISSION_VIEW,
+        roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN],
       },
     ],
   },

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Users, Landmark, IndianRupee, AlertTriangle } from "lucide-react";
+import { Users, Landmark, IndianRupee, AlertTriangle, ShieldOff } from "lucide-react";
+import usePermissions from "../../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../../constants/permissions.js";
 import {
   fetchCustomerLoanSummary,
   clearSummary,
@@ -16,6 +18,9 @@ import {
 
 export default function CustomerLoanSummaryPage() {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.CUSTOMER_REPORT_VIEW);
+
   const {
     customerSummaries = [],
     customerSummaryCount = 0,
@@ -29,9 +34,11 @@ export default function CustomerLoanSummaryPage() {
 
   const loadData = useCallback(
     (filters = {}) => {
-      dispatch(fetchCustomerLoanSummary({ limit: 10000, ...filters }));
+      if (canView) {
+        dispatch(fetchCustomerLoanSummary({ limit: 10000, ...filters }));
+      }
     },
-    [dispatch],
+    [dispatch, canView],
   );
 
   useEffect(() => {
@@ -109,6 +116,13 @@ export default function CustomerLoanSummaryPage() {
 
   return (
     <div className="space-y-6">
+      {!canView ? (
+        <div className="flex flex-col items-center justify-center py-24 text-base-content/40 gap-3">
+          <ShieldOff size={40} />
+          <p className="text-sm font-medium">You don't have permission to view Customer Reports.</p>
+        </div>
+      ) : (
+        <>
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -202,6 +216,8 @@ export default function CustomerLoanSummaryPage() {
           />
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

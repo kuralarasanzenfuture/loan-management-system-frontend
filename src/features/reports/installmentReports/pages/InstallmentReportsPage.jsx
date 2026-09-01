@@ -6,6 +6,7 @@ import {
   IndianRupee,
   AlertTriangle,
   CheckCircle2,
+  ShieldOff,
 } from "lucide-react";
 import {
   fetchLoanInstallmentsReport,
@@ -19,9 +20,14 @@ import {
   formatCurrency,
   exportToCsv,
 } from "../utils/installmentReportHelpers.js";
+import usePermissions from "../../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../../constants/permissions.js";
 
 export default function InstallmentReportsPage() {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.LOAN_INSTALLMENT_REPORT_VIEW);
+
   const {
     installmentReports,
     installmentReportsCount,
@@ -30,9 +36,11 @@ export default function InstallmentReportsPage() {
   } = useSelector((state) => state.loanReports);
 
   useEffect(() => {
-    dispatch(fetchLoanInstallmentsReport({}));
+    if (canView) {
+      dispatch(fetchLoanInstallmentsReport({}));
+    }
     return () => dispatch(clearInstallmentReports());
-  }, [dispatch]);
+  }, [dispatch, canView]);
 
   const handleApplyFilters = (filters) => {
     dispatch(fetchLoanInstallmentsReport(filters));
@@ -76,6 +84,13 @@ export default function InstallmentReportsPage() {
 
   return (
     <div className="space-y-6">
+      {!canView ? (
+        <div className="flex flex-col items-center justify-center py-24 text-base-content/40 gap-3">
+          <ShieldOff size={40} />
+          <p className="text-sm font-medium">You don't have permission to view Installment Reports.</p>
+        </div>
+      ) : (
+        <>
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -184,6 +199,8 @@ export default function InstallmentReportsPage() {
           />
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

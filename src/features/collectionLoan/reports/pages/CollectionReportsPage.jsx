@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { FileBarChart2, IndianRupee, Receipt, Users } from "lucide-react";
+import { FileBarChart2, IndianRupee, Receipt, Users, ShieldOff } from "lucide-react";
+import usePermissions from "../../../../common/hooks/usePermissions.js";
+import { PERMISSIONS } from "../../../../constants/permissions.js";
 import {
   fetchCollectionReports,
   clearCollectionReports,
@@ -16,6 +18,9 @@ import {
 
 export default function CollectionReportsPage() {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
+  const canView = can(PERMISSIONS.COLLECTION_REPORT_VIEW);
+
   const {
     collectionReports = [],
     loading,
@@ -25,10 +30,12 @@ export default function CollectionReportsPage() {
   const [activeFilters, setActiveFilters] = useState({});
 
   useEffect(() => {
-    dispatch(fetchCollectionReports(activeFilters));
+    if (canView) {
+      dispatch(fetchCollectionReports(activeFilters));
+    }
     return () => dispatch(clearCollectionReports());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
+  }, [dispatch, canView]);
 
   const handleApplyFilters = (filters) => {
     setActiveFilters(filters);
@@ -78,6 +85,13 @@ export default function CollectionReportsPage() {
 
   return (
     <div className="space-y-6">
+      {!canView ? (
+        <div className="flex flex-col items-center justify-center py-24 text-base-content/40 gap-3">
+          <ShieldOff size={40} />
+          <p className="text-sm font-medium">You don't have permission to view Collection Reports.</p>
+        </div>
+      ) : (
+        <>
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -156,6 +170,8 @@ export default function CollectionReportsPage() {
           />
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

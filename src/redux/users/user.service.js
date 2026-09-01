@@ -44,3 +44,12 @@ export const deleteUser = async (id) => {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
+
+export const changeOwnPassword = async (formData) => {
+  try {
+    const response = await api.patch(`/users/change-password`, formData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};
