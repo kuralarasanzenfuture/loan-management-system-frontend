@@ -1,326 +1,890 @@
-import React, { useState, useEffect } from "react";
-import { X, Loader2, IndianRupee, AlertTriangle, ShieldAlert } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  X,
+  Loader2,
+  Receipt,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  IndianRupee,
+  ShieldAlert,
+  Printer,
+  Check,
+  Calendar,
+  User,
+  CreditCard,
+  Hash,
+} from "lucide-react";
 import {
   PAYMENT_MODES,
   formatCurrency,
   formatDate,
 } from "../utils/collectionHelpers.js";
+import { calculatePenalty } from "../../../redux/installments/installment.service.js";
+import { printInstallmentReceipt } from "../../customerLoans/utils/printLoanStatement.js";
 
 /**
  * PayInstallmentModal
- * Supports recording payment for both regular and overdue installments,
- * including principal EMI and calculated penalty amount breakdown.
+ * Used in Loan Collection & Due Collection modules.
+ *
+ * Supports:
+ * - Live penalty calculation API & overdue detection
+ * - Partial payments with remaining balance auto-detection
+ * - "Pay Penalty Later" deferral option
+ * - Payment Mode (Cash, Bank Transfer, UPI, Cheque) & Reference
+ * - Payment Successful Screen with instant Print Receipt action
  */
 export default function PayInstallmentModal({
   open,
   installment,
+  loan = null,
+  customer = null,
+  company = null,
   loading,
   error,
   onClose,
   onSubmit,
 }) {
-  const principal = installment ? Number(installment.principal_amount || 0) : 0;
-  const penalty = installment
-    ? Number(installment.penalty_amount || installment.calculated_penalty_amount || 0)
-    : 0;
-  const paid = installment ? Number(installment.paid_amount || 0) : 0;
-
-  // Calculate full total due and effective balance
-  const computedTotalDue = Number(
-    (installment?.total_due != null && Number(installment.total_due) >= principal + penalty)
-      ? Number(installment.total_due)
-      : (principal + penalty)
-  );
-
-  const rawBalance = installment ? Number(installment.balance_amount || 0) : 0;
-  const balance = Number(
-    Math.max(
-      rawBalance,
-      computedTotalDue - paid
-    ).toFixed(2)
-  );
-
-  const remainingPrincipal = Math.max(0, principal - paid);
-
   const [form, setForm] = useState({
-    paid_amount: "",
+    amount_paying_now: "",
     paid_date: new Date().toISOString().slice(0, 10),
+    penalty_amount: "0",
     payment_mode: "cash",
     transaction_reference: "",
   });
   const [fieldErrors, setFieldErrors] = useState({});
 
+  // Penalty calculation API state
+  const [penaltyApiData, setPenaltyApiData] = useState(null);
+  const [loadingPenalty, setLoadingPenalty] = useState(false);
+
+  // Defer penalty option
+  const [payPenaltyLater, setPayPenaltyLater] = useState(false);
+
+  // Success state for the confirmation receipt view
+  const [successData, setSuccessData] = useState(null);
+
+  // Canonical principal due
+  const principalAmount = useMemo(() => {
+    if (!installment) return 0;
+    return Number(
+      installment.principal_amount ??
+      installment.installment_amount ??
+      installment.total_due ??
+      0
+    );
+  }, [installment]);
+
+  // Amount already paid on this installment previously
+  const alreadyPaid = useMemo(() => {
+    if (!installment) return 0;
+    return Number(installment.paid_amount || 0);
+  }, [installment]);
+
+  // System calculated penalty from API
+  const calculatedPenalty = useMemo(() => {
+    if (!penaltyApiData) return 0;
+    return Math.max(0, Number(penaltyApiData?.penalty_amount || 0));
+  }, [penaltyApiData]);
+
+  // Max allowed penalty
+  const maxAllowedPenalty = useMemo(() => {
+    const fromInstallment = Number(installment?.penalty_amount || installment?.calculated_penalty_amount || 0);
+    return Math.max(calculatedPenalty, fromInstallment);
+  }, [calculatedPenalty, installment]);
+
+  // Dynamic penalty amount
+  const penaltyAmount = useMemo(() => {
+    if (!form.penalty_amount || isNaN(Number(form.penalty_amount))) return 0;
+    return Math.max(0, Number(form.penalty_amount));
+  }, [form.penalty_amount]);
+
+  // Total payable liability
+  const totalPayableLiability = useMemo(() => {
+    return Number((principalAmount + penaltyAmount).toFixed(2));
+  }, [principalAmount, penaltyAmount]);
+
+  // Remaining total due across principal + penalty
+  const remainingTotalDue = useMemo(() => {
+    return Math.max(0, Number((totalPayableLiability - alreadyPaid).toFixed(2)));
+  }, [totalPayableLiability, alreadyPaid]);
+
+  // Remaining principal due
+  const remainingPrincipalDue = useMemo(() => {
+    return Math.max(0, Number((principalAmount - alreadyPaid).toFixed(2)));
+  }, [principalAmount, alreadyPaid]);
+
+  // Maximum payment amount permitted in this transaction
+  const maxPayableNow = useMemo(() => {
+    if (payPenaltyLater) {
+      return remainingPrincipalDue > 0 ? remainingPrincipalDue : remainingTotalDue;
+    }
+    return remainingTotalDue;
+  }, [payPenaltyLater, remainingPrincipalDue, remainingTotalDue]);
+
+  // Current amount being paid in this session
+  const currentPayingNow = useMemo(() => {
+    const entered = Number(form.amount_paying_now || 0);
+    return isNaN(entered) || entered < 0 ? 0 : entered;
+  }, [form.amount_paying_now]);
+
+  // Projected cumulative paid sum
+  const projectedCumulativePaid = useMemo(() => {
+    return Number((alreadyPaid + currentPayingNow).toFixed(2));
+  }, [alreadyPaid, currentPayingNow]);
+
+  // Projected remaining balance after this payment
+  const projectedRemainingBalance = useMemo(() => {
+    return Math.max(0, Number((totalPayableLiability - projectedCumulativePaid).toFixed(2)));
+  }, [totalPayableLiability, projectedCumulativePaid]);
+
+  // Dynamic status based on cumulative total paid
+  const autoStatus = useMemo(() => {
+    if (projectedCumulativePaid >= totalPayableLiability && projectedCumulativePaid > 0) {
+      return "paid";
+    }
+    if (projectedCumulativePaid > 0 && projectedCumulativePaid < totalPayableLiability) {
+      return "partial";
+    }
+    return "pending";
+  }, [projectedCumulativePaid, totalPayableLiability]);
+
+  // Initialize on modal open
   useEffect(() => {
     if (open && installment) {
+      const principal = Number(
+        installment.principal_amount ??
+        installment.installment_amount ??
+        installment.total_due ??
+        0
+      );
+      const prevPaid = Number(installment.paid_amount || 0);
+      const existingPenalty = Number(installment.penalty_amount || installment.calculated_penalty_amount || 0);
+      const initialTotal = Number((principal + existingPenalty).toFixed(2));
+      const initialRemaining = Math.max(0, Number((initialTotal - prevPaid).toFixed(2)));
+
       setForm({
-        paid_amount: balance > 0 ? balance : "",
+        amount_paying_now: initialRemaining > 0 ? String(initialRemaining) : "",
         paid_date: new Date().toISOString().slice(0, 10),
+        penalty_amount: String(existingPenalty),
         payment_mode: "cash",
         transaction_reference: "",
       });
       setFieldErrors({});
+      setPayPenaltyLater(false);
+      setSuccessData(null);
+
+      // Fetch live penalty from API
+      let isSubscribed = true;
+      setLoadingPenalty(true);
+      calculatePenalty(installment.id)
+        .then((res) => {
+          if (!isSubscribed) return;
+          const data = res?.data?.data || res?.data || res;
+          setPenaltyApiData(data);
+
+          const apiPenalty = Math.max(0, Number(data?.penalty_amount || 0));
+
+          if (apiPenalty > 0 && existingPenalty === 0) {
+            const updatedTotal = Number((principal + apiPenalty).toFixed(2));
+            const updatedRemaining = Math.max(0, Number((updatedTotal - prevPaid).toFixed(2)));
+            setForm((prev) => ({
+              ...prev,
+              penalty_amount: String(apiPenalty),
+              amount_paying_now: String(updatedRemaining),
+            }));
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not calculate penalty from API:", err);
+        })
+        .finally(() => {
+          if (isSubscribed) setLoadingPenalty(false);
+        });
+
+      return () => {
+        isSubscribed = false;
+      };
     }
-  }, [open, installment, balance]);
+  }, [open, installment]);
 
   if (!open || !installment) return null;
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    setFieldErrors((prev) => ({ ...prev, [field]: null }));
+  // Handle Amount Paying Now change
+  const handleAmountPayingNowChange = (e) => {
+    const val = e.target.value;
+    setForm((prev) => ({ ...prev, amount_paying_now: val }));
+
+    if (val !== "") {
+      const num = Number(val);
+      if (num > maxPayableNow) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          amount_paying_now: `Amount cannot exceed remaining due of ${formatCurrency(maxPayableNow)}`,
+        }));
+      } else if (num <= 0) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          amount_paying_now: "Please enter an amount greater than 0",
+        }));
+      } else {
+        setFieldErrors((prev) => ({ ...prev, amount_paying_now: null }));
+      }
+    } else {
+      setFieldErrors((prev) => ({ ...prev, amount_paying_now: null }));
+    }
   };
 
-  const setQuickAmount = (val) =>
-    setForm((prev) => ({ ...prev, paid_amount: val }));
+  // Handle Penalty Change
+  const handlePenaltyChange = (e) => {
+    const val = e.target.value;
+    const num = Number(val || 0);
+
+    if (maxAllowedPenalty > 0 && num > maxAllowedPenalty) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        penalty_amount: `Penalty cannot exceed calculated limit of ${formatCurrency(maxAllowedPenalty)}`,
+      }));
+    } else {
+      setFieldErrors((prev) => ({ ...prev, penalty_amount: null }));
+    }
+
+    setForm((prev) => {
+      const newPenalty = Math.max(0, num);
+      const newTotal = Number((principalAmount + newPenalty).toFixed(2));
+      const newRemaining = Math.max(0, Number((newTotal - alreadyPaid).toFixed(2)));
+      const wasFullRemaining = Number(prev.amount_paying_now) === remainingTotalDue;
+
+      return {
+        ...prev,
+        penalty_amount: val,
+        amount_paying_now: wasFullRemaining && !payPenaltyLater ? String(newRemaining) : prev.amount_paying_now,
+      };
+    });
+  };
+
+  // Toggle "Pay Penalty Later"
+  const handleTogglePayPenaltyLater = (payLater) => {
+    setPayPenaltyLater(payLater);
+    setFieldErrors({});
+
+    if (payLater) {
+      setForm((prev) => ({
+        ...prev,
+        amount_paying_now: String(remainingPrincipalDue > 0 ? remainingPrincipalDue : remainingTotalDue),
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        amount_paying_now: String(remainingTotalDue),
+      }));
+    }
+  };
+
+  // Waive penalty to 0
+  const handleWaivePenalty = () => {
+    setForm((prev) => ({
+      ...prev,
+      penalty_amount: "0",
+      amount_paying_now: String(remainingPrincipalDue),
+    }));
+    setPayPenaltyLater(false);
+    setFieldErrors({});
+  };
+
+  // Quick action: Set remaining full payment
+  const handleSetFullRemainingPayment = () => {
+    setPayPenaltyLater(false);
+    setForm((prev) => ({
+      ...prev,
+      amount_paying_now: String(remainingTotalDue),
+    }));
+    setFieldErrors({});
+  };
 
   const validate = () => {
     const errors = {};
-    const amt = Number(form.paid_amount);
-    if (!form.paid_amount || amt <= 0) {
-      errors.paid_amount = "Enter a valid amount";
-    } else if (amt > balance + 0.01) {
-      errors.paid_amount = `Cannot exceed total payable balance of ${formatCurrency(balance)}`;
+    const payingNum = Number(form.amount_paying_now);
+    const penaltyNum = Number(form.penalty_amount || 0);
+
+    if (!form.amount_paying_now || isNaN(payingNum) || payingNum <= 0) {
+      errors.amount_paying_now = "Enter a valid amount greater than 0";
+    } else if (payingNum > maxPayableNow) {
+      errors.amount_paying_now = `Amount cannot exceed remaining payable of ${formatCurrency(maxPayableNow)}`;
     }
-    if (!form.paid_date) errors.paid_date = "Select a payment date";
+
+    if (maxAllowedPenalty > 0 && penaltyNum > maxAllowedPenalty) {
+      errors.penalty_amount = `Penalty cannot exceed calculated limit of ${formatCurrency(maxAllowedPenalty)}`;
+    }
+
+    if (!form.paid_date) {
+      errors.paid_date = "Select a payment date";
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    onSubmit({
+    const res = await onSubmit({
       id: installment.id,
-      penaltyAmount: penalty,
+      penaltyAmount: penaltyAmount,
+      amountPayingNow: currentPayingNow,
+      projectedCumulativePaid: projectedCumulativePaid,
       formData: {
-        payment_amount: Number(form.paid_amount),
-        paid_amount: Number(form.paid_amount),
-        penalty_amount: penalty > 0 ? penalty : undefined,
+        payment_amount: currentPayingNow,
+        paid_amount: currentPayingNow,
+        penalty_amount: penaltyAmount > 0 ? penaltyAmount : undefined,
         paid_date: form.paid_date,
         payment_mode: form.payment_mode,
         transaction_reference: form.transaction_reference.trim() || null,
       },
     });
+
+    if (res && res.success !== false) {
+      setSuccessData({
+        amountPaidNow: currentPayingNow,
+        cumulativePaid: projectedCumulativePaid,
+        remainingBalance: projectedRemainingBalance,
+        totalLiability: totalPayableLiability,
+        paidDate: form.paid_date,
+        paymentMode: form.payment_mode,
+        transactionReference: form.transaction_reference,
+        status: autoStatus,
+        receiptNo: `REC-${installment.id}-${Math.floor(1000 + Math.random() * 9000)}`,
+      });
+    }
   };
 
-  const resultingBalance = Math.max(balance - Number(form.paid_amount || 0), 0);
-  const willBePartial = resultingBalance > 0.009;
+  const handlePrintReceipt = () => {
+    if (!successData) return;
+    printInstallmentReceipt({
+      loan,
+      installment,
+      customer,
+      company,
+      successData,
+    });
+  };
+
+  const isAlreadyFullySettled = alreadyPaid >= totalPayableLiability && totalPayableLiability > 0;
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box max-w-md rounded-2xl">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="font-bold text-lg flex items-center gap-2">
-            <IndianRupee size={18} className="text-primary" />
-            Pay Installment #{installment.installment_no}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-ghost btn-sm btn-square"
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <p className="text-xs text-base-content/50 mb-3">
-          Due Date: {formatDate(installment.due_date) || "—"}
-          {installment.days_overdue != null && Number(installment.days_overdue) > 0 && (
-            <span className="text-error font-semibold ml-2">
-              ({installment.days_overdue} days overdue)
-            </span>
-          )}
-        </p>
-
-        {/* Overdue & Penalty Breakdown Box */}
-        {penalty > 0 ? (
-          <div className="rounded-xl border border-error/20 bg-error/5 p-3.5 mb-4 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-error">
-              <ShieldAlert size={14} /> Overdue Payment Breakdown
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-error/10">
-              <div>
-                <span className="text-base-content/60">EMI Principal:</span>
-                <span className="font-bold ml-1 text-base-content">
-                  {formatCurrency(principal)}
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-error font-medium">Late Penalty:</span>
-                <span className="font-bold ml-1 text-error">
-                  +{formatCurrency(penalty)}
-                </span>
+    <div className="modal modal-open z-50">
+      <div className="modal-box max-w-md rounded-2xl border border-base-300 shadow-2xl p-6 transition-all">
+        
+        {/* ================================================================= */}
+        {/* 1. PAYMENT SUCCESSFUL SCREEN                                      */}
+        {/* ================================================================= */}
+        {successData ? (
+          <div className="text-center space-y-4 py-1 animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Animated Radiant Green Check Icon */}
+            <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-success/20 animate-ping opacity-60" />
+              <div className="relative w-16 h-16 rounded-full bg-success/15 border-2 border-success/40 text-success flex items-center justify-center shadow-md">
+                <CheckCircle2 size={36} className="text-success stroke-[2.5]" />
               </div>
             </div>
-            <div className="flex items-center justify-between pt-1 border-t border-error/10 text-xs font-bold">
-              <span>Total Payable (EMI + Penalty):</span>
-              <span className="text-sm text-primary">{formatCurrency(balance)}</span>
+
+            <div>
+              <h3 className="font-extrabold text-xl text-base-content tracking-tight">
+                Collection Successful!
+              </h3>
+              <p className="text-xs text-base-content/60 mt-0.5">
+                Installment #{installment.installment_no} payment has been verified & recorded.
+              </p>
             </div>
+
+            {/* Collected Amount Card */}
+            <div className="rounded-2xl bg-gradient-to-b from-base-200/90 to-base-200/50 border border-base-300 p-4 text-center shadow-xs">
+              <div className="text-[10px] font-bold text-base-content/50 uppercase tracking-wider">
+                Amount Collected in this Transaction
+              </div>
+              <div className="text-3xl font-black text-primary font-mono mt-1">
+                {formatCurrency(successData.amountPaidNow)}
+              </div>
+              <div className="mt-2.5 inline-flex items-center gap-1.5">
+                {successData.status === "paid" ? (
+                  <span className="badge badge-success text-[11px] font-bold py-2.5 px-3 gap-1 shadow-xs">
+                    <CheckCircle2 size={13} /> Installment Cleared in Full
+                  </span>
+                ) : (
+                  <span className="badge badge-warning text-[11px] font-bold py-2.5 px-3 gap-1 shadow-xs">
+                    <Clock size={13} /> Partial Payment · {formatCurrency(successData.remainingBalance)} Remaining
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Receipt Summary Grid */}
+            <div className="rounded-xl border border-base-200 bg-base-100 p-3.5 text-xs text-left space-y-2">
+              <div className="flex justify-between items-center text-base-content/70">
+                <span className="flex items-center gap-1.5">
+                  <Receipt size={13} className="text-primary" /> Receipt Reference
+                </span>
+                <span className="font-bold font-mono text-base-content">{successData.receiptNo}</span>
+              </div>
+              
+              <div className="flex justify-between items-center text-base-content/70">
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={13} className="text-base-content/50" /> Payment Date
+                </span>
+                <span className="font-semibold text-base-content">
+                  {new Date(successData.paidDate).toLocaleDateString("en-GB")}
+                </span>
+              </div>
+
+              {(customer?.name || installment.customer_name) && (
+                <div className="flex justify-between items-center text-base-content/70">
+                  <span className="flex items-center gap-1.5">
+                    <User size={13} className="text-base-content/50" /> Customer
+                  </span>
+                  <span className="font-semibold text-base-content">
+                    {customer?.name || installment.customer_name}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-base-content/70">
+                <span className="flex items-center gap-1.5">
+                  <CreditCard size={13} className="text-base-content/50" /> Mode
+                </span>
+                <span className="font-semibold text-base-content capitalize">
+                  {successData.paymentMode} {successData.transactionReference ? `(${successData.transactionReference})` : ""}
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-base-200 flex justify-between items-center">
+                <span className="text-base-content/70">Cumulative Paid to Date</span>
+                <span className="font-bold text-mono text-base-content">
+                  {formatCurrency(successData.cumulativePaid)} of {formatCurrency(successData.totalLiability)}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center font-bold">
+                <span className="text-base-content/80">Remaining Installment Due</span>
+                <span className={`text-mono ${successData.remainingBalance > 0 ? "text-warning" : "text-success"}`}>
+                  {formatCurrency(successData.remainingBalance)}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons: Print Receipt & Done */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePrintReceipt}
+                className="btn btn-outline btn-sm rounded-xl gap-2 w-full sm:w-1/2 border-base-300 hover:border-primary hover:bg-primary/5 font-bold"
+              >
+                <Printer size={15} className="text-primary" />
+                <span>Print Receipt</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn-primary btn-sm rounded-xl gap-1.5 w-full sm:w-1/2 font-bold shadow-sm"
+              >
+                <Check size={16} />
+                <span>Done</span>
+              </button>
+            </div>
+
           </div>
         ) : (
-          <div className="rounded-xl bg-base-200/50 px-4 py-3 mb-4 flex items-center justify-between">
-            <span className="text-xs text-base-content/50 font-medium">
-              Outstanding Balance
-            </span>
-            <span className="text-lg font-bold text-base-content">
-              {formatCurrency(balance)}
-            </span>
-          </div>
-        )}
-
-        {error && (
-          <div className="alert alert-error text-sm py-2 mb-4">
-            <span>
-              {typeof error === "string" ? error : "Something went wrong."}
-            </span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="form-control">
-            <label className="label pb-1">
-              <span className="label-text text-xs font-semibold">
-                Amount to Collect / Pay (₹) *
-              </span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.paid_amount}
-              onChange={handleChange("paid_amount")}
-              className={`input input-bordered input-sm rounded-lg w-full font-semibold ${fieldErrors.paid_amount ? "input-error" : ""}`}
-              placeholder="0.00"
-            />
-            {fieldErrors.paid_amount && (
-              <span className="text-[11px] text-error mt-1">
-                {fieldErrors.paid_amount}
-              </span>
-            )}
-
-            {/* Quick Amount Selection Buttons */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
+          /* =============================================================== */
+          /* 2. PAYMENT INPUT FORM SCREEN                                    */
+          /* =============================================================== */
+          <>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-base-200 mb-4">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Receipt size={17} />
+                </span>
+                <div>
+                  <h3 className="font-bold text-base text-base-content leading-tight">
+                    {alreadyPaid > 0 ? "Record Subsequent Collection" : "Record Installment Collection"}
+                  </h3>
+                  <p className="text-[11px] text-base-content/50">
+                    Installment #{installment.installment_no} · Due {formatDate(installment.due_date) || "—"}
+                    {alreadyPaid > 0 && (
+                      <span className="text-warning font-semibold ml-1.5">(Partial Paid)</span>
+                    )}
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => setQuickAmount(balance)}
-                className="btn btn-neutral btn-xs rounded-lg font-medium"
+                onClick={onClose}
+                className="btn btn-ghost btn-xs btn-square text-base-content/50 hover:text-base-content"
+                aria-label="Close"
               >
-                {penalty > 0 ? "Full (EMI + Penalty)" : "Full Balance"} ({formatCurrency(balance)})
-              </button>
-
-              {penalty > 0 && remainingPrincipal > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setQuickAmount(remainingPrincipal)}
-                  className="btn btn-outline btn-xs rounded-lg"
-                  title="Pay only the principal EMI"
-                >
-                  Only EMI ({formatCurrency(remainingPrincipal)})
-                </button>
-              )}
-
-              {penalty > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setQuickAmount(penalty)}
-                  className="btn btn-outline btn-xs rounded-lg text-error"
-                  title="Pay only penalty"
-                >
-                  Only Penalty ({formatCurrency(penalty)})
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setQuickAmount(Number((balance / 2).toFixed(2)))}
-                className="btn btn-ghost btn-xs rounded-lg"
-              >
-                Half ({formatCurrency((balance / 2).toFixed(2))})
+                <X size={16} />
               </button>
             </div>
 
-            {willBePartial && Number(form.paid_amount) > 0 && (
-              <p className="text-[11px] text-warning mt-2">
-                Leaves {formatCurrency(resultingBalance)} balance — marked as "partial".
-              </p>
+            {/* Backend Error Alert */}
+            {error && (
+              <div className="flex items-start gap-2 p-3 mb-4 rounded-xl bg-error/10 border border-error/20 text-error text-xs">
+                <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                <div className="font-medium">
+                  {typeof error === "string" ? error : "Failed to record payment. Please verify the amount."}
+                </div>
+              </div>
             )}
-          </div>
 
-          <div className="form-control">
-            <label className="label pb-1">
-              <span className="label-text text-xs font-semibold">
-                Payment Date *
-              </span>
-            </label>
-            <input
-              type="date"
-              value={form.paid_date}
-              onChange={handleChange("paid_date")}
-              className={`input input-bordered input-sm rounded-lg w-full ${fieldErrors.paid_date ? "input-error" : ""}`}
-            />
-            {fieldErrors.paid_date && (
-              <span className="text-[11px] text-error mt-1">
-                {fieldErrors.paid_date}
-              </span>
+            {/* Overdue Banner with Policy Calculated Penalty */}
+            {loadingPenalty ? (
+              <div className="flex items-center gap-2 p-2.5 mb-3 rounded-xl bg-base-200/50 text-[11px] text-base-content/60">
+                <Loader2 size={13} className="animate-spin text-primary shrink-0" />
+                <span>Calculating system penalty from active loan policy…</span>
+              </div>
+            ) : penaltyApiData && penaltyApiData.days_overdue > 0 ? (
+              <div className="p-3 mb-3.5 rounded-xl bg-warning/10 border border-warning/25 text-warning-content text-xs space-y-1">
+                <div className="flex items-center justify-between font-bold">
+                  <span className="flex items-center gap-1.5 text-warning">
+                    <ShieldAlert size={14} />
+                    Installment Overdue
+                  </span>
+                  <span className="text-mono font-bold text-error">
+                    {penaltyApiData.days_overdue} Days Late ({penaltyApiData.penalty_days} Penalty Days)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-base-content/70 pt-0.5">
+                  <span>Policy Calculated Penalty:</span>
+                  <span className="font-bold text-mono text-error">
+                    {formatCurrency(penaltyApiData.penalty_amount)}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Financial Breakdown Card with Remaining Due Clarity */}
+            <div className="rounded-xl bg-base-200/60 border border-base-300/80 p-3.5 mb-4 text-xs space-y-2">
+              <div className="flex justify-between items-center text-base-content/70">
+                <span>Total Installment Amount</span>
+                <span className="font-semibold text-base-content text-mono">
+                  {formatCurrency(principalAmount)}
+                </span>
+              </div>
+
+              {penaltyAmount > 0 && (
+                <div className="flex justify-between items-center text-base-content/70">
+                  <span>Late Fee / Penalty</span>
+                  <span className="font-semibold text-mono text-error">
+                    + {formatCurrency(penaltyAmount)}
+                  </span>
+                </div>
+              )}
+
+              {alreadyPaid > 0 && (
+                <div className="flex justify-between items-center text-success font-medium">
+                  <span>Already Paid Previously</span>
+                  <span className="font-bold text-mono">
+                    - {formatCurrency(alreadyPaid)}
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-base-300 flex justify-between items-center">
+                <div>
+                  <span className="font-bold text-base-content text-xs">Remaining Balance Due</span>
+                  {alreadyPaid > 0 && (
+                    <div className="text-[10px] text-base-content/50">
+                      Total {formatCurrency(totalPayableLiability)} less {formatCurrency(alreadyPaid)} paid
+                    </div>
+                  )}
+                </div>
+                <span className="font-bold text-base text-primary text-mono">
+                  {formatCurrency(remainingTotalDue)}
+                </span>
+              </div>
+            </div>
+
+            {/* Fully Settled Alert */}
+            {isAlreadyFullySettled ? (
+              <div className="p-4 mb-4 rounded-xl bg-success/10 border border-success/20 text-success text-center space-y-1">
+                <CheckCircle2 size={24} className="mx-auto text-success mb-1" />
+                <div className="font-bold text-sm">Installment Fully Settled</div>
+                <p className="text-xs text-base-content/70">
+                  This installment has already been paid in full ({formatCurrency(alreadyPaid)} collected). No further dues remaining.
+                </p>
+                <div className="pt-3">
+                  <button type="button" onClick={onClose} className="btn btn-outline btn-sm rounded-xl">
+                    Close Window
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Penalty Options: Pay Now vs Pay Later */}
+                {penaltyAmount > 0 && (
+                  <div className="rounded-xl border border-base-300 bg-base-100 p-3 mb-4 space-y-2 text-xs">
+                    <div className="flex items-center justify-between font-bold text-base-content/80 text-[11px] uppercase tracking-wider">
+                      <span>Penalty Payment Option</span>
+                      <button
+                        type="button"
+                        onClick={handleWaivePenalty}
+                        className="text-[10px] font-bold text-error hover:underline"
+                      >
+                        Waive Penalty (₹0)
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePayPenaltyLater(false)}
+                        className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
+                          !payPenaltyLater
+                            ? "border-primary bg-primary/10 text-primary font-bold shadow-xs"
+                            : "border-base-300 bg-base-200/40 text-base-content/70 hover:border-base-content/30"
+                        }`}
+                      >
+                        <span className="text-xs font-bold">Pay Penalty Now</span>
+                        <span className="text-[10px] opacity-70">
+                          Pay {formatCurrency(remainingTotalDue)} in full
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePayPenaltyLater(true)}
+                        className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
+                          payPenaltyLater
+                            ? "border-warning bg-warning/15 text-warning font-bold shadow-xs"
+                            : "border-base-300 bg-base-200/40 text-base-content/70 hover:border-base-content/30"
+                        }`}
+                      >
+                        <span className="text-xs font-bold">Pay Penalty Later</span>
+                        <span className="text-[10px] opacity-70">
+                          Pay {formatCurrency(remainingPrincipalDue)} · Defer penalty
+                        </span>
+                      </button>
+                    </div>
+
+                    {payPenaltyLater && (
+                      <p className="text-[11px] text-warning font-medium leading-tight pt-1">
+                        Notice: Collecting <strong>{formatCurrency(remainingPrincipalDue)}</strong> toward remaining principal now. Penalty of <strong>{formatCurrency(penaltyAmount)}</strong> remains recorded and will be collected later.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-3.5">
+                  
+                  {/* Amount to Pay Now Input */}
+                  <div className="form-control">
+                    <div className="flex items-center justify-between pb-1">
+                      <label className="text-xs font-semibold text-base-content/80" htmlFor="collection-amount-now-input">
+                        Amount to Collect Now (₹) *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSetFullRemainingPayment}
+                        className="text-[11px] font-semibold text-primary hover:underline"
+                      >
+                        Pay Remaining ({formatCurrency(remainingTotalDue)})
+                      </button>
+                    </div>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-base-content/40 text-xs font-bold pointer-events-none">
+                        ₹
+                      </span>
+                      <input
+                        id="collection-amount-now-input"
+                        type="number"
+                        min="0.01"
+                        max={maxPayableNow}
+                        step="0.01"
+                        required
+                        value={form.amount_paying_now}
+                        onChange={handleAmountPayingNowChange}
+                        placeholder={`Max ${maxPayableNow}`}
+                        className={`input input-bordered input-sm rounded-xl pl-7 w-full font-medium ${
+                          fieldErrors.amount_paying_now ? "input-error border-error" : ""
+                        }`}
+                      />
+                    </div>
+                    {fieldErrors.amount_paying_now && (
+                      <span className="text-[11px] text-error mt-1 flex items-center gap-1 font-medium">
+                        <AlertCircle size={12} />
+                        {fieldErrors.amount_paying_now}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Payment Date & Penalty Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Payment Date */}
+                    <div className="form-control">
+                      <label className="label pb-1" htmlFor="collection-date-input">
+                        <span className="label-text text-xs font-semibold">Payment Date *</span>
+                      </label>
+                      <input
+                        id="collection-date-input"
+                        type="date"
+                        required
+                        value={form.paid_date}
+                        onChange={(e) => {
+                          setForm((prev) => ({ ...prev, paid_date: e.target.value }));
+                          setFieldErrors((prev) => ({ ...prev, paid_date: null }));
+                        }}
+                        className={`input input-bordered input-sm rounded-xl w-full font-medium ${
+                          fieldErrors.paid_date ? "input-error border-error" : ""
+                        }`}
+                      />
+                      {fieldErrors.paid_date && (
+                        <span className="text-[11px] text-error mt-1">{fieldErrors.paid_date}</span>
+                      )}
+                    </div>
+
+                    {/* Penalty Input with Cap */}
+                    <div className="form-control">
+                      <div className="flex items-center justify-between pb-1">
+                        <label className="text-xs font-semibold text-base-content/80" htmlFor="collection-penalty-input">
+                          Penalty (₹)
+                        </label>
+                        {maxAllowedPenalty > 0 && (
+                          <span className="text-[10px] text-base-content/50">
+                            Max: ₹{maxAllowedPenalty}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        id="collection-penalty-input"
+                        type="number"
+                        min="0"
+                        max={maxAllowedPenalty > 0 ? maxAllowedPenalty : undefined}
+                        step="0.01"
+                        value={form.penalty_amount}
+                        onChange={handlePenaltyChange}
+                        placeholder="0"
+                        className={`input input-bordered input-sm rounded-xl w-full font-medium ${
+                          fieldErrors.penalty_amount ? "input-error border-error" : ""
+                        }`}
+                      />
+                      {fieldErrors.penalty_amount && (
+                        <span className="text-[10px] text-error mt-1 flex items-center gap-1 font-medium">
+                          <AlertCircle size={11} />
+                          {fieldErrors.penalty_amount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Payment Mode & Reference */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="form-control">
+                      <label className="label pb-1">
+                        <span className="label-text text-xs font-semibold">Payment Mode</span>
+                      </label>
+                      <select
+                        value={form.payment_mode}
+                        onChange={(e) => setForm((prev) => ({ ...prev, payment_mode: e.target.value }))}
+                        className="select select-bordered select-sm rounded-xl w-full capitalize font-medium"
+                      >
+                        {PAYMENT_MODES.map((m) => (
+                          <option key={m} value={m} className="capitalize">
+                            {m.charAt(0).toUpperCase() + m.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-control">
+                      <label className="label pb-1">
+                        <span className="label-text text-xs font-semibold">Reference / Note</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={form.transaction_reference}
+                        onChange={(e) => setForm((prev) => ({ ...prev, transaction_reference: e.target.value }))}
+                        placeholder="UTR / Cheque #"
+                        className="input input-bordered input-sm rounded-xl w-full font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Automatic Status & Cumulative Accounting Summary */}
+                  <div className="rounded-xl border border-base-300 bg-base-200/40 p-3 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">
+                        New Installment Status
+                      </div>
+                      <div className="mt-1">
+                        {autoStatus === "paid" && (
+                          <span className="badge badge-success gap-1 text-[11px] font-bold text-success-content py-2 px-2.5">
+                            <CheckCircle2 size={12} />
+                            Paid (Full Settlement)
+                          </span>
+                        )}
+                        {autoStatus === "partial" && (
+                          <span className="badge badge-warning gap-1 text-[11px] font-bold text-warning-content py-2 px-2.5">
+                            <Clock size={12} />
+                            Partial Payment
+                          </span>
+                        )}
+                        {autoStatus === "pending" && (
+                          <span className="badge badge-ghost text-[11px] font-medium py-2 px-2.5">
+                            Pending (Unpaid)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">
+                        Remaining After Payment
+                      </div>
+                      <div className="text-sm font-bold text-mono text-base-content mt-0.5">
+                        {formatCurrency(projectedRemainingBalance)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cumulative Progress Pill */}
+                  {alreadyPaid > 0 && currentPayingNow > 0 && (
+                    <div className="text-[11px] text-base-content/60 bg-base-200/70 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                      <span>Ledger Progress:</span>
+                      <span className="font-mono font-medium">
+                        {formatCurrency(alreadyPaid)} + <strong className="text-primary">{formatCurrency(currentPayingNow)}</strong> = <strong>{formatCurrency(projectedCumulativePaid)}</strong> of {formatCurrency(totalPayableLiability)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Modal Action Buttons */}
+                  <div className="modal-action mt-5 pt-3 border-t border-base-200 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={loading}
+                      className="btn btn-ghost btn-sm rounded-xl"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading || Boolean(fieldErrors.amount_paying_now) || Boolean(fieldErrors.penalty_amount)}
+                      className="btn btn-primary btn-sm rounded-xl gap-1.5 shadow-sm font-bold"
+                    >
+                      {loading && <Loader2 size={14} className="animate-spin" />}
+                      <span>Confirm Collection</span>
+                    </button>
+                  </div>
+                </form>
+              </>
             )}
-          </div>
+          </>
+        )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="form-control">
-              <label className="label pb-1">
-                <span className="label-text text-xs font-semibold">
-                  Payment Mode
-                </span>
-              </label>
-              <select
-                value={form.payment_mode}
-                onChange={handleChange("payment_mode")}
-                className="select select-bordered select-sm rounded-lg w-full capitalize"
-              >
-                {PAYMENT_MODES.map((m) => (
-                  <option key={m} value={m} className="capitalize">
-                    {m.charAt(0).toUpperCase() + m.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-control">
-              <label className="label pb-1">
-                <span className="label-text text-xs font-semibold">
-                  Reference
-                </span>
-              </label>
-              <input
-                type="text"
-                value={form.transaction_reference}
-                onChange={handleChange("transaction_reference")}
-                className="input input-bordered input-sm rounded-lg w-full"
-                placeholder="UTR / UPI Ref"
-              />
-            </div>
-          </div>
-
-          <div className="modal-action mt-5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-ghost btn-sm rounded-lg"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary btn-sm rounded-lg gap-1.5"
-            >
-              {loading && <Loader2 size={14} className="animate-spin" />}
-              Record Payment
-            </button>
-          </div>
-        </form>
       </div>
-      <div className="modal-backdrop bg-black/40" onClick={onClose} />
+      <div className="modal-backdrop bg-black/50 backdrop-blur-xs" onClick={onClose} />
     </div>
   );
 }

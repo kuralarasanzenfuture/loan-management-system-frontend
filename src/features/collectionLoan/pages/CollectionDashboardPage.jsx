@@ -27,6 +27,7 @@ import PayInstallmentModal from "../components/PayInstallmentModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
 import { formatCurrency } from "../utils/collectionHelpers.js";
+import { fetchCompanyDetails } from "../../../redux/companyDetails/companyDetailsSlice.js";
 import PaymentSuccessModal from "../components/PaymentSuccessModal.jsx";
 import usePermissions from "../../../common/hooks/usePermissions.js";
 import { PERMISSIONS } from "../../../constants/permissions.js";
@@ -64,6 +65,7 @@ export default function CollectionDashboardPage() {
     loading,
     error,
   } = useSelector((state) => state.installments);
+  const { company } = useSelector((state) => state.companyDetails);
 
   const [activeTab, setActiveTab] = useState("today");
   const [selectedDate, setSelectedDate] = useState(
@@ -81,6 +83,7 @@ export default function CollectionDashboardPage() {
   const loadData = () => {
     dispatch(fetchTodayCollections(selectedDate));
     dispatch(fetchOverdueInstallmentsGlobal());
+    dispatch(fetchCompanyDetails());
   };
 
   useEffect(() => {
@@ -166,29 +169,11 @@ export default function CollectionDashboardPage() {
 
       const action = await dispatch(payInstallmentAction({ id, formData }));
       if (payInstallmentAction.fulfilled.match(action)) {
-        setPayTarget(null);
-
-        // `action.payload` is whatever your payInstallmentAction thunk
-        // resolves with — adjust these field reads to match its actual
-        // shape (e.g. action.payload.data?.pending_amount instead of
-        // action.payload.pending_amount, if your API wraps responses in
-        // { data: ... }).
-        const updated = action.payload?.data ?? action.payload ?? {};
-
-        setPaySuccessData({
-          amount: Number(formData.paid_amount || formData.payment_amount || 0),
-          installmentNo: formData.installment_no ?? updated.installment_no,
-          paymentDate:
-            formData.payment_date || new Date().toISOString().slice(0, 10),
-          paymentMode: formData.payment_mode,
-          transactionReference: formData.transaction_reference,
-          penaltyAmount: Number(penaltyAmount || 0),
-          remainingBalance: updated.pending_amount,
-          status: updated.status,
-        });
-
         // Refresh collections
         loadData();
+        return { success: true, data: action.payload };
+      } else {
+        return { success: false, error: action.payload };
       }
     } finally {
       setPaySubmitting(false);
@@ -484,10 +469,11 @@ export default function CollectionDashboardPage() {
         )}
       </div>
 
-      {/* Pay Modal for Direct Payment Recording */}
+      {/* Pay Modal for Direct Payment Recording with Receipt & Success UI */}
       <PayInstallmentModal
         open={Boolean(payTarget)}
         installment={payTarget}
+        company={company}
         loading={paySubmitting}
         error={payTarget ? error : null}
         onClose={() => setPayTarget(null)}
@@ -497,6 +483,7 @@ export default function CollectionDashboardPage() {
       <PaymentSuccessModal
         open={Boolean(paySuccessData)}
         data={paySuccessData}
+        company={company}
         onClose={() => setPaySuccessData(null)}
         formatCurrency={formatCurrency}
       />

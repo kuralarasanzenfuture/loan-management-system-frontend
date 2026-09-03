@@ -6,7 +6,9 @@ import {
   Hash,
   Receipt,
   AlertTriangle,
+  Printer,
 } from "lucide-react";
+import { printInstallmentReceipt } from "../../customerLoans/utils/printLoanStatement.js";
 
 /**
  * PaymentSuccessModal
@@ -16,17 +18,7 @@ import {
  *
  * Props:
  * - open (bool)
- * - data (object | null):
- *     {
- *       amount,                 // number — the amount actually paid
- *       installmentNo,          // number|string, optional
- *       paymentDate,            // string (YYYY-MM-DD), optional
- *       paymentMode,            // string, optional — 'cash' | 'bank' | 'upi' | ...
- *       transactionReference,   // string, optional
- *       penaltyAmount,          // number, optional — shown as a separate line if > 0
- *       remainingBalance,       // number, optional
- *       status,                 // string, optional — 'paid' | 'partial' | ...
- *     }
+ * - data (object | null)
  * - onClose (fn)
  * - autoCloseMs (number)   : default 5000; pass 0 to disable auto-close
  * - formatCurrency (fn)    : your existing currency formatter
@@ -34,6 +26,7 @@ import {
 export default function PaymentSuccessModal({
   open,
   data,
+  company = null,
   onClose,
   autoCloseMs = 5000,
   formatCurrency = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`,
@@ -45,6 +38,21 @@ export default function PaymentSuccessModal({
   }, [open, autoCloseMs, onClose]);
 
   if (!open || !data) return null;
+
+  const handlePrint = () => {
+    printInstallmentReceipt({
+      installment: { id: data.installmentId || data.id, installment_no: data.installmentNo },
+      company: company || {},
+      successData: {
+        amountPaidNow: data.amount,
+        cumulativePaid: data.cumulativePaid || data.amount,
+        remainingBalance: data.remainingBalance || 0,
+        paidDate: data.paymentDate,
+        status: data.status,
+        receiptNo: data.receiptNo || `REC-${Date.now().toString().slice(-4)}`,
+      },
+    });
+  };
 
   const PAYMENT_MODE_LABELS = {
     cash: "Cash",
@@ -206,13 +214,23 @@ export default function PaymentSuccessModal({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-success btn-sm w-full rounded-lg text-success-content"
-          >
-            Done
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="btn btn-outline btn-sm rounded-lg flex-1 gap-1.5 border-base-300"
+            >
+              <Printer size={14} />
+              <span>Print Receipt</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-success btn-sm rounded-lg text-success-content flex-1 font-bold"
+            >
+              Done
+            </button>
+          </div>
         </div>
       </div>
       <div className="modal-backdrop bg-black/40" onClick={onClose} />

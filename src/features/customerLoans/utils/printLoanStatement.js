@@ -1271,10 +1271,10 @@ export function printInstallmentReceipt({
   ].filter(Boolean).join(" | ");
 
   const customerName =
-    customer?.customer_name || customer?.name || loan?.customer_name || "Borrower";
-  const customerNo = customer?.customer_no || loan?.customer_no || (loan?.customer_id ? `CUST-${loan.customer_id}` : "—");
-  const customerMobile = customer?.mobile || loan?.customer_mobile || loan?.mobile || "—";
-  const loanNo = loan?.loan_no || `LN-${installment.loan_id}`;
+    customer?.customer_name || customer?.name || loan?.customer_name || installment?.customer_name || "Borrower";
+  const customerNo = customer?.customer_no || loan?.customer_no || installment?.customer_no || (loan?.customer_id ? `CUST-${loan.customer_id}` : (installment?.customer_id ? `CUST-${installment.customer_id}` : "—"));
+  const customerMobile = customer?.mobile || loan?.customer_mobile || loan?.mobile || installment?.customer_mobile || installment?.mobile || "—";
+  const loanNo = loan?.loan_no || installment?.loan_no || (installment?.loan_id ? `LN-${installment.loan_id}` : "—");
 
   const amountPaidNow = Number(successData?.amountPaidNow || 0);
   const cumulativePaid = Number(successData?.cumulativePaid || installment?.paid_amount || 0);

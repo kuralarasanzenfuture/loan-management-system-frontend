@@ -22,6 +22,7 @@ import {
   clearPenalty,
 } from "../../../redux/installments/installmentSlice.js";
 import { fetchCustomerLoans } from "../../../redux/customerLoans/customerLoanSlice.js";
+import { fetchCompanyDetails } from "../../../redux/companyDetails/companyDetailsSlice.js";
 import LoanInstallmentTable from "../components/LoanInstallmentTable.jsx";
 import PayInstallmentModal from "../components/PayInstallmentModal.jsx";
 import ApplyPenaltyModal from "../components/ApplyPenaltyModal.jsx";
@@ -61,6 +62,7 @@ export default function LoanCollectionPage() {
   const { customerLoans: loans = [], loading: loansLoading } = useSelector(
     (state) => state.customerLoans,
   );
+  const { company } = useSelector((state) => state.companyDetails);
 
   const [selectedLoanId, setSelectedLoanId] = useState(loanId || "");
   const [loanSearch, setLoanSearch] = useState("");
@@ -72,9 +74,10 @@ export default function LoanCollectionPage() {
   const [penaltyPreviewLoading, setPenaltyPreviewLoading] = useState(false);
   const [penaltySubmitting, setPenaltySubmitting] = useState(false);
 
-  // Load customer loans on mount for the loan picker
+  // Load customer loans and company details on mount
   useEffect(() => {
     dispatch(fetchCustomerLoans());
+    dispatch(fetchCompanyDetails());
   }, [dispatch]);
 
   // Sync selectedLoanId when URL param changes
@@ -94,6 +97,12 @@ export default function LoanCollectionPage() {
     }
   }, [loans, selectedLoanId]);
 
+  // Find active selected loan object
+  const selectedLoan = useMemo(() => {
+    if (!selectedLoanId || !loans?.length) return null;
+    return loans.find((l) => String(l.id) === String(selectedLoanId)) || null;
+  }, [loans, selectedLoanId]);
+
   // Fetch loan installments & due when selectedLoanId changes
   useEffect(() => {
     if (!selectedLoanId || isNaN(Number(selectedLoanId))) return;
@@ -108,6 +117,7 @@ export default function LoanCollectionPage() {
     dispatch(fetchInstallmentsByLoan(selectedLoanId));
     dispatch(fetchCurrentDue(selectedLoanId));
     dispatch(fetchLoanSummary(selectedLoanId));
+    dispatch(fetchCustomerLoans());
   };
 
   const handleSelectLoan = (newId) => {
@@ -134,8 +144,10 @@ export default function LoanCollectionPage() {
 
       const action = await dispatch(payInstallmentAction({ id, formData }));
       if (payInstallmentAction.fulfilled.match(action)) {
-        setPayTarget(null);
         refetch();
+        return { success: true, data: action.payload };
+      } else {
+        return { success: false, error: action.payload };
       }
     } finally {
       setPaySubmitting(false);
@@ -313,10 +325,12 @@ export default function LoanCollectionPage() {
         />
       </div>
 
-      {/* Pay modal */}
+      {/* Pay modal with Receipt & Success UI */}
       <PayInstallmentModal
         open={Boolean(payTarget)}
         installment={payTarget}
+        loan={selectedLoan}
+        company={company}
         loading={paySubmitting}
         error={payTarget ? error : null}
         onClose={() => setPayTarget(null)}
