@@ -198,10 +198,10 @@ export default function CustomerLoanTable({
                 {canChangeStatus ? (
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onStatusChange) onStatusChange(loan);
-                    }}
+                    // onClick={(e) => {
+                    //   e.stopPropagation();
+                    //   if (onStatusChange) onStatusChange(loan);
+                    // }}
                     className={`badge gap-1.5 font-medium badge-sm cursor-pointer hover:opacity-80 transition-opacity ${
                       STATUS_STYLES[loan.status] || "badge-ghost"
                     }`}

@@ -12,6 +12,10 @@ import {
   Clock,
   AlertTriangle,
   IndianRupee,
+  Printer,
+  ChevronDown,
+  FileText,
+  Calendar,
 } from "lucide-react";
 import {
   fetchCustomerLoanById,
@@ -27,10 +31,12 @@ import {
 import { fetchLoanPlanAndPenalityById } from "../../../redux/loanPlanAndPenalities/loanPlanAndPenalitySlice.js";
 import { fetchCustomers } from "../../../redux/customers/customerSlice.js";
 import { fetchLoanPlanAndPenalities } from "../../../redux/loanPlanAndPenalities/loanPlanAndPenalitySlice.js";
+import { fetchCompanyDetails } from "../../../redux/companyDetails/companyDetailsSlice.js";
 import InstallmentTable from "../components/InstallmentTable.jsx";
 import InstallmentPaymentModal from "../components/InstallmentPaymentModal.jsx";
 import CustomerLoanFormModal from "../components/CustomerLoanFormModal.jsx";
 import { formatCurrency } from "../utils/loanCalculations.js";
+import { printLoanStatement } from "../utils/printLoanStatement.js";
 import usePermissions from "../../../common/hooks/usePermissions.js";
 import { PERMISSIONS } from "../../../constants/permissions.js";
 
@@ -78,6 +84,7 @@ export default function LoanViewPage() {
   const { loanPlanAndPenalities: plans } = useSelector(
     (state) => state.loanPlanAndPenalities,
   );
+  const { company } = useSelector((state) => state.companyDetails);
 
   const [activeTab, setActiveTab] = useState("overview");
   const [paymentTarget, setPaymentTarget] = useState(null);
@@ -90,6 +97,7 @@ export default function LoanViewPage() {
     dispatch(fetchInstallmentsByLoan(id));
     dispatch(fetchCustomers());
     dispatch(fetchLoanPlanAndPenalities());
+    dispatch(fetchCompanyDetails());
     return () => {
       dispatch(clearSelectedCustomerLoan());
     };
@@ -101,6 +109,12 @@ export default function LoanViewPage() {
       dispatch(fetchLoanPlanAndPenalityById(loan.loan_plan_id));
     }
   }, [dispatch, loan?.loan_plan_id]);
+
+  // Find linked customer profile
+  const customer = useMemo(() => {
+    if (!customers || !loan?.customer_id) return null;
+    return customers.find((c) => c.id === loan.customer_id) || null;
+  }, [customers, loan?.customer_id]);
 
   const installmentSummary = useMemo(() => {
     const safeInstallments = Array.isArray(installments) ? installments : [];
@@ -121,7 +135,7 @@ export default function LoanViewPage() {
       overdue,
       paidAmount,
       totalAmount,
-      outstanding: totalAmount - paidAmount,
+      outstanding: Math.max(0, totalAmount - paidAmount),
     };
   }, [installments]);
 
@@ -145,6 +159,7 @@ export default function LoanViewPage() {
       if (editInstallment.fulfilled.match(action)) {
         setPaymentTarget(null);
         dispatch(fetchInstallmentsByLoan(id)); // refresh list + statuses
+        dispatch(fetchCustomerLoanById(id)); // refresh loan stats & status
       }
     } finally {
       setPaymentSubmitting(false);
@@ -168,11 +183,23 @@ export default function LoanViewPage() {
     }
   };
 
+  // Professional print handler with mode option
+  const handlePrint = (mode = "statement") => {
+    printLoanStatement({
+      loan,
+      installments,
+      company,
+      customer,
+      plan,
+      mode,
+    });
+  };
+
   if (loanLoading && !loan) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-base-content/40 gap-2">
         <span className="loading loading-spinner loading-md" />
-        <p className="text-sm">Loading loan…</p>
+        <p className="text-sm">Loading loan details…</p>
       </div>
     );
   }
@@ -190,12 +217,26 @@ export default function LoanViewPage() {
 
   return (
     <div className="space-y-6">
+      {/* ── Native Print Styling Support ────────────────────────────────────────── */}
+      <style>{`
+        @media print {
+          nav, header, aside, .btn, .tabs, .no-print, #collect-loan-btn, #edit-loan-btn {
+            display: none !important;
+          }
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+        }
+      `}</style>
+
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
             className="btn btn-ghost btn-sm btn-square"
+            title="Go back"
           >
             <ArrowLeft size={18} />
           </button>
@@ -218,7 +259,79 @@ export default function LoanViewPage() {
           </span>
         </div>
 
+        {/* Action Buttons: Print, Collect, Edit */}
         <div className="flex items-center gap-2">
+          
+          {/* ── Professional Print Dropdown ─────────────────────────────────── */}
+          <div className="dropdown dropdown-end">
+            <button
+              tabIndex={0}
+              type="button"
+              className="btn btn-outline btn-sm gap-1.5 border-base-300 hover:border-primary hover:bg-primary/5 transition-all shadow-xs font-semibold"
+              title="Print Loan Documents"
+            >
+              <Printer size={15} className="text-primary" />
+              <span>Print</span>
+              <ChevronDown size={13} className="opacity-60" />
+            </button>
+            <ul
+              tabIndex={0}
+              className="dropdown-content z-30 menu p-2 shadow-2xl bg-base-100 rounded-2xl w-72 border border-base-300 text-xs mt-1 space-y-1"
+            >
+              <li className="menu-title px-3 py-1.5 text-[10px] uppercase font-bold text-base-content/40 tracking-wider">
+                Select Print Document
+              </li>
+              <li>
+                <button
+                  onClick={() => handlePrint("statement")}
+                  className="flex items-start gap-2.5 py-2.5 px-3 rounded-xl hover:bg-base-200 transition-colors"
+                >
+                  <FileText size={16} className="text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-base-content">Full Statement (All Data)</div>
+                    <div className="text-[11px] text-base-content/50">Complete passbook with all installments</div>
+                  </div>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handlePrint("paid")}
+                  className="flex items-start gap-2.5 py-2.5 px-3 rounded-xl hover:bg-base-200 transition-colors"
+                >
+                  <CheckCircle2 size={16} className="text-success mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-base-content">Paid Receipts Only (Paid Data)</div>
+                    <div className="text-[11px] text-base-content/50">Only cleared installments & payments</div>
+                  </div>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handlePrint("pending")}
+                  className="flex items-start gap-2.5 py-2.5 px-3 rounded-xl hover:bg-base-200 transition-colors"
+                >
+                  <Clock size={16} className="text-warning mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-base-content">Outstanding Dues Only (Pending)</div>
+                    <div className="text-[11px] text-base-content/50">Unpaid installments & overdue notice</div>
+                  </div>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handlePrint("summary")}
+                  className="flex items-start gap-2.5 py-2.5 px-3 rounded-xl hover:bg-base-200 transition-colors"
+                >
+                  <Receipt size={16} className="text-info mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-base-content">Loan Summary Slip (No Table)</div>
+                    <div className="text-[11px] text-base-content/50">1-page balance certificate & stats</div>
+                  </div>
+                </button>
+              </li>
+            </ul>
+          </div>
+
           {canCollect && (
             <button
               id="collect-loan-btn"
@@ -297,9 +410,19 @@ export default function LoanViewPage() {
       {activeTab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2 flex items-center gap-1.5">
-              <HandCoins size={13} /> Loan Details
-            </h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
+                <HandCoins size={13} /> Loan Details
+              </h3>
+              <button
+                onClick={() => handlePrint("summary")}
+                className="btn btn-ghost btn-xs text-primary gap-1"
+                title="Print loan summary"
+              >
+                <Printer size={12} />
+                <span>Print Slip</span>
+              </button>
+            </div>
             <div className="divide-y divide-base-200">
               <InfoRow label="Loan Number" value={loan.loan_no} />
               <InfoRow
@@ -348,7 +471,15 @@ export default function LoanViewPage() {
             <div className="divide-y divide-base-200 mb-4">
               <InfoRow
                 label="Customer"
-                value={loan.customer_name || `Customer #${loan.customer_id}`}
+                value={customer?.customer_name || loan.customer_name || `Customer #${loan.customer_id}`}
+              />
+              <InfoRow
+                label="Customer Code"
+                value={customer?.customer_no || loan.customer_no || "—"}
+              />
+              <InfoRow
+                label="Contact Mobile"
+                value={customer?.mobile || loan.customer_mobile || "—"}
               />
               <InfoRow
                 label="Loan Plan"
@@ -396,12 +527,50 @@ export default function LoanViewPage() {
       )}
 
       {activeTab === "installments" && (
-        <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden">
-          <InstallmentTable
-            installments={installments}
-            loading={installmentsLoading}
-            onRecordPayment={handleOpenPayment}
-          />
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="text-xs text-base-content/60 font-medium">
+              Installments Timeline: <span className="text-success font-semibold">{installmentSummary.paid}</span> of {installmentSummary.total} cleared
+              {installmentSummary.overdue > 0 && (
+                <span className="text-error font-semibold ml-1.5">({installmentSummary.overdue} overdue)</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => handlePrint("statement")}
+                className="btn btn-ghost btn-xs gap-1 text-base-content/70 hover:text-primary"
+                title="Print all installments statement"
+              >
+                <Printer size={12} />
+                <span>Print All</span>
+              </button>
+              <button
+                onClick={() => handlePrint("paid")}
+                className="btn btn-outline btn-xs gap-1 text-success border-base-300 hover:border-success hover:bg-success/5"
+                title="Print only cleared paid installments"
+                disabled={installmentSummary.paid === 0}
+              >
+                <CheckCircle2 size={12} />
+                <span>Print Paid ({installmentSummary.paid})</span>
+              </button>
+              <button
+                onClick={() => handlePrint("pending")}
+                className="btn btn-outline btn-xs gap-1 text-warning border-base-300 hover:border-warning hover:bg-warning/5"
+                title="Print pending and overdue installments"
+                disabled={installmentSummary.total - installmentSummary.paid === 0}
+              >
+                <Clock size={12} />
+                <span>Print Dues ({installmentSummary.total - installmentSummary.paid})</span>
+              </button>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden">
+            <InstallmentTable
+              installments={installments}
+              loading={installmentsLoading}
+              onRecordPayment={handleOpenPayment}
+            />
+          </div>
         </div>
       )}
 

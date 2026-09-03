@@ -401,7 +401,7 @@ export default function CustomerLoanFormModal({
               <option value="" disabled>
                 Select loan plan
               </option>
-              {plans.map((p) => (
+              {plans.filter((p) => p.status === "active").map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.plan_name} ({p.plan_code}) — {p.tenure} {p.tenure_type}
                 </option>

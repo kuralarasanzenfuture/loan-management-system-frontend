@@ -95,7 +95,7 @@ export default function LoanPlanFormModal({
   const validate = () => {
     const errors = {};
     if (!form.plan_name.trim()) errors.plan_name = "Plan name is required";
-    if (!form.plan_code.trim()) errors.plan_code = "Plan code is required";
+    // if (!form.plan_code.trim()) errors.plan_code = "Plan code is required";
 
     // Skip core-field validation if the plan is in use (fields are locked)
     if (!isUsed) {
@@ -158,7 +158,7 @@ export default function LoanPlanFormModal({
 
     const payload = {
       plan_name: form.plan_name.trim(),
-      plan_code: form.plan_code.trim().toUpperCase(),
+      // plan_code: form.plan_code.trim().toUpperCase(),
       description: form.description.trim() || null,
       status: String(form.status).toLowerCase(),
     };
@@ -261,7 +261,7 @@ export default function LoanPlanFormModal({
                 />
                 <FieldError field="plan_name" />
               </div>
-              <div className="form-control">
+              {/* <div className="form-control">
                 <label className="label pb-1">
                   <span className="label-text text-xs font-semibold">
                     Plan Code *
@@ -275,7 +275,7 @@ export default function LoanPlanFormModal({
                   placeholder="DGP0012"
                 />
                 <FieldError field="plan_code" />
-              </div>
+              </div> */}
 
               <div className="form-control">
                 <label className="label pb-1">
