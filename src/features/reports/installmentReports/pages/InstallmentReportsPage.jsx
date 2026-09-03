@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   FileBarChart2,
@@ -35,6 +35,8 @@ export default function InstallmentReportsPage() {
     installmentReportsError: error,
   } = useSelector((state) => state.loanReports);
 
+  const [activeFilters, setActiveFilters] = useState({});
+
   useEffect(() => {
     if (canView) {
       dispatch(fetchLoanInstallmentsReport({}));
@@ -43,12 +45,57 @@ export default function InstallmentReportsPage() {
   }, [dispatch, canView]);
 
   const handleApplyFilters = (filters) => {
+    setActiveFilters(filters);
     dispatch(fetchLoanInstallmentsReport(filters));
   };
 
+  const safeReports = useMemo(
+    () => (Array.isArray(installmentReports) ? installmentReports : []),
+    [installmentReports],
+  );
+
+  const filteredRows = useMemo(() => {
+    let list = safeReports;
+    const searchLower = activeFilters.search?.toLowerCase()?.trim();
+    const custNameLower = activeFilters.customer_name?.toLowerCase()?.trim();
+    const phoneTrim = (activeFilters.phone || activeFilters.mobile)?.trim();
+    const loanNoLower = activeFilters.loan_no?.toLowerCase()?.trim();
+    const instNo = activeFilters.installment_no ? String(activeFilters.installment_no) : "";
+    const statusFilter = activeFilters.status?.toLowerCase()?.trim();
+
+    if (searchLower || custNameLower || phoneTrim || loanNoLower || instNo || statusFilter) {
+      list = list.filter((r) => {
+        const fullName = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
+        const mobile = (r.mobile || "").toString();
+        const loanNo = (r.loan_no || "").toLowerCase();
+        const rInstNo = String(r.installment_no ?? "");
+        const rStatus = (r.status || "").toLowerCase();
+
+        if (searchLower) {
+          const match =
+            fullName.includes(searchLower) ||
+            mobile.includes(searchLower) ||
+            loanNo.includes(searchLower) ||
+            rInstNo === searchLower;
+          if (!match) return false;
+        }
+
+        if (custNameLower && !fullName.includes(custNameLower)) return false;
+        if (phoneTrim && !mobile.includes(phoneTrim)) return false;
+        if (loanNoLower && !loanNo.includes(loanNoLower)) return false;
+        if (instNo && rInstNo !== instNo) return false;
+        if (statusFilter && rStatus !== statusFilter) return false;
+
+        return true;
+      });
+    }
+
+    return list;
+  }, [safeReports, activeFilters]);
+
   const handleExport = () => {
     exportToCsv(
-      installmentReports,
+      filteredRows,
       `installment-report-${new Date().toISOString().slice(0, 10)}.csv`,
     );
   };
@@ -60,10 +107,10 @@ export default function InstallmentReportsPage() {
     totalItems,
     setPage,
     setPageSize,
-  } = usePagination({ data: installmentReports, initialSize: 20 });
+  } = usePagination({ data: filteredRows, initialSize: 20 });
 
   const totals = useMemo(() => {
-    return installmentReports.reduce(
+    return filteredRows.reduce(
       (acc, r) => {
         acc.totalDue += Number(r.total_due) || 0;
         acc.totalPaid += Number(r.paid_amount) || 0;
@@ -80,7 +127,7 @@ export default function InstallmentReportsPage() {
         overdueCount: 0,
       },
     );
-  }, [installmentReports]);
+  }, [filteredRows]);
 
   return (
     <div className="space-y-6">
@@ -122,7 +169,9 @@ export default function InstallmentReportsPage() {
               Total Installments
             </div>
             <div className="text-xl font-bold leading-tight">
-              {installmentReportsCount || installmentReports.length}
+              {Object.keys(activeFilters).length > 0
+                ? filteredRows.length
+                : (installmentReportsCount || safeReports.length)}
             </div>
           </div>
         </div>
@@ -183,7 +232,7 @@ export default function InstallmentReportsPage() {
       <InstallmentReportFilters
         onApply={handleApplyFilters}
         onExport={handleExport}
-        hasResults={installmentReports.length > 0}
+        hasResults={filteredRows.length > 0}
       />
 
       {/* Table + Pagination */}

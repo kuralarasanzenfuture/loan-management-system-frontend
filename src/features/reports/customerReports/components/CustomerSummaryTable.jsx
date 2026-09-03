@@ -61,8 +61,10 @@ export default function CustomerSummaryTable({ rows = [], loading }) {
         <tbody>
           {safeRows.map((row, idx) => {
             const customerId = row.id || row.customer_id;
-            const pendingPct = getPendingPercent(row);
-            const recoveredPct = 100 - pendingPct;
+            const totalLoanAmt = Number(row.total_loan ?? row.total_amount ?? 0);
+            const hasLoans = Number(row.total_loans ?? 0) > 0 && totalLoanAmt > 0;
+            const pendingPct = hasLoans ? getPendingPercent(row) : 0;
+            const recoveredPct = hasLoans ? 100 - pendingPct : 0;
 
             return (
               <tr
@@ -75,8 +77,13 @@ export default function CustomerSummaryTable({ rows = [], loading }) {
                       <User size={15} />
                     </span>
                     <div className="min-w-0">
-                      <div className="font-semibold text-sm truncate">
-                        {getFullName(row)}
+                      <div className="font-semibold text-sm truncate flex items-center gap-1.5">
+                        <span>{getFullName(row)}</span>
+                        {row.customer_no && (
+                          <span className="badge badge-ghost badge-xs text-[10px] font-mono">
+                            {row.customer_no}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-base-content/40">
                         {row.mobile || "—"}
@@ -116,23 +123,27 @@ export default function CustomerSummaryTable({ rows = [], loading }) {
                 </td>
 
                 <td>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-base-200 h-2 rounded-full overflow-hidden border border-base-300">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          recoveredPct >= 80
-                            ? "bg-success"
-                            : recoveredPct >= 40
-                              ? "bg-warning"
-                              : "bg-error"
-                        }`}
-                        style={{ width: `${recoveredPct}%` }}
-                      />
+                  {hasLoans ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-base-200 h-2 rounded-full overflow-hidden border border-base-300">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            recoveredPct >= 80
+                              ? "bg-success"
+                              : recoveredPct >= 40
+                                ? "bg-warning"
+                                : "bg-error"
+                          }`}
+                          style={{ width: `${recoveredPct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-semibold text-base-content/50 w-8 shrink-0 text-right">
+                        {recoveredPct}%
+                      </span>
                     </div>
-                    <span className="text-[10px] font-semibold text-base-content/50 w-8 shrink-0 text-right">
-                      {recoveredPct}%
-                    </span>
-                  </div>
+                  ) : (
+                    <span className="text-xs text-base-content/35 italic">No loans</span>
+                  )}
                 </td>
 
                 <td>

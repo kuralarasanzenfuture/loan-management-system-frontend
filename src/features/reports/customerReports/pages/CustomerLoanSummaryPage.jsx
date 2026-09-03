@@ -58,7 +58,9 @@ export default function CustomerLoanSummaryPage() {
         (r.name && r.name.toLowerCase().includes(q)) ||
         `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase().includes(q) ||
         (r.mobile && String(r.mobile).includes(q)) ||
-        (r.customer_no && String(r.customer_no).toLowerCase().includes(q)),
+        (r.customer_no && String(r.customer_no).toLowerCase().includes(q)) ||
+        (r.id && String(r.id) === q) ||
+        (r.customer_id && String(r.customer_id) === q),
     );
   }, [safeSummaries, search]);
 
@@ -91,7 +93,7 @@ export default function CustomerLoanSummaryPage() {
   };
 
   const totals = useMemo(() => {
-    if (customerSummaryTotals) {
+    if (!search.trim() && customerSummaryTotals) {
       return {
         totalLoanAmount: Number(
           customerSummaryTotals.total_amount ??
@@ -102,7 +104,7 @@ export default function CustomerLoanSummaryPage() {
         totalPending: Number(customerSummaryTotals.total_pending || 0),
       };
     }
-    return safeSummaries.reduce(
+    return filteredRows.reduce(
       (acc, r) => {
         acc.totalLoanAmount +=
           Number(r.total_loan ?? r.total_amount) || 0;
@@ -112,7 +114,7 @@ export default function CustomerLoanSummaryPage() {
       },
       { totalLoanAmount: 0, totalPaid: 0, totalPending: 0 },
     );
-  }, [safeSummaries, customerSummaryTotals]);
+  }, [filteredRows, search, customerSummaryTotals]);
 
   return (
     <div className="space-y-6">

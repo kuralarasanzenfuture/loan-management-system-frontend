@@ -27,7 +27,7 @@ export default function CollectionReportsPage() {
     error,
   } = useSelector((state) => state.installments);
 
-  const [activeFilters, setActiveFilters] = useState({});
+  const [activeFilters, setActiveFilters] = useState({ all: "true" });
 
   useEffect(() => {
     if (canView) {
@@ -42,10 +42,38 @@ export default function CollectionReportsPage() {
     dispatch(fetchCollectionReports(filters));
   };
 
-  const reportsList = useMemo(
-    () => (Array.isArray(collectionReports) ? collectionReports : []),
-    [collectionReports],
-  );
+  const reportsList = useMemo(() => {
+    let list = Array.isArray(collectionReports) ? collectionReports : [];
+
+    const searchLower = activeFilters.search?.toLowerCase()?.trim();
+    const custNameLower = activeFilters.customer_name?.toLowerCase()?.trim();
+    const phoneTrim = (activeFilters.phone || activeFilters.mobile)?.trim();
+    const loanNoLower = activeFilters.loan_no?.toLowerCase()?.trim();
+
+    if (searchLower || custNameLower || phoneTrim || loanNoLower) {
+      list = list.filter((r) => {
+        const fullName = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
+        const mobile = (r.mobile || "").toString();
+        const loanNo = (r.loan_no || "").toLowerCase();
+
+        if (searchLower) {
+          const matchesSearch =
+            fullName.includes(searchLower) ||
+            mobile.includes(searchLower) ||
+            loanNo.includes(searchLower);
+          if (!matchesSearch) return false;
+        }
+
+        if (custNameLower && !fullName.includes(custNameLower)) return false;
+        if (phoneTrim && !mobile.includes(phoneTrim)) return false;
+        if (loanNoLower && !loanNo.includes(loanNoLower)) return false;
+
+        return true;
+      });
+    }
+
+    return list;
+  }, [collectionReports, activeFilters]);
 
   const handleExport = () => {
     const label = activeFilters.date
@@ -77,11 +105,27 @@ export default function CollectionReportsPage() {
     [reportsList],
   );
 
-  const filterSummaryLabel = activeFilters.date
-    ? `for ${activeFilters.date}`
-    : activeFilters.from_date || activeFilters.to_date
-      ? `from ${activeFilters.from_date || "…"} to ${activeFilters.to_date || "…"}`
-      : "";
+  const filterSummaryLabel = useMemo(() => {
+    const parts = [];
+    if (activeFilters.date && activeFilters.date !== "all") {
+      parts.push(`for ${activeFilters.date}`);
+    } else if (activeFilters.from_date || activeFilters.to_date) {
+      parts.push(`from ${activeFilters.from_date || "start"} to ${activeFilters.to_date || "today"}`);
+    }
+    if (activeFilters.search) {
+      parts.push(`matching "${activeFilters.search}"`);
+    }
+    if (activeFilters.customer_name) {
+      parts.push(`customer "${activeFilters.customer_name}"`);
+    }
+    if (activeFilters.phone) {
+      parts.push(`phone "${activeFilters.phone}"`);
+    }
+    if (activeFilters.loan_no) {
+      parts.push(`loan "${activeFilters.loan_no}"`);
+    }
+    return parts.length ? parts.join(", ") : "across all records";
+  }, [activeFilters]);
 
   return (
     <div className="space-y-6">
