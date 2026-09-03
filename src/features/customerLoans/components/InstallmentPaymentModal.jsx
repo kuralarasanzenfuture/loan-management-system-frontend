@@ -9,11 +9,15 @@ import {
   IndianRupee,
   Sparkles,
   ShieldAlert,
-  ArrowRight,
+  Printer,
   Check,
+  Calendar,
+  User,
+  CreditCard,
 } from "lucide-react";
 import { formatCurrency } from "../utils/loanCalculations.js";
 import { calculatePenalty } from "../../../redux/installments/installment.service.js";
+import { printInstallmentReceipt } from "../utils/printLoanStatement.js";
 
 /**
  * InstallmentPaymentModal
@@ -25,10 +29,14 @@ import { calculatePenalty } from "../../../redux/installments/installment.servic
  * 4. Penalty Bounds: Prevents paying over the calculated/maximum penalty.
  * 5. "Pay Penalty Later": Deferral option to pay just remaining principal now.
  * 6. Automatic Status: Dynamically updates to "paid" or "partial" based on cumulative total.
+ * 7. Payment Successful UI: Elegant receipt confirmation screen with print receipt capability.
  */
 export default function InstallmentPaymentModal({
   open,
   installment,
+  loan = null,
+  customer = null,
+  company = null,
   loading,
   error,
   onClose,
@@ -48,6 +56,9 @@ export default function InstallmentPaymentModal({
 
   // Defer penalty option
   const [payPenaltyLater, setPayPenaltyLater] = useState(false);
+
+  // Payment success state for receipt confirmation screen
+  const [successData, setSuccessData] = useState(null);
 
   // Canonical principal due for this installment
   const principalAmount = useMemo(() => {
@@ -155,6 +166,7 @@ export default function InstallmentPaymentModal({
       });
       setFieldErrors({});
       setPayPenaltyLater(false);
+      setSuccessData(null); // Reset success screen on new open
 
       // Fetch live penalty from API
       let isSubscribed = true;
@@ -238,7 +250,6 @@ export default function InstallmentPaymentModal({
       const newTotal = Number((principalAmount + newPenalty).toFixed(2));
       const newRemaining = Math.max(0, Number((newTotal - alreadyPaid).toFixed(2)));
 
-      // If user had remaining balance entered, keep it synced to new remaining
       const wasFullRemaining = Number(prev.amount_paying_now) === remainingTotalDue;
 
       return {
@@ -255,13 +266,11 @@ export default function InstallmentPaymentModal({
     setFieldErrors({});
 
     if (payLater) {
-      // Pay only remaining principal
       setForm((prev) => ({
         ...prev,
         amount_paying_now: String(remainingPrincipalDue > 0 ? remainingPrincipalDue : remainingTotalDue),
       }));
     } else {
-      // Pay full remaining total including penalty
       setForm((prev) => ({
         ...prev,
         amount_paying_now: String(remainingTotalDue),
@@ -313,17 +322,40 @@ export default function InstallmentPaymentModal({
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    // We submit the new CUMULATIVE paid amount to the backend:
-    // cumulativePaid = alreadyPaid + payingNow
-    onSubmit({
+    const res = await onSubmit({
       paid_amount: projectedCumulativePaid,
       paid_date: form.paid_date,
       status: autoStatus,
       penalty_amount: penaltyAmount,
+    });
+
+    // If submission succeeded, switch to Payment Successful UI screen
+    if (res && res.success !== false) {
+      setSuccessData({
+        amountPaidNow: currentPayingNow,
+        cumulativePaid: projectedCumulativePaid,
+        remainingBalance: projectedRemainingBalance,
+        totalLiability: totalPayableLiability,
+        paidDate: form.paid_date,
+        status: autoStatus,
+        receiptNo: `REC-${installment.id}-${Math.floor(1000 + Math.random() * 9000)}`,
+      });
+    }
+  };
+
+  // Trigger Cash Receipt Print
+  const handlePrintReceipt = () => {
+    if (!successData) return;
+    printInstallmentReceipt({
+      loan,
+      installment,
+      customer,
+      company,
+      successData,
     });
   };
 
@@ -331,353 +363,479 @@ export default function InstallmentPaymentModal({
 
   return (
     <div className="modal modal-open z-50">
-      <div className="modal-box max-w-md rounded-2xl border border-base-300 shadow-2xl p-6">
+      <div className="modal-box max-w-md rounded-2xl border border-base-300 shadow-2xl p-6 transition-all">
         
-        {/* Modal Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-base-200 mb-4">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <Receipt size={17} />
-            </span>
+        {/* ================================================================= */}
+        {/* 1. PAYMENT SUCCESSFUL SCREEN                                      */}
+        {/* ================================================================= */}
+        {successData ? (
+          <div className="text-center space-y-4 py-1 animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Animated Radiant Green Check Icon */}
+            <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-success/20 animate-ping opacity-60" />
+              <div className="relative w-16 h-16 rounded-full bg-success/15 border-2 border-success/40 text-success flex items-center justify-center shadow-md">
+                <CheckCircle2 size={36} className="text-success stroke-[2.5]" />
+              </div>
+            </div>
+
             <div>
-              <h3 className="font-bold text-base text-base-content leading-tight">
-                {alreadyPaid > 0 ? "Record Subsequent Payment" : "Record Installment Payment"}
+              <h3 className="font-extrabold text-xl text-base-content tracking-tight">
+                Payment Successful!
               </h3>
-              <p className="text-[11px] text-base-content/50">
-                Installment #{installment.installment_no} · Due {new Date(installment.due_date).toLocaleDateString("en-GB")}
-                {alreadyPaid > 0 && (
-                  <span className="text-warning font-semibold ml-1.5">(Partial Paid)</span>
-                )}
+              <p className="text-xs text-base-content/60 mt-0.5">
+                Installment #{installment.installment_no} payment has been verified & recorded.
               </p>
             </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-ghost btn-xs btn-square text-base-content/50 hover:text-base-content"
-            aria-label="Close"
-          >
-            <X size={16} />
-          </button>
-        </div>
 
-        {/* Backend / Submission Error */}
-        {error && (
-          <div className="flex items-start gap-2 p-3 mb-4 rounded-xl bg-error/10 border border-error/20 text-error text-xs">
-            <AlertCircle size={15} className="shrink-0 mt-0.5" />
-            <div className="font-medium">
-              {typeof error === "string" ? error : "Failed to record payment. Please verify the amount."}
+            {/* Collected Amount Card */}
+            <div className="rounded-2xl bg-gradient-to-b from-base-200/90 to-base-200/50 border border-base-300 p-4 text-center shadow-xs">
+              <div className="text-[10px] font-bold text-base-content/50 uppercase tracking-wider">
+                Amount Collected in this Transaction
+              </div>
+              <div className="text-3xl font-black text-primary font-mono mt-1">
+                {formatCurrency(successData.amountPaidNow)}
+              </div>
+              <div className="mt-2.5 inline-flex items-center gap-1.5">
+                {successData.status === "paid" ? (
+                  <span className="badge badge-success text-[11px] font-bold py-2.5 px-3 gap-1 shadow-xs">
+                    <CheckCircle2 size={13} /> Installment Cleared in Full
+                  </span>
+                ) : (
+                  <span className="badge badge-warning text-[11px] font-bold py-2.5 px-3 gap-1 shadow-xs">
+                    <Clock size={13} /> Partial Payment · {formatCurrency(successData.remainingBalance)} Remaining
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Overdue & Penalty Calculation API Info Banner */}
-        {loadingPenalty ? (
-          <div className="flex items-center gap-2 p-2.5 mb-3 rounded-xl bg-base-200/50 text-[11px] text-base-content/60">
-            <Loader2 size={13} className="animate-spin text-primary shrink-0" />
-            <span>Calculating system penalty from active loan policy…</span>
-          </div>
-        ) : penaltyApiData && penaltyApiData.days_overdue > 0 ? (
-          <div className="p-3 mb-3.5 rounded-xl bg-warning/10 border border-warning/25 text-warning-content text-xs space-y-1">
-            <div className="flex items-center justify-between font-bold">
-              <span className="flex items-center gap-1.5 text-warning">
-                <ShieldAlert size={14} />
-                Installment Overdue
-              </span>
-              <span className="text-mono font-bold text-error">
-                {penaltyApiData.days_overdue} Days Late ({penaltyApiData.penalty_days} Penalty Days)
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-base-content/70 pt-0.5">
-              <span>Policy Calculated Penalty:</span>
-              <span className="font-bold text-mono text-error">
-                {formatCurrency(penaltyApiData.penalty_amount)}
-              </span>
-            </div>
-          </div>
-        ) : null}
+            {/* Receipt Summary Grid */}
+            <div className="rounded-xl border border-base-200 bg-base-100 p-3.5 text-xs text-left space-y-2">
+              <div className="flex justify-between items-center text-base-content/70">
+                <span className="flex items-center gap-1.5">
+                  <Receipt size={13} className="text-primary" /> Receipt Reference
+                </span>
+                <span className="font-bold font-mono text-base-content">{successData.receiptNo}</span>
+              </div>
+              
+              <div className="flex justify-between items-center text-base-content/70">
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={13} className="text-base-content/50" /> Payment Date
+                </span>
+                <span className="font-semibold text-base-content">
+                  {new Date(successData.paidDate).toLocaleDateString("en-GB")}
+                </span>
+              </div>
 
-        {/* Financial Breakdown Card with Remaining Due Clarity */}
-        <div className="rounded-xl bg-base-200/60 border border-base-300/80 p-3.5 mb-4 text-xs space-y-2">
-          <div className="flex justify-between items-center text-base-content/70">
-            <span>Total Installment Amount</span>
-            <span className="font-semibold text-base-content text-mono">
-              {formatCurrency(principalAmount)}
-            </span>
-          </div>
-
-          {penaltyAmount > 0 && (
-            <div className="flex justify-between items-center text-base-content/70">
-              <span>Late Fee / Penalty</span>
-              <span className="font-semibold text-mono text-error">
-                + {formatCurrency(penaltyAmount)}
-              </span>
-            </div>
-          )}
-
-          {alreadyPaid > 0 && (
-            <div className="flex justify-between items-center text-success font-medium">
-              <span>Already Paid Previously</span>
-              <span className="font-bold text-mono">
-                - {formatCurrency(alreadyPaid)}
-              </span>
-            </div>
-          )}
-
-          <div className="pt-2 border-t border-base-300 flex justify-between items-center">
-            <div>
-              <span className="font-bold text-base-content text-xs">Remaining Balance Due</span>
-              {alreadyPaid > 0 && (
-                <div className="text-[10px] text-base-content/50">
-                  Total {formatCurrency(totalPayableLiability)} less {formatCurrency(alreadyPaid)} paid
+              {(customer?.name || loan?.customer_name) && (
+                <div className="flex justify-between items-center text-base-content/70">
+                  <span className="flex items-center gap-1.5">
+                    <User size={13} className="text-base-content/50" /> Customer
+                  </span>
+                  <span className="font-semibold text-base-content">
+                    {customer?.name || customer?.customer_name || loan?.customer_name}
+                  </span>
                 </div>
               )}
-            </div>
-            <span className="font-bold text-base text-primary text-mono">
-              {formatCurrency(remainingTotalDue)}
-            </span>
-          </div>
-        </div>
 
-        {/* Fully Settled Alert */}
-        {isAlreadyFullySettled ? (
-          <div className="p-4 mb-4 rounded-xl bg-success/10 border border-success/20 text-success text-center space-y-1">
-            <CheckCircle2 size={24} className="mx-auto text-success mb-1" />
-            <div className="font-bold text-sm">Installment Fully Settled</div>
-            <p className="text-xs text-base-content/70">
-              This installment has already been paid in full ({formatCurrency(alreadyPaid)} collected). No further dues remaining.
-            </p>
-            <div className="pt-3">
-              <button type="button" onClick={onClose} className="btn btn-outline btn-sm rounded-xl">
-                Close Window
+              <div className="flex justify-between items-center text-base-content/70">
+                <span className="flex items-center gap-1.5">
+                  <CreditCard size={13} className="text-base-content/50" /> Loan Account
+                </span>
+                <span className="font-semibold text-base-content">
+                  {loan?.loan_no || `LN-${installment.loan_id}`}
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-base-200 flex justify-between items-center">
+                <span className="text-base-content/70">Cumulative Paid to Date</span>
+                <span className="font-bold text-mono text-base-content">
+                  {formatCurrency(successData.cumulativePaid)} of {formatCurrency(successData.totalLiability)}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center font-bold">
+                <span className="text-base-content/80">Remaining Installment Due</span>
+                <span className={`text-mono ${successData.remainingBalance > 0 ? "text-warning" : "text-success"}`}>
+                  {formatCurrency(successData.remainingBalance)}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons: Print Receipt & Done */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePrintReceipt}
+                className="btn btn-outline btn-sm rounded-xl gap-2 w-full sm:w-1/2 border-base-300 hover:border-primary hover:bg-primary/5 font-bold"
+              >
+                <Printer size={15} className="text-primary" />
+                <span>Print Receipt</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn-primary btn-sm rounded-xl gap-1.5 w-full sm:w-1/2 font-bold shadow-sm"
+              >
+                <Check size={16} />
+                <span>Done</span>
               </button>
             </div>
+
           </div>
         ) : (
+          /* =============================================================== */
+          /* 2. PAYMENT INPUT FORM SCREEN                                    */
+          /* =============================================================== */
           <>
-            {/* Penalty Payment Options: Pay Now vs Pay Later */}
-            {penaltyAmount > 0 && (
-              <div className="rounded-xl border border-base-300 bg-base-100 p-3 mb-4 space-y-2 text-xs">
-                <div className="flex items-center justify-between font-bold text-base-content/80 text-[11px] uppercase tracking-wider">
-                  <span>Penalty Payment Option</span>
-                  <button
-                    type="button"
-                    onClick={handleWaivePenalty}
-                    className="text-[10px] font-bold text-error hover:underline"
-                  >
-                    Waive Penalty (₹0)
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => handleTogglePayPenaltyLater(false)}
-                    className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
-                      !payPenaltyLater
-                        ? "border-primary bg-primary/10 text-primary font-bold shadow-xs"
-                        : "border-base-300 bg-base-200/40 text-base-content/70 hover:border-base-content/30"
-                    }`}
-                  >
-                    <span className="text-xs font-bold">Pay Penalty Now</span>
-                    <span className="text-[10px] opacity-70">
-                      Pay {formatCurrency(remainingTotalDue)} in full
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleTogglePayPenaltyLater(true)}
-                    className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
-                      payPenaltyLater
-                        ? "border-warning bg-warning/15 text-warning font-bold shadow-xs"
-                        : "border-base-300 bg-base-200/40 text-base-content/70 hover:border-base-content/30"
-                    }`}
-                  >
-                    <span className="text-xs font-bold">Pay Penalty Later</span>
-                    <span className="text-[10px] opacity-70">
-                      Pay {formatCurrency(remainingPrincipalDue)} · Defer penalty
-                    </span>
-                  </button>
-                </div>
-
-                {payPenaltyLater && (
-                  <p className="text-[11px] text-warning font-medium leading-tight pt-1">
-                    Notice: Paying <strong>{formatCurrency(remainingPrincipalDue)}</strong> toward remaining principal now. Penalty of <strong>{formatCurrency(penaltyAmount)}</strong> remains recorded and will be collected later.
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-base-200 mb-4">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Receipt size={17} />
+                </span>
+                <div>
+                  <h3 className="font-bold text-base text-base-content leading-tight">
+                    {alreadyPaid > 0 ? "Record Subsequent Payment" : "Record Installment Payment"}
+                  </h3>
+                  <p className="text-[11px] text-base-content/50">
+                    Installment #{installment.installment_no} · Due {new Date(installment.due_date).toLocaleDateString("en-GB")}
+                    {alreadyPaid > 0 && (
+                      <span className="text-warning font-semibold ml-1.5">(Partial Paid)</span>
+                    )}
                   </p>
-                )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn-ghost btn-xs btn-square text-base-content/50 hover:text-base-content"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Backend / Submission Error */}
+            {error && (
+              <div className="flex items-start gap-2 p-3 mb-4 rounded-xl bg-error/10 border border-error/20 text-error text-xs">
+                <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                <div className="font-medium">
+                  {typeof error === "string" ? error : "Failed to record payment. Please verify the amount."}
+                </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-3.5">
-              
-              {/* Amount to Pay Now Input */}
-              <div className="form-control">
-                <div className="flex items-center justify-between pb-1">
-                  <label className="text-xs font-semibold text-base-content/80" htmlFor="payment-amount-now-input">
-                    Amount to Pay Now (₹) *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleSetFullRemainingPayment}
-                    className="text-[11px] font-semibold text-primary hover:underline"
-                  >
-                    Pay Remaining ({formatCurrency(remainingTotalDue)})
-                  </button>
-                </div>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3 text-base-content/40 text-xs font-bold pointer-events-none">
-                    ₹
+            {/* Overdue & Penalty Calculation API Info Banner */}
+            {loadingPenalty ? (
+              <div className="flex items-center gap-2 p-2.5 mb-3 rounded-xl bg-base-200/50 text-[11px] text-base-content/60">
+                <Loader2 size={13} className="animate-spin text-primary shrink-0" />
+                <span>Calculating system penalty from active loan policy…</span>
+              </div>
+            ) : penaltyApiData && penaltyApiData.days_overdue > 0 ? (
+              <div className="p-3 mb-3.5 rounded-xl bg-warning/10 border border-warning/25 text-warning-content text-xs space-y-1">
+                <div className="flex items-center justify-between font-bold">
+                  <span className="flex items-center gap-1.5 text-warning">
+                    <ShieldAlert size={14} />
+                    Installment Overdue
                   </span>
-                  <input
-                    id="payment-amount-now-input"
-                    type="number"
-                    min="0.01"
-                    max={maxPayableNow}
-                    step="0.01"
-                    required
-                    value={form.amount_paying_now}
-                    onChange={handleAmountPayingNowChange}
-                    placeholder={`Max ${maxPayableNow}`}
-                    className={`input input-bordered input-sm rounded-xl pl-7 w-full font-medium ${
-                      fieldErrors.amount_paying_now ? "input-error border-error" : ""
-                    }`}
-                  />
-                </div>
-                {fieldErrors.amount_paying_now && (
-                  <span className="text-[11px] text-error mt-1 flex items-center gap-1 font-medium">
-                    <AlertCircle size={12} />
-                    {fieldErrors.amount_paying_now}
+                  <span className="text-mono font-bold text-error">
+                    {penaltyApiData.days_overdue} Days Late ({penaltyApiData.penalty_days} Penalty Days)
                   </span>
-                )}
-              </div>
-
-              {/* Payment Date & Penalty Row */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Payment Date */}
-                <div className="form-control">
-                  <label className="label pb-1" htmlFor="payment-date-input">
-                    <span className="label-text text-xs font-semibold">Payment Date *</span>
-                  </label>
-                  <input
-                    id="payment-date-input"
-                    type="date"
-                    required
-                    value={form.paid_date}
-                    onChange={(e) => {
-                      setForm((prev) => ({ ...prev, paid_date: e.target.value }));
-                      setFieldErrors((prev) => ({ ...prev, paid_date: null }));
-                    }}
-                    className={`input input-bordered input-sm rounded-xl w-full font-medium ${
-                      fieldErrors.paid_date ? "input-error border-error" : ""
-                    }`}
-                  />
-                  {fieldErrors.paid_date && (
-                    <span className="text-[11px] text-error mt-1">{fieldErrors.paid_date}</span>
-                  )}
                 </div>
-
-                {/* Penalty Input with Max Cap */}
-                <div className="form-control">
-                  <div className="flex items-center justify-between pb-1">
-                    <label className="text-xs font-semibold text-base-content/80" htmlFor="penalty-amount-input">
-                      Penalty (₹)
-                    </label>
-                    {maxAllowedPenalty > 0 && (
-                      <span className="text-[10px] text-base-content/50">
-                        Max: ₹{maxAllowedPenalty}
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    id="penalty-amount-input"
-                    type="number"
-                    min="0"
-                    max={maxAllowedPenalty > 0 ? maxAllowedPenalty : undefined}
-                    step="0.01"
-                    value={form.penalty_amount}
-                    onChange={handlePenaltyChange}
-                    placeholder="0"
-                    className={`input input-bordered input-sm rounded-xl w-full font-medium ${
-                      fieldErrors.penalty_amount ? "input-error border-error" : ""
-                    }`}
-                  />
-                  {fieldErrors.penalty_amount && (
-                    <span className="text-[10px] text-error mt-1 flex items-center gap-1 font-medium">
-                      <AlertCircle size={11} />
-                      {fieldErrors.penalty_amount}
-                    </span>
-                  )}
+                <div className="flex items-center justify-between text-[11px] text-base-content/70 pt-0.5">
+                  <span>Policy Calculated Penalty:</span>
+                  <span className="font-bold text-mono text-error">
+                    {formatCurrency(penaltyApiData.penalty_amount)}
+                  </span>
                 </div>
               </div>
+            ) : null}
 
-              {/* Automatic Status & Cumulative Accounting Summary */}
-              <div className="rounded-xl border border-base-300 bg-base-200/40 p-3 flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">
-                    New Installment Status
-                  </div>
-                  <div className="mt-1">
-                    {autoStatus === "paid" && (
-                      <span className="badge badge-success gap-1 text-[11px] font-bold text-success-content py-2 px-2.5">
-                        <CheckCircle2 size={12} />
-                        Paid (Full Settlement)
-                      </span>
-                    )}
-                    {autoStatus === "partial" && (
-                      <span className="badge badge-warning gap-1 text-[11px] font-bold text-warning-content py-2 px-2.5">
-                        <Clock size={12} />
-                        Partial Payment
-                      </span>
-                    )}
-                    {autoStatus === "pending" && (
-                      <span className="badge badge-ghost text-[11px] font-medium py-2 px-2.5">
-                        Pending (Unpaid)
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">
-                    Remaining After Payment
-                  </div>
-                  <div className="text-sm font-bold text-mono text-base-content mt-0.5">
-                    {formatCurrency(projectedRemainingBalance)}
-                  </div>
-                </div>
+            {/* Financial Breakdown Card with Remaining Due Clarity */}
+            <div className="rounded-xl bg-base-200/60 border border-base-300/80 p-3.5 mb-4 text-xs space-y-2">
+              <div className="flex justify-between items-center text-base-content/70">
+                <span>Total Installment Amount</span>
+                <span className="font-semibold text-base-content text-mono">
+                  {formatCurrency(principalAmount)}
+                </span>
               </div>
 
-              {/* Cumulative Progress Pill (Shows previous + current payment) */}
-              {alreadyPaid > 0 && currentPayingNow > 0 && (
-                <div className="text-[11px] text-base-content/60 bg-base-200/70 rounded-lg px-3 py-1.5 flex items-center justify-between">
-                  <span>Ledger Progress:</span>
-                  <span className="font-mono font-medium">
-                    {formatCurrency(alreadyPaid)} + <strong className="text-primary">{formatCurrency(currentPayingNow)}</strong> = <strong>{formatCurrency(projectedCumulativePaid)}</strong> of {formatCurrency(totalPayableLiability)}
+              {penaltyAmount > 0 && (
+                <div className="flex justify-between items-center text-base-content/70">
+                  <span>Late Fee / Penalty</span>
+                  <span className="font-semibold text-mono text-error">
+                    + {formatCurrency(penaltyAmount)}
                   </span>
                 </div>
               )}
 
-              {/* Modal Action Buttons */}
-              <div className="modal-action mt-5 pt-3 border-t border-base-200 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={loading}
-                  className="btn btn-ghost btn-sm rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || Boolean(fieldErrors.amount_paying_now) || Boolean(fieldErrors.penalty_amount)}
-                  className="btn btn-primary btn-sm rounded-xl gap-1.5 shadow-sm font-bold"
-                >
-                  {loading && <Loader2 size={14} className="animate-spin" />}
-                  <span>Confirm & Save Payment</span>
-                </button>
+              {alreadyPaid > 0 && (
+                <div className="flex justify-between items-center text-success font-medium">
+                  <span>Already Paid Previously</span>
+                  <span className="font-bold text-mono">
+                    - {formatCurrency(alreadyPaid)}
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-base-300 flex justify-between items-center">
+                <div>
+                  <span className="font-bold text-base-content text-xs">Remaining Balance Due</span>
+                  {alreadyPaid > 0 && (
+                    <div className="text-[10px] text-base-content/50">
+                      Total {formatCurrency(totalPayableLiability)} less {formatCurrency(alreadyPaid)} paid
+                    </div>
+                  )}
+                </div>
+                <span className="font-bold text-base text-primary text-mono">
+                  {formatCurrency(remainingTotalDue)}
+                </span>
               </div>
-            </form>
+            </div>
+
+            {/* Fully Settled Alert */}
+            {isAlreadyFullySettled ? (
+              <div className="p-4 mb-4 rounded-xl bg-success/10 border border-success/20 text-success text-center space-y-1">
+                <CheckCircle2 size={24} className="mx-auto text-success mb-1" />
+                <div className="font-bold text-sm">Installment Fully Settled</div>
+                <p className="text-xs text-base-content/70">
+                  This installment has already been paid in full ({formatCurrency(alreadyPaid)} collected). No further dues remaining.
+                </p>
+                <div className="pt-3">
+                  <button type="button" onClick={onClose} className="btn btn-outline btn-sm rounded-xl">
+                    Close Window
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Penalty Payment Options: Pay Now vs Pay Later */}
+                {penaltyAmount > 0 && (
+                  <div className="rounded-xl border border-base-300 bg-base-100 p-3 mb-4 space-y-2 text-xs">
+                    <div className="flex items-center justify-between font-bold text-base-content/80 text-[11px] uppercase tracking-wider">
+                      <span>Penalty Payment Option</span>
+                      <button
+                        type="button"
+                        onClick={handleWaivePenalty}
+                        className="text-[10px] font-bold text-error hover:underline"
+                      >
+                        Waive Penalty (₹0)
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePayPenaltyLater(false)}
+                        className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
+                          !payPenaltyLater
+                            ? "border-primary bg-primary/10 text-primary font-bold shadow-xs"
+                            : "border-base-300 bg-base-200/40 text-base-content/70 hover:border-base-content/30"
+                        }`}
+                      >
+                        <span className="text-xs font-bold">Pay Penalty Now</span>
+                        <span className="text-[10px] opacity-70">
+                          Pay {formatCurrency(remainingTotalDue)} in full
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePayPenaltyLater(true)}
+                        className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
+                          payPenaltyLater
+                            ? "border-warning bg-warning/15 text-warning font-bold shadow-xs"
+                            : "border-base-300 bg-base-200/40 text-base-content/70 hover:border-base-content/30"
+                        }`}
+                      >
+                        <span className="text-xs font-bold">Pay Penalty Later</span>
+                        <span className="text-[10px] opacity-70">
+                          Pay {formatCurrency(remainingPrincipalDue)} · Defer penalty
+                        </span>
+                      </button>
+                    </div>
+
+                    {payPenaltyLater && (
+                      <p className="text-[11px] text-warning font-medium leading-tight pt-1">
+                        Notice: Paying <strong>{formatCurrency(remainingPrincipalDue)}</strong> toward remaining principal now. Penalty of <strong>{formatCurrency(penaltyAmount)}</strong> remains recorded and will be collected later.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-3.5">
+                  
+                  {/* Amount to Pay Now Input */}
+                  <div className="form-control">
+                    <div className="flex items-center justify-between pb-1">
+                      <label className="text-xs font-semibold text-base-content/80" htmlFor="payment-amount-now-input">
+                        Amount to Pay Now (₹) *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSetFullRemainingPayment}
+                        className="text-[11px] font-semibold text-primary hover:underline"
+                      >
+                        Pay Remaining ({formatCurrency(remainingTotalDue)})
+                      </button>
+                    </div>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-base-content/40 text-xs font-bold pointer-events-none">
+                        ₹
+                      </span>
+                      <input
+                        id="payment-amount-now-input"
+                        type="number"
+                        min="0.01"
+                        max={maxPayableNow}
+                        step="0.01"
+                        required
+                        value={form.amount_paying_now}
+                        onChange={handleAmountPayingNowChange}
+                        placeholder={`Max ${maxPayableNow}`}
+                        className={`input input-bordered input-sm rounded-xl pl-7 w-full font-medium ${
+                          fieldErrors.amount_paying_now ? "input-error border-error" : ""
+                        }`}
+                      />
+                    </div>
+                    {fieldErrors.amount_paying_now && (
+                      <span className="text-[11px] text-error mt-1 flex items-center gap-1 font-medium">
+                        <AlertCircle size={12} />
+                        {fieldErrors.amount_paying_now}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Payment Date & Penalty Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Payment Date */}
+                    <div className="form-control">
+                      <label className="label pb-1" htmlFor="payment-date-input">
+                        <span className="label-text text-xs font-semibold">Payment Date *</span>
+                      </label>
+                      <input
+                        id="payment-date-input"
+                        type="date"
+                        required
+                        value={form.paid_date}
+                        onChange={(e) => {
+                          setForm((prev) => ({ ...prev, paid_date: e.target.value }));
+                          setFieldErrors((prev) => ({ ...prev, paid_date: null }));
+                        }}
+                        className={`input input-bordered input-sm rounded-xl w-full font-medium ${
+                          fieldErrors.paid_date ? "input-error border-error" : ""
+                        }`}
+                      />
+                      {fieldErrors.paid_date && (
+                        <span className="text-[11px] text-error mt-1">{fieldErrors.paid_date}</span>
+                      )}
+                    </div>
+
+                    {/* Penalty Input with Max Cap */}
+                    <div className="form-control">
+                      <div className="flex items-center justify-between pb-1">
+                        <label className="text-xs font-semibold text-base-content/80" htmlFor="penalty-amount-input">
+                          Penalty (₹)
+                        </label>
+                        {maxAllowedPenalty > 0 && (
+                          <span className="text-[10px] text-base-content/50">
+                            Max: ₹{maxAllowedPenalty}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        id="penalty-amount-input"
+                        type="number"
+                        min="0"
+                        max={maxAllowedPenalty > 0 ? maxAllowedPenalty : undefined}
+                        step="0.01"
+                        value={form.penalty_amount}
+                        onChange={handlePenaltyChange}
+                        placeholder="0"
+                        className={`input input-bordered input-sm rounded-xl w-full font-medium ${
+                          fieldErrors.penalty_amount ? "input-error border-error" : ""
+                        }`}
+                      />
+                      {fieldErrors.penalty_amount && (
+                        <span className="text-[10px] text-error mt-1 flex items-center gap-1 font-medium">
+                          <AlertCircle size={11} />
+                          {fieldErrors.penalty_amount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Automatic Status & Cumulative Accounting Summary */}
+                  <div className="rounded-xl border border-base-300 bg-base-200/40 p-3 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">
+                        New Installment Status
+                      </div>
+                      <div className="mt-1">
+                        {autoStatus === "paid" && (
+                          <span className="badge badge-success gap-1 text-[11px] font-bold text-success-content py-2 px-2.5">
+                            <CheckCircle2 size={12} />
+                            Paid (Full Settlement)
+                          </span>
+                        )}
+                        {autoStatus === "partial" && (
+                          <span className="badge badge-warning gap-1 text-[11px] font-bold text-warning-content py-2 px-2.5">
+                            <Clock size={12} />
+                            Partial Payment
+                          </span>
+                        )}
+                        {autoStatus === "pending" && (
+                          <span className="badge badge-ghost text-[11px] font-medium py-2 px-2.5">
+                            Pending (Unpaid)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">
+                        Remaining After Payment
+                      </div>
+                      <div className="text-sm font-bold text-mono text-base-content mt-0.5">
+                        {formatCurrency(projectedRemainingBalance)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cumulative Progress Pill (Shows previous + current payment) */}
+                  {alreadyPaid > 0 && currentPayingNow > 0 && (
+                    <div className="text-[11px] text-base-content/60 bg-base-200/70 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                      <span>Ledger Progress:</span>
+                      <span className="font-mono font-medium">
+                        {formatCurrency(alreadyPaid)} + <strong className="text-primary">{formatCurrency(currentPayingNow)}</strong> = <strong>{formatCurrency(projectedCumulativePaid)}</strong> of {formatCurrency(totalPayableLiability)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Modal Action Buttons */}
+                  <div className="modal-action mt-5 pt-3 border-t border-base-200 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={loading}
+                      className="btn btn-ghost btn-sm rounded-xl"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading || Boolean(fieldErrors.amount_paying_now) || Boolean(fieldErrors.penalty_amount)}
+                      className="btn btn-primary btn-sm rounded-xl gap-1.5 shadow-sm font-bold"
+                    >
+                      {loading && <Loader2 size={14} className="animate-spin" />}
+                      <span>Confirm & Save Payment</span>
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </>
         )}
 

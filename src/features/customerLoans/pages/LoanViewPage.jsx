@@ -150,16 +150,18 @@ export default function LoanViewPage() {
   };
 
   const handlePaymentSubmit = async (formData) => {
-    if (!canCollect) return;
+    if (!canCollect) return { success: false, error: "Unauthorized" };
     setPaymentSubmitting(true);
     try {
       const action = await dispatch(
         editInstallment({ id: paymentTarget.id, formData })
       );
       if (editInstallment.fulfilled.match(action)) {
-        setPaymentTarget(null);
         dispatch(fetchInstallmentsByLoan(id)); // refresh list + statuses
         dispatch(fetchCustomerLoanById(id)); // refresh loan stats & status
+        return { success: true, data: action.payload };
+      } else {
+        return { success: false, error: action.payload };
       }
     } finally {
       setPaymentSubmitting(false);
@@ -654,10 +656,13 @@ export default function LoanViewPage() {
         </div>
       )}
 
-      {/* Payment modal */}
+      {/* Payment modal with Receipt & Success UI */}
       <InstallmentPaymentModal
         open={Boolean(paymentTarget)}
         installment={paymentTarget}
+        loan={loan}
+        customer={customer}
+        company={company}
         loading={paymentSubmitting}
         error={paymentTarget ? installmentError : null}
         onClose={handleClosePayment}
