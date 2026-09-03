@@ -13,7 +13,7 @@ const emptyForm = {
   description: "",
   purchase_price: "",
   purchase_date: "",
-  quantity: "",
+  quantity: "1",
   vendor_name: "",
   invoice_number: "",
   // current_value: "",
@@ -111,8 +111,8 @@ export default function AssetFormModal({
     if (!form.asset_name.trim()) errors.asset_name = "Asset name is required";
     if (form.purchase_price === "" || Number(form.purchase_price) < 0)
       errors.purchase_price = "Enter a valid purchase price";
-    if (form.current_value !== "" && Number(form.current_value) < 0)
-      errors.current_value = "Current value cannot be negative";
+    if (form.quantity !== "" && Number(form.quantity) < 1)
+      errors.quantity = "Quantity must be at least 1";
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -131,7 +131,7 @@ export default function AssetFormModal({
     fd.append("description", form.description.trim());
     fd.append("purchase_price", Number(form.purchase_price));
     fd.append("purchase_date", form.purchase_date || "");
-    fd.append("quantity", Number(form.quantity));
+    fd.append("quantity", form.quantity ? Number(form.quantity) : 1);
     fd.append("vendor_name", form.vendor_name.trim());
     fd.append("invoice_number", form.invoice_number.trim());
     // fd.append(
@@ -364,13 +364,13 @@ export default function AssetFormModal({
                 </label>
                 <input
                   type="number"
-                  min="0"
-                  step="0.01"
+                  min="1"
+                  step="1"
                   value={form.quantity}
                   onChange={handleChange("quantity")}
                   className={inputClass("quantity")}
                 />
-                <FieldError field="current_value" />
+                <FieldError field="quantity" />
               </div>
               <div className="form-control">
                 <label className="label pb-1">

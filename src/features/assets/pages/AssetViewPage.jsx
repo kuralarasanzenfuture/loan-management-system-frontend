@@ -62,15 +62,6 @@ export default function AssetViewPage() {
 
   if (!asset) return null;
 
-  const depreciation =
-    asset.purchase_price > 0
-      ? Math.round(
-          ((asset.purchase_price - (asset.current_value || 0)) /
-            asset.purchase_price) *
-            100,
-        )
-      : 0;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -120,41 +111,43 @@ export default function AssetViewPage() {
 
       {/* Value strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
-          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
-            <IndianRupee size={18} />
-          </span>
-          <div>
-            <div className="text-xs text-base-content/50">Current Value</div>
-            <div className="text-lg font-semibold leading-tight">
-              {formatCurrency(asset.current_value)}
-            </div>
-          </div>
-        </div> */}
         <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
           <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-info/10 text-info shrink-0">
             <Tag size={18} />
           </span>
           <div>
-            <div className="text-xs text-base-content/50">Purchase Price</div>
+            <div className="text-xs text-base-content/50">Unit Price</div>
             <div className="text-lg font-semibold leading-tight">
               {formatCurrency(asset.purchase_price)}
             </div>
           </div>
         </div>
-        {/* <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
-          <span
-            className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${depreciation > 0 ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}
-          >
-            <BadgeCheck size={18} />
+
+        <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+            <Package size={18} />
           </span>
           <div>
-            <div className="text-xs text-base-content/50">Depreciation</div>
+            <div className="text-xs text-base-content/50">Quantity</div>
             <div className="text-lg font-semibold leading-tight">
-              {depreciation}%
+              {asset.quantity || 1} units
             </div>
           </div>
-        </div> */}
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-success/20 bg-success/5 px-5 py-4">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 text-success shrink-0">
+            <IndianRupee size={18} />
+          </span>
+          <div>
+            <div className="text-xs text-base-content/50">Total Value</div>
+            <div className="text-lg font-semibold leading-tight text-success">
+              {formatCurrency(
+                (Number(asset.purchase_price) || 0) * (Number(asset.quantity) || 1),
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -203,8 +196,18 @@ export default function AssetViewPage() {
                   : null
               }
             />
-            <InfoRow label="purchase Price" value={asset.purchase_price} />
-            <InfoRow label="quantity" value={asset.quantity} />
+            <InfoRow
+              label="Unit Price"
+              value={formatCurrency(asset.purchase_price)}
+            />
+            <InfoRow label="Quantity" value={asset.quantity || 1} />
+            <InfoRow
+              label="Total Cost"
+              value={formatCurrency(
+                (Number(asset.purchase_price) || 0) *
+                  (Number(asset.quantity) || 1),
+              )}
+            />
             <InfoRow label="Vendor" value={asset.vendor_name} />
             <InfoRow label="Invoice Number" value={asset.invoice_number} />
           </div>

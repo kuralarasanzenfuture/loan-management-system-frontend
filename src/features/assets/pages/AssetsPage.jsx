@@ -116,8 +116,17 @@ export default function AssetsPage() {
     reset: resetPage,
   } = usePagination({ data: filteredAssets, initialSize: 10 });
 
-  const totalCurrentValue = useMemo(
-    () => assets.reduce((sum, a) => sum + (Number(a.current_value) || 0), 0),
+  const totalAssetValue = useMemo(
+    () =>
+      assets.reduce(
+        (sum, a) =>
+          sum + (Number(a.purchase_price) || 0) * (Number(a.quantity) || 1),
+        0,
+      ),
+    [assets],
+  );
+  const totalQuantity = useMemo(
+    () => assets.reduce((sum, a) => sum + (Number(a.quantity) || 1), 0),
     [assets],
   );
   const damagedCount = useMemo(
@@ -219,9 +228,12 @@ export default function AssetsPage() {
             <Package size={18} />
           </span>
           <div>
-            <div className="text-xs text-base-content/50">Total assets</div>
+            <div className="text-xs text-base-content/50">Total Assets</div>
             <div className="text-2xl font-semibold leading-tight">
-              {assets.length}
+              {assets.length}{" "}
+              <span className="text-xs text-base-content/40 font-normal">
+                ({totalQuantity} units)
+              </span>
             </div>
           </div>
         </div>
@@ -231,10 +243,10 @@ export default function AssetsPage() {
           </span>
           <div>
             <div className="text-xs text-base-content/50">
-              Total current value
+              Total Asset Value
             </div>
             <div className="text-xl font-semibold leading-tight">
-              {formatCurrency(totalCurrentValue)}
+              {formatCurrency(totalAssetValue)}
             </div>
           </div>
         </div>

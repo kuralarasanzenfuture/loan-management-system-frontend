@@ -125,9 +125,16 @@ export default function AssetTable({
 
               <td className="text-xs">
                 <div className="font-semibold text-base-content">
-                  {formatCurrency(asset.purchase_price)}
+                  {formatCurrency(
+                    (Number(asset.purchase_price) || 0) *
+                      (Number(asset.quantity) || 1),
+                  )}
                 </div>
-                <div className="text-[10px] text-base-content/40">Bought</div>
+                <div className="text-[10px] text-base-content/50">
+                  {Number(asset.quantity) > 1
+                    ? `${asset.quantity} units × ${formatCurrency(asset.purchase_price)}`
+                    : "Bought"}
+                </div>
               </td>
 
               <td>
