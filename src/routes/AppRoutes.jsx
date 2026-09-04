@@ -247,6 +247,8 @@ import CustomerLoanSummaryPage from "../features/reports/customerReports/pages/C
 import RolePermissionsPage from "../features/permissions/pages/RolePermissionsPage.jsx";
 import UserPermissionsPage from "../features/permissions/pages/UserPermissionsPage.jsx";
 import UnauthorizedPage from "../common/pages/UnauthorizedPage.jsx";
+import InterestLoanPlansPage from "../features/interestLoanPlan/pages/InterestLoanPlansPage.jsx";
+import InterestLoanPlanViewPage from "../features/interestLoanPlan/pages/InterestLoanPlanViewPage.jsx";
 
 // Centralized configuration for protected routes inside MainLayout
 const protectedRoutesConfig = [
@@ -529,6 +531,17 @@ const protectedRoutesConfig = [
     path: "/reports/loan-collections",
     element: <CollectionReportsPage />,
     permission: "COLLECTION_REPORT_VIEW",
+  },
+
+  {
+    path: "/interest-loan-plans",
+    element: <InterestLoanPlansPage />,
+    permission: ["INTEREST_LOAN_PLAN_VIEW", "LOAN_PLAN_VIEW"],
+  },
+  {
+    path: "/interest-loan-plans/:id",
+    element: <InterestLoanPlanViewPage />,
+    permission: ["INTEREST_LOAN_PLAN_VIEW", "LOAN_PLAN_VIEW"],
   },
 
   // Profile & Settings (Authenticated, no specific permission required)

@@ -17,6 +17,7 @@ import {
   Settings,
   HandCoins,
   Wallet,
+  Percent,
 } from "lucide-react";
 import { PERMISSIONS, ROLES } from "../../../../constants/permissions.js";
 
@@ -77,6 +78,15 @@ export const NAV_SECTIONS = [
         icon: Wallet,
         path: "/personal-chits",
         permission: PERMISSIONS.PERSONAL_CHIT_VIEW,
+      },
+      {
+        label: "Interest-Only Loan Plans",
+        icon: Percent,
+        path: "/interest-loan-plans",
+        permission: [
+          PERMISSIONS.INTEREST_LOAN_PLAN_VIEW,
+          PERMISSIONS.LOAN_PLAN_VIEW,
+        ],
       },
     ],
   },

@@ -21,6 +21,7 @@ import dashboardReducer from "../redux/dashboard/dashboardSlice.js";
 import modulesActionsReducer from "../redux/modulesActions/modulesActionsSlice.js";
 import rolePermissionReducer from "../redux/rolePermissions/rolePermissionSlice.js";
 import userPermissionReducer from "../redux/userPermissions/userPermissionSlice.js";
+import interestLoanPlanReducer from "../redux/interestLoanPlan/interestLoanPlanSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -45,6 +46,7 @@ export const store = configureStore({
     modulesActions: modulesActionsReducer,
     rolePermissions: rolePermissionReducer,
     userPermissions: userPermissionReducer,
+    interestLoanPlans: interestLoanPlanReducer,
     // },
     // middleware: (getDefaultMiddleware) => {
     //   return getDefaultMiddleware({
