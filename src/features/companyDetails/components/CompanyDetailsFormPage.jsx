@@ -11,6 +11,7 @@ import {
   Share2,
   Loader2,
   Save,
+  MessageCircle,
 } from "lucide-react";
 import {
   addCompanyDetails,
@@ -126,6 +127,84 @@ const tabForField = {
   whatsapp_number: "social",
 };
 
+export const COUNTRY_CODES = [
+  { code: "+91", country: "India", flag: "🇮🇳" },
+  { code: "+1", country: "USA / Canada", flag: "🇺🇸" },
+  { code: "+44", country: "UK", flag: "🇬🇧" },
+  { code: "+971", country: "UAE", flag: "🇦🇪" },
+  { code: "+65", country: "Singapore", flag: "🇸🇬" },
+  { code: "+60", country: "Malaysia", flag: "🇲🇾" },
+  { code: "+61", country: "Australia", flag: "🇦🇺" },
+  { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
+  { code: "+974", country: "Qatar", flag: "🇶🇦" },
+  { code: "+968", country: "Oman", flag: "🇴🇲" },
+  { code: "+973", country: "Bahrain", flag: "🇧🇭" },
+  { code: "+965", country: "Kuwait", flag: "🇰🇼" },
+  { code: "+94", country: "Sri Lanka", flag: "🇱🇰" },
+  { code: "+880", country: "Bangladesh", flag: "🇧🇩" },
+  { code: "+977", country: "Nepal", flag: "🇳🇵" },
+];
+
+export function parsePhoneNumber(raw = "") {
+  if (!raw) return { countryCode: "+91", number: "" };
+  const str = String(raw).trim();
+  for (const c of COUNTRY_CODES) {
+    if (str.startsWith(c.code)) {
+      const rest = str.slice(c.code.length).replace(/^[ -]+/, "");
+      return { countryCode: c.code, number: rest };
+    }
+  }
+  return { countryCode: "+91", number: str.replace(/^\+/, "") };
+}
+
+function PhoneInputWithCountry({
+  label,
+  countryCode,
+  onCountryCodeChange,
+  value,
+  onChange,
+  error,
+  placeholder = "98765 43210",
+  icon,
+}) {
+  return (
+    <div className="form-control">
+      <label className="label pb-1">
+        <span className="label-text text-xs font-semibold flex items-center gap-1.5">
+          {icon}
+          {label}
+        </span>
+      </label>
+      <div className="join w-full">
+        <select
+          value={countryCode}
+          onChange={(e) => onCountryCodeChange(e.target.value)}
+          className="join-item select select-bordered select-sm text-xs font-medium bg-base-200/50 w-28 shrink-0 px-2.5"
+        >
+          {COUNTRY_CODES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.flag} {c.code}
+            </option>
+          ))}
+        </select>
+        <input
+          type="tel"
+          value={value}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^\d\s-]/g, "");
+            onChange(val);
+          }}
+          placeholder={placeholder}
+          className={`join-item input input-bordered input-sm w-full text-xs font-medium ${
+            error ? "input-error" : ""
+          }`}
+        />
+      </div>
+      {error && <span className="text-[11px] text-error mt-1">{error}</span>}
+    </div>
+  );
+}
+
 /**
  * CompanyDetailsFormPage
  * Props:
@@ -146,6 +225,16 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
     stamp_image: null,
     signature_image: null,
   });
+
+  // Dedicated phone and country code states
+  const [phoneCountry, setPhoneCountry] = useState("+91");
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const [altPhoneCountry, setAltPhoneCountry] = useState("+91");
+  const [altPhoneNumber, setAltPhoneNumber] = useState("");
+
+  const [whatsappCountry, setWhatsappCountry] = useState("+91");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
 
   useEffect(() => {
     dispatch(clearCompanyDetailsError());
@@ -191,6 +280,26 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
         whatsapp_number: initialData.whatsapp_number || "",
         status: initialData.status || "active",
       });
+
+      const p = parsePhoneNumber(initialData.phone);
+      setPhoneCountry(p.countryCode);
+      setPhoneNumber(p.number);
+
+      const ap = parsePhoneNumber(initialData.alternate_phone);
+      setAltPhoneCountry(ap.countryCode);
+      setAltPhoneNumber(ap.number);
+
+      const wp = parsePhoneNumber(initialData.whatsapp_number);
+      setWhatsappCountry(wp.countryCode);
+      setWhatsappNumber(wp.number);
+    } else {
+      setForm(emptyForm);
+      setPhoneCountry("+91");
+      setPhoneNumber("");
+      setAltPhoneCountry("+91");
+      setAltPhoneNumber("");
+      setWhatsappCountry("+91");
+      setWhatsappNumber("");
     }
   }, [isEdit, initialData, dispatch]);
 
@@ -241,6 +350,26 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
       !/^[A-Z]{5}\d{4}[A-Z]$/i.test(form.pan_number.trim())
     )
       errors.pan_number = "Enter a valid PAN (e.g. ABCDE1234F)";
+
+    if (phoneNumber.trim()) {
+      const clean = phoneNumber.replace(/[\s-]/g, "");
+      if (clean.length < 7 || clean.length > 14) {
+        errors.phone = "Enter a valid phone number (7 to 14 digits)";
+      }
+    }
+    if (altPhoneNumber.trim()) {
+      const clean = altPhoneNumber.replace(/[\s-]/g, "");
+      if (clean.length < 7 || clean.length > 14) {
+        errors.alternate_phone = "Enter a valid alternate phone number";
+      }
+    }
+    if (whatsappNumber.trim()) {
+      const clean = whatsappNumber.replace(/[\s-]/g, "");
+      if (clean.length < 7 || clean.length > 14) {
+        errors.whatsapp_number = "Enter a valid WhatsApp number";
+      }
+    }
+
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email.trim()))
       errors.email = "Enter a valid email address";
     if (form.alternate_email && !/^\S+@\S+\.\S+$/.test(form.alternate_email.trim()))
@@ -275,6 +404,15 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
 
     if (form.gst_number) fd.set("gst_number", form.gst_number.toUpperCase().trim());
     if (form.pan_number) fd.set("pan_number", form.pan_number.toUpperCase().trim());
+
+    // Phone numbers with country code
+    const fullPhone = phoneNumber.trim() ? `${phoneCountry} ${phoneNumber.trim()}` : "";
+    const fullAltPhone = altPhoneNumber.trim() ? `${altPhoneCountry} ${altPhoneNumber.trim()}` : "";
+    const fullWhatsapp = whatsappNumber.trim() ? `${whatsappCountry} ${whatsappNumber.trim()}` : "";
+
+    fd.set("phone", fullPhone);
+    fd.set("alternate_phone", fullAltPhone);
+    fd.set("whatsapp_number", fullWhatsapp);
 
     Object.entries(images).forEach(([key, file]) => {
       if (file) fd.append(key, file);
@@ -508,32 +646,30 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
             {/* Contact */}
             {activeTab === "contact" && (
               <div className="grid grid-cols-2 gap-3">
-                <div className="form-control">
-                  <label className="label pb-1">
-                    <span className="label-text text-xs font-semibold">
-                      Phone
-                    </span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={handleChange("phone")}
-                    className={inputClass("phone")}
-                  />
-                </div>
-                <div className="form-control">
-                  <label className="label pb-1">
-                    <span className="label-text text-xs font-semibold">
-                      Alternate Phone
-                    </span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.alternate_phone}
-                    onChange={handleChange("alternate_phone")}
-                    className={inputClass("alternate_phone")}
-                  />
-                </div>
+                <PhoneInputWithCountry
+                  label="Primary Phone"
+                  countryCode={phoneCountry}
+                  onCountryCodeChange={setPhoneCountry}
+                  value={phoneNumber}
+                  onChange={(val) => {
+                    setPhoneNumber(val);
+                    setFieldErrors((prev) => ({ ...prev, phone: null }));
+                  }}
+                  error={fieldErrors.phone}
+                  placeholder="98765 43210"
+                />
+                <PhoneInputWithCountry
+                  label="Alternate Phone"
+                  countryCode={altPhoneCountry}
+                  onCountryCodeChange={setAltPhoneCountry}
+                  value={altPhoneNumber}
+                  onChange={(val) => {
+                    setAltPhoneNumber(val);
+                    setFieldErrors((prev) => ({ ...prev, alternate_phone: null }));
+                  }}
+                  error={fieldErrors.alternate_phone}
+                  placeholder="80 2345 6789"
+                />
                 <div className="form-control">
                   <label className="label pb-1">
                     <span className="label-text text-xs font-semibold">
@@ -921,20 +1057,19 @@ export default function CompanyDetailsFormPage({ initialData, onCancel }) {
                     placeholder="https://youtube.com/@yourchannel"
                   />
                 </div>
-                <div className="form-control">
-                  <label className="label pb-1">
-                    <span className="label-text text-xs font-semibold">
-                      WhatsApp Number
-                    </span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.whatsapp_number}
-                    onChange={handleChange("whatsapp_number")}
-                    className={inputClass("whatsapp_number")}
-                    placeholder="919876543210"
-                  />
-                </div>
+                <PhoneInputWithCountry
+                  label="WhatsApp Number"
+                  countryCode={whatsappCountry}
+                  onCountryCodeChange={setWhatsappCountry}
+                  value={whatsappNumber}
+                  onChange={(val) => {
+                    setWhatsappNumber(val);
+                    setFieldErrors((prev) => ({ ...prev, whatsapp_number: null }));
+                  }}
+                  error={fieldErrors.whatsapp_number}
+                  placeholder="98765 43210"
+                  icon={<MessageCircle size={13} className="text-success" />}
+                />
               </div>
             )}
           </div>

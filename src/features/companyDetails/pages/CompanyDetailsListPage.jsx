@@ -200,7 +200,7 @@ export default function CompanyDetailsListPage() {
           <p className="text-sm">No company profile set up yet.</p>
           <button
             className="btn btn-primary btn-sm mt-1"
-            onClick={() => navigate("/settings/company")}
+            onClick={() => navigate("/companies-details")}
           >
             Set Up Now
           </button>

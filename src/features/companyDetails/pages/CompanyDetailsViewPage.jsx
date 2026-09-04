@@ -148,17 +148,89 @@ export default function CompanyDetailsViewPage() {
               Contact
             </h3>
             <div className="divide-y divide-base-200">
-              <InfoRow label="Phone" value={company.phone} />
+              <InfoRow
+                label="Primary Phone"
+                value={
+                  company.phone ? (
+                    <a
+                      href={`tel:${company.phone.replace(/[\s-]/g, "")}`}
+                      className="text-primary hover:underline"
+                    >
+                      {company.phone}
+                    </a>
+                  ) : null
+                }
+              />
               <InfoRow
                 label="Alternate Phone"
-                value={company.alternate_phone}
+                value={
+                  company.alternate_phone ? (
+                    <a
+                      href={`tel:${company.alternate_phone.replace(/[\s-]/g, "")}`}
+                      className="text-primary hover:underline"
+                    >
+                      {company.alternate_phone}
+                    </a>
+                  ) : null
+                }
               />
-              <InfoRow label="Email" value={company.email} />
+              <InfoRow
+                label="WhatsApp"
+                value={
+                  company.whatsapp_number ? (
+                    <a
+                      href={`https://wa.me/${company.whatsapp_number.replace(/[^\d]/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-success hover:underline inline-flex items-center gap-1.5"
+                    >
+                      <MessageCircle size={14} />
+                      {company.whatsapp_number}
+                    </a>
+                  ) : null
+                }
+              />
+              <InfoRow
+                label="Email"
+                value={
+                  company.email ? (
+                    <a
+                      href={`mailto:${company.email}`}
+                      className="text-primary hover:underline"
+                    >
+                      {company.email}
+                    </a>
+                  ) : null
+                }
+              />
               <InfoRow
                 label="Alternate Email"
-                value={company.alternate_email}
+                value={
+                  company.alternate_email ? (
+                    <a
+                      href={`mailto:${company.alternate_email}`}
+                      className="text-primary hover:underline"
+                    >
+                      {company.alternate_email}
+                    </a>
+                  ) : null
+                }
               />
-              <InfoRow label="Website" value={company.website} />
+              <InfoRow
+                label="Website"
+                value={
+                  company.website ? (
+                    <a
+                      href={company.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      {company.website}
+                    </a>
+                  ) : null
+                }
+              />
             </div>
           </div>
 
@@ -275,7 +347,7 @@ export default function CompanyDetailsViewPage() {
                 icon={MessageCircle}
                 url={
                   company.whatsapp_number
-                    ? `https://wa.me/${company.whatsapp_number}`
+                    ? `https://wa.me/${company.whatsapp_number.replace(/[^\d]/g, "")}`
                     : null
                 }
                 label={company.whatsapp_number || "WhatsApp"}

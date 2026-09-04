@@ -110,7 +110,7 @@ export default function CompanyDetailsTable({
               </td>
 
               <td className="text-xs text-base-content/60">
-                <div>{c.phone || "—"}</div>
+                <div className="font-medium">{c.phone || "—"}</div>
                 {c.email && (
                   <div className="text-[10px] text-base-content/40">
                     {c.email}
