@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Trash2, Percent, User, Receipt } from "lucide-react";
+import { Eye, Pencil, Trash2, Percent, User, Receipt } from "lucide-react";
 import {
   STATUS_STYLES,
   formatCurrency,
@@ -17,7 +17,7 @@ import { PERMISSIONS } from "../../../constants/permissions.js";
  * - canEdit (bool)
  * - canPay (bool)
  * - canDelete (bool)
- * - onView (fn) / onDelete (fn) / onStatusChange (fn) / onRecordPayment (fn)
+ * - onView (fn) / onEdit (fn) / onDelete (fn) / onStatusChange (fn) / onRecordPayment (fn)
  */
 export default function InterestOnlyLoanTable({
   loans = [],
@@ -27,6 +27,7 @@ export default function InterestOnlyLoanTable({
   canPay: canPayProp,
   canDelete: canDeleteProp,
   onView,
+  onEdit,
   onDelete,
   onStatusChange,
   onRecordPayment,
@@ -202,6 +203,16 @@ export default function InterestOnlyLoanTable({
                           title="Record payment"
                         >
                           <Receipt size={15} />
+                        </button>
+                      )}
+
+                      {canEdit && onEdit && !isClosed && (
+                        <button
+                          className="btn btn-ghost btn-sm btn-square text-info hover:bg-info/10"
+                          onClick={() => onEdit(loan)}
+                          title="Edit loan & schedule"
+                        >
+                          <Pencil size={15} />
                         </button>
                       )}
 

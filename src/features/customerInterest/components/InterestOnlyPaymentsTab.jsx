@@ -9,6 +9,7 @@ import {
   Trash2,
   Loader2,
   AlertTriangle,
+  Printer,
 } from "lucide-react";
 import {
   fetchInterestOnlyPayments,
@@ -19,6 +20,7 @@ import {
   formatCurrency,
   formatDate,
 } from "../utils/interestOnlyLoanHelpers.js";
+import { printInterestReceipt } from "../utils/printInterestReceipt.js";
 import usePermissions from "../../../common/hooks/usePermissions.js";
 import { PERMISSIONS } from "../../../constants/permissions.js";
 
@@ -33,6 +35,8 @@ import { PERMISSIONS } from "../../../constants/permissions.js";
  */
 export default function InterestOnlyPaymentsTab({
   loanId,
+  loan = null,
+  company = null,
   onRecordPayment,
   onPaymentReversed,
 }) {
@@ -40,6 +44,8 @@ export default function InterestOnlyPaymentsTab({
   const { payments = [], loading } = useSelector(
     (state) => state.interestOnlyPayments || {},
   );
+  const reduxCompany = useSelector((state) => state.companyDetails?.company);
+  const effectiveCompany = company || reduxCompany || {};
 
   const { can, isAdmin } = usePermissions();
   const canPay = can([
@@ -167,10 +173,32 @@ export default function InterestOnlyPaymentsTab({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm font-bold text-success">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-bold text-success mr-1">
                       {formatCurrency(p.payment_amount)}
                     </span>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        printInterestReceipt({
+                          loan: loan || {
+                            id: p.loan_id,
+                            loan_no: p.loan_no,
+                            customer_name: p.customer_name,
+                            customer_mobile: p.customer_mobile,
+                          },
+                          payment: p,
+                          allocations: p.allocations || [],
+                          company: effectiveCompany,
+                        })
+                      }
+                      className="btn btn-ghost btn-xs rounded-lg gap-1 text-primary hover:bg-primary/10 font-medium"
+                      title="Print Payment Slip / Invoice"
+                    >
+                      <Printer size={13} />
+                      <span className="hidden sm:inline">Print Slip</span>
+                    </button>
 
                     {canDeletePayment && (
                       <button

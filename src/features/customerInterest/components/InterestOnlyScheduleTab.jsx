@@ -4,18 +4,13 @@ import {
   CalendarClock,
   Receipt,
   IndianRupee,
-  RefreshCw,
-  AlertCircle,
   CheckCircle2,
-  X,
-  Loader2,
 } from "lucide-react";
 import {
   fetchLoanSchedules,
   fetchPendingSchedules,
   fetchOverdueSchedules,
 } from "../../../redux/interestOnlySchedule/interestOnlyScheduleSlice.js";
-import { regenerateLoanScheduleAction } from "../../../redux/interestOnlyLoans/interestLoanSlice.js";
 import {
   SCHEDULE_STATUS_STYLES,
   formatCurrency,
@@ -41,7 +36,6 @@ export default function InterestOnlyScheduleTab({
   loanId,
   loan = null,
   onPayDue,
-  onScheduleRegenerated,
 }) {
   const dispatch = useDispatch();
   const {
@@ -56,23 +50,8 @@ export default function InterestOnlyScheduleTab({
     PERMISSIONS.INTEREST_ONLY_PAYMENT_CREATE,
     PERMISSIONS.LOAN_COLLECTION_CREATE,
   ]);
-  const canManage = can([
-    PERMISSIONS.INTEREST_ONLY_LOAN_EDIT,
-    PERMISSIONS.LOAN_CREATE,
-  ]);
 
   const [filter, setFilter] = useState("all");
-  const [showRegenModal, setShowRegenModal] = useState(false);
-  const [regenSubmitting, setRegenSubmitting] = useState(false);
-  const [regenSuccessMsg, setRegenSuccessMsg] = useState("");
-  const [regenError, setRegenError] = useState("");
-
-  const [regenForm, setRegenForm] = useState({
-    interest_frequency: "monthly",
-    tenure: 12,
-    tenure_type: "months",
-    interest_rate: "",
-  });
 
   const loadSchedules = () => {
     if (loanId) {
@@ -87,17 +66,6 @@ export default function InterestOnlyScheduleTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, loanId]);
 
-  useEffect(() => {
-    if (loan) {
-      setRegenForm({
-        interest_frequency: loan.interest_frequency || "monthly",
-        tenure: loan.tenure || 12,
-        tenure_type: loan.tenure_type || "months",
-        interest_rate: loan.interest_rate || "",
-      });
-    }
-  }, [loan]);
-
   const scheduleList = Array.isArray(schedules) ? schedules : [];
   const pendingList = Array.isArray(pendingSchedules) ? pendingSchedules : [];
   const overdueList = Array.isArray(overdueSchedules) ? overdueSchedules : [];
@@ -110,48 +78,6 @@ export default function InterestOnlyScheduleTab({
         : scheduleList;
 
   const hasPayAction = Boolean(onPayDue && canPay);
-  const canRegenerate =
-    canManage &&
-    loan &&
-    Number(loan.total_interest_paid || 0) === 0 &&
-    Number(loan.total_principal_paid || 0) === 0;
-
-  // Handle regenerating schedule
-  const handleRegenerateSubmit = async (e) => {
-    e.preventDefault();
-    setRegenSubmitting(true);
-    setRegenError("");
-
-    try {
-      const action = await dispatch(
-        regenerateLoanScheduleAction({
-          id: loanId,
-          data: {
-            interest_frequency: regenForm.interest_frequency,
-            tenure: Number(regenForm.tenure),
-            tenure_type: regenForm.tenure_type,
-            interest_rate: regenForm.interest_rate
-              ? Number(regenForm.interest_rate)
-              : undefined,
-          },
-        }),
-      );
-
-      if (regenerateLoanScheduleAction.fulfilled.match(action)) {
-        setShowRegenModal(false);
-        setRegenSuccessMsg("Repayment schedule regenerated successfully with all installments!");
-        loadSchedules();
-        if (onScheduleRegenerated) onScheduleRegenerated();
-        setTimeout(() => setRegenSuccessMsg(""), 5000);
-      } else {
-        setRegenError(action.payload || "Failed to regenerate schedule.");
-      }
-    } catch (err) {
-      setRegenError(err.message || "Failed to regenerate schedule.");
-    } finally {
-      setRegenSubmitting(false);
-    }
-  };
 
   return (
     <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-xs">
@@ -162,18 +88,6 @@ export default function InterestOnlyScheduleTab({
         </h3>
 
         <div className="flex items-center gap-2">
-          {canRegenerate && (
-            <button
-              type="button"
-              onClick={() => setShowRegenModal(true)}
-              className="btn btn-xs btn-outline btn-warning gap-1 rounded-lg font-medium"
-              title="Regenerate all installment schedules"
-            >
-              <RefreshCw size={12} />
-              Regenerate Schedule
-            </button>
-          )}
-
           <div className="join">
             {FILTERS.map((f) => (
               <button
@@ -202,13 +116,6 @@ export default function InterestOnlyScheduleTab({
         </div>
       </div>
 
-      {regenSuccessMsg && (
-        <div className="alert alert-success text-xs py-2.5 px-4 rounded-none flex items-center gap-2">
-          <CheckCircle2 size={16} />
-          <span>{regenSuccessMsg}</span>
-        </div>
-      )}
-
       {loading && rows.length === 0 ? (
         <div className="flex items-center justify-center py-16 gap-2 text-base-content/40">
           <span className="loading loading-spinner loading-md text-primary" />
@@ -222,18 +129,9 @@ export default function InterestOnlyScheduleTab({
           <p className="text-sm font-medium text-base-content/70">
             No {filter !== "all" ? filter : ""} schedule entries found.
           </p>
-          {canRegenerate && (
-            <button
-              onClick={() => setShowRegenModal(true)}
-              className="btn btn-sm btn-primary mt-2 gap-1.5 rounded-xl"
-            >
-              <RefreshCw size={13} />
-              Generate All Installments
-            </button>
-          )}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto [scrollbar-width:thin]">
           <table className="table table-sm w-full">
             <thead>
               <tr className="text-xs uppercase tracking-wider text-base-content/50 border-b border-base-200 bg-base-200/30">
@@ -330,6 +228,9 @@ export default function InterestOnlyScheduleTab({
                             onClick={() =>
                               onPayDue({
                                 amount: balance,
+                                schedule_id: s.id,
+                                schedule_no: s.schedule_no,
+                                schedule_due: balance,
                                 remarks: `Repayment for Schedule #${s.schedule_no}`,
                               })
                             }
@@ -355,146 +256,6 @@ export default function InterestOnlyScheduleTab({
               })}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* ── Regenerate Schedule Modal ──────────────────────────────────────── */}
-      {showRegenModal && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-md rounded-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-base flex items-center gap-2">
-                <RefreshCw size={16} className="text-warning" />
-                Regenerate Repayment Schedule
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowRegenModal(false)}
-                className="btn btn-ghost btn-xs btn-square"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {regenError && (
-              <div className="alert alert-error text-xs py-2 mb-3">
-                <AlertCircle size={14} />
-                <span>{regenError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleRegenerateSubmit} className="space-y-3">
-              <p className="text-xs text-base-content/60">
-                You can re-generate the periodic schedule for this loan. Any existing unpaid schedule will be replaced with the new installment breakdown.
-              </p>
-
-              <div className="form-control">
-                <label className="label pb-1">
-                  <span className="label-text text-xs font-semibold">
-                    Interest Frequency *
-                  </span>
-                </label>
-                <select
-                  value={regenForm.interest_frequency}
-                  onChange={(e) =>
-                    setRegenForm((prev) => ({
-                      ...prev,
-                      interest_frequency: e.target.value,
-                    }))
-                  }
-                  className="select select-bordered select-sm rounded-lg w-full text-xs"
-                >
-                  <option value="monthly">Monthly (Recommended - 12 dues/year)</option>
-                  <option value="quarterly">Quarterly (4 dues/year)</option>
-                  <option value="half_yearly">Half-Yearly (2 dues/year)</option>
-                  <option value="yearly">Yearly / Bullet (1 due/year)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="form-control">
-                  <label className="label pb-1">
-                    <span className="label-text text-xs font-semibold">Tenure</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={regenForm.tenure}
-                    onChange={(e) =>
-                      setRegenForm((prev) => ({
-                        ...prev,
-                        tenure: e.target.value,
-                      }))
-                    }
-                    className="input input-bordered input-sm rounded-lg text-xs"
-                  />
-                </div>
-                <div className="form-control">
-                  <label className="label pb-1">
-                    <span className="label-text text-xs font-semibold">Unit</span>
-                  </label>
-                  <select
-                    value={regenForm.tenure_type}
-                    onChange={(e) =>
-                      setRegenForm((prev) => ({
-                        ...prev,
-                        tenure_type: e.target.value,
-                      }))
-                    }
-                    className="select select-bordered select-sm rounded-lg text-xs"
-                  >
-                    <option value="months">Months</option>
-                    <option value="years">Years</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-control">
-                <label className="label pb-1">
-                  <span className="label-text text-xs font-semibold">
-                    Interest Rate (% per period)
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={regenForm.interest_rate}
-                  onChange={(e) =>
-                    setRegenForm((prev) => ({
-                      ...prev,
-                      interest_rate: e.target.value,
-                    }))
-                  }
-                  className="input input-bordered input-sm rounded-lg text-xs"
-                  placeholder={loan?.interest_rate || "1.00"}
-                />
-              </div>
-
-              <div className="modal-action mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowRegenModal(false)}
-                  className="btn btn-ghost btn-sm rounded-lg"
-                  disabled={regenSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={regenSubmitting}
-                  className="btn btn-warning btn-sm rounded-lg gap-1.5"
-                >
-                  {regenSubmitting && <Loader2 size={14} className="animate-spin" />}
-                  Regenerate Installments
-                </button>
-              </div>
-            </form>
-          </div>
-          <div
-            className="modal-backdrop bg-black/40"
-            onClick={() => setShowRegenModal(false)}
-          />
         </div>
       )}
     </div>

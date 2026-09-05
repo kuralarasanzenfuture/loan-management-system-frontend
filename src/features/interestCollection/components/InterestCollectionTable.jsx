@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   User,
   CheckCircle2,
+  Printer,
 } from "lucide-react";
 import {
   formatCurrency,
@@ -27,6 +28,7 @@ export default function InterestCollectionTable({
   isOverdueTab = false,
   canCollect = false,
   onCollect,
+  onPrintReceipt,
 }) {
   if (loading && items.length === 0) {
     return (
@@ -215,6 +217,17 @@ export default function InterestCollectionTable({
                       <span className="text-xs text-base-content/40 italic py-1">
                         Due
                       </span>
+                    )}
+
+                    {Number(row.paid_amount) > 0 && onPrintReceipt && (
+                      <button
+                        type="button"
+                        onClick={() => onPrintReceipt(row)}
+                        className="btn btn-ghost btn-xs btn-square rounded-lg text-primary hover:bg-primary/10"
+                        title="Print Receipt Slip"
+                      >
+                        <Printer size={13} />
+                      </button>
                     )}
 
                     {row.loan_id && (

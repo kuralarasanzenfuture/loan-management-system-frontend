@@ -12,6 +12,7 @@ import {
 import {
   fetchInterestOnlyLoans,
   addInterestOnlyLoan,
+  editInterestOnlyLoan,
   editInterestOnlyLoanStatus,
   removeInterestOnlyLoan,
   clearInterestOnlyLoanError,
@@ -19,6 +20,7 @@ import {
 import { addInterestOnlyPayment } from "../../../redux/interestOnlyPayment/interestOnlyPaymentSlice.js";
 import { fetchCustomers } from "../../../redux/customers/customerSlice.js";
 import { fetchActiveInterestOnlyLoanPlans } from "../../../redux/interestLoanPlan/interestLoanPlanSlice.js";
+import { fetchCompanyDetails } from "../../../redux/companyDetails/companyDetailsSlice.js";
 import InterestOnlyLoanTable from "../components/InterestOnlyLoanTable.jsx";
 import InterestOnlyLoanFormModal from "../components/InterestOnlyLoanFormModal.jsx";
 import InterestOnlyLoanStatusModal from "../components/InterestOnlyLoanStatusModal.jsx";
@@ -69,6 +71,7 @@ export default function InterestOnlyLoansPage() {
   const { loans = [], loading, error } = useSelector(
     (state) => state.interestOnlyLoans || {},
   );
+  const company = useSelector((state) => state.companyDetails?.company);
   const { customers = [] } = useSelector((state) => state.customers || {});
   const { activePlans = [] } = useSelector(
     (state) => state.interestLoanPlans || {},
@@ -83,6 +86,8 @@ export default function InterestOnlyLoansPage() {
   const [statusTarget, setStatusTarget] = useState(null);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
 
+  const [editTarget, setEditTarget] = useState(null);
+
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
@@ -96,6 +101,7 @@ export default function InterestOnlyLoansPage() {
       dispatch(fetchInterestOnlyLoans());
       dispatch(fetchCustomers());
       dispatch(fetchActiveInterestOnlyLoanPlans());
+      dispatch(fetchCompanyDetails());
     }
   }, [dispatch, canView]);
 
@@ -194,6 +200,22 @@ export default function InterestOnlyLoansPage() {
     }
   };
 
+  const handleEditLoanSubmit = async (formData) => {
+    if (!canEdit || !editTarget) return;
+    setFormSubmitting(true);
+    try {
+      const action = await dispatch(
+        editInterestOnlyLoan({ id: editTarget.id, data: formData }),
+      );
+      if (editInterestOnlyLoan.fulfilled.match(action)) {
+        setEditTarget(null);
+        dispatch(fetchInterestOnlyLoans());
+      }
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
   const handleStatusSubmit = async ({ id, data }) => {
     if (!canEdit) return;
     setStatusSubmitting(true);
@@ -226,10 +248,12 @@ export default function InterestOnlyLoansPage() {
     try {
       const action = await dispatch(addInterestOnlyPayment(formData));
       if (addInterestOnlyPayment.fulfilled.match(action)) {
-        setPaymentTarget(null);
         dispatch(fetchInterestOnlyLoans());
+        return { success: true, data: action.payload?.data || action.payload };
       } else {
-        setPaymentError(action.payload || "Failed to record payment");
+        const errMsg = action.payload || "Failed to record payment";
+        setPaymentError(errMsg);
+        return { success: false, error: errMsg };
       }
     } finally {
       setPaymentSubmitting(false);
@@ -365,6 +389,7 @@ export default function InterestOnlyLoansPage() {
           canPay={canPay}
           canDelete={canDelete}
           onView={(l) => navigate(`/interest-only-loans/${l.id}`)}
+          onEdit={(l) => setEditTarget(l)}
           onStatusChange={(l) => setStatusTarget(l)}
           onRecordPayment={(l) => setPaymentTarget(l)}
           onDelete={(l) => setDeleteTarget(l)}
@@ -390,6 +415,23 @@ export default function InterestOnlyLoansPage() {
           error={error}
           onClose={handleCloseForm}
           onSubmit={handleFormSubmit}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editTarget && (
+        <InterestOnlyLoanFormModal
+          open={Boolean(editTarget)}
+          initialData={editTarget}
+          customers={customerList}
+          plans={activePlans}
+          loading={formSubmitting}
+          error={error}
+          onClose={() => {
+            setEditTarget(null);
+            dispatch(clearInterestOnlyLoanError());
+          }}
+          onSubmit={handleEditLoanSubmit}
         />
       )}
 
@@ -422,6 +464,7 @@ export default function InterestOnlyLoansPage() {
         <InterestOnlyPaymentModal
           open={Boolean(paymentTarget)}
           loan={paymentTarget}
+          company={company}
           loading={paymentSubmitting}
           error={paymentError}
           onClose={() => {

@@ -98,6 +98,20 @@ export const updateInterestOnlyLoanStatus = async (id, data) => {
 };
 
 /* =========================================================
+   UPDATE INTEREST ONLY LOAN
+   PUT /api/interest-only-loans/:id
+========================================================= */
+
+export const updateInterestOnlyLoan = async (id, formData) => {
+  try {
+    const response = await api.put(`/interest-only-loans/${id}`, formData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};
+
+/* =========================================================
    DELETE INTEREST ONLY LOAN
 
    DELETE /api/interest-only-loans/:id

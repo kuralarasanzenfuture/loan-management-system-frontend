@@ -85,10 +85,15 @@ export function calculateInterestOnlyLoan({
   commissionType,
   commissionValue,
 }) {
+  const months = tenureInMonths(tenure, tenureType);
+  const monthsPerPeriod = 12 / (PERIODS_PER_YEAR[interestFrequency] || 12);
+  const numberOfPeriods =
+    monthsPerPeriod > 0 ? Math.round(months / monthsPerPeriod) : 0;
+
   const p = Number(principal) || 0;
   if (p <= 0) {
     return {
-      numberOfPeriods: 0,
+      numberOfPeriods,
       interestPerPeriod: 0,
       totalInterest: 0,
       totalPayable: 0,
@@ -96,11 +101,6 @@ export function calculateInterestOnlyLoan({
       netDisbursed: 0,
     };
   }
-
-  const months = tenureInMonths(tenure, tenureType);
-  const monthsPerPeriod = 12 / (PERIODS_PER_YEAR[interestFrequency] || 12);
-  const numberOfPeriods =
-    monthsPerPeriod > 0 ? Math.round(months / monthsPerPeriod) : 0;
 
   const interestPerPeriod =
     interestType === "percentage"

@@ -6,6 +6,7 @@ import {
   getInterestOnlyLoanById,
   getInterestOnlyLoansByCustomer,
   updateInterestOnlyLoanStatus,
+  updateInterestOnlyLoan,
   deleteInterestOnlyLoan,
   regenerateInterestOnlyLoanSchedule,
 } from "./interestLoan.service.js";
@@ -100,6 +101,25 @@ export const editInterestOnlyLoanStatus = createAsyncThunk(
         err.response?.data?.message ||
           err.message ||
           "Failed to update loan status",
+      );
+    }
+  },
+);
+
+/* =========================================================
+   UPDATE FULL INTEREST ONLY LOAN (terms & schedules)
+========================================================= */
+
+export const editInterestOnlyLoan = createAsyncThunk(
+  "interestOnlyLoans/editInterestOnlyLoan",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      return await updateInterestOnlyLoan(id, data);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to update interest only loan",
       );
     }
   },
@@ -394,6 +414,55 @@ const interestLoanSlice = createSlice({
       })
 
       .addCase(editInterestOnlyLoanStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      /* =====================================================
+         UPDATE FULL LOAN
+      ===================================================== */
+
+      .addCase(editInterestOnlyLoan.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(editInterestOnlyLoan.fulfilled, (state, action) => {
+        state.loading = false;
+        const updated = action.payload?.data ?? action.payload?.loan ?? action.payload;
+
+        if (!updated?.id) return;
+
+        const index = state.loans.findIndex((item) => item.id === updated.id);
+        if (index !== -1) {
+          state.loans[index] = {
+            ...state.loans[index],
+            ...updated,
+          };
+        }
+
+        const customerIndex = state.customerLoans.findIndex(
+          (item) => item.id === updated.id,
+        );
+        if (customerIndex !== -1) {
+          state.customerLoans[customerIndex] = {
+            ...state.customerLoans[customerIndex],
+            ...updated,
+          };
+        }
+
+        if (state.loan?.id === updated.id) {
+          state.loan = {
+            ...state.loan,
+            ...updated,
+          };
+          if (Array.isArray(updated.schedules)) {
+            state.schedules = updated.schedules;
+          }
+        }
+      })
+
+      .addCase(editInterestOnlyLoan.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

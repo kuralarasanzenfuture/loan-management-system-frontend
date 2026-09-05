@@ -21,6 +21,7 @@ import {
   clearInterestCollections,
 } from "../../../redux/interestOnlySchedule/interestOnlyScheduleSlice.js";
 import { addInterestOnlyPayment } from "../../../redux/interestOnlyPayment/interestOnlyPaymentSlice.js";
+import { fetchCompanyDetails } from "../../../redux/companyDetails/companyDetailsSlice.js";
 import InterestCollectionTable from "../components/InterestCollectionTable.jsx";
 import InterestOnlyPaymentModal from "../../customerInterest/components/InterestOnlyPaymentModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
@@ -28,6 +29,7 @@ import usePagination from "../../../common/hooks/usePagination.js";
 import usePermissions from "../../../common/hooks/usePermissions.js";
 import { PERMISSIONS } from "../../../constants/permissions.js";
 import { formatCurrency } from "../../customerInterest/utils/interestOnlyLoanHelpers.js";
+import { printInterestReceipt } from "../../customerInterest/utils/printInterestReceipt.js";
 
 const TABS = [
   { key: "today", label: "Today's Due", icon: Calendar },
@@ -47,6 +49,7 @@ export default function InterestCollectionPage() {
 
   // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────────
   const { can } = usePermissions();
+  const company = useSelector((state) => state.companyDetails?.company);
   const canView = can([
     PERMISSIONS.INTEREST_COLLECTION_VIEW,
     PERMISSIONS.LOAN_COLLECTION_VIEW,
@@ -95,7 +98,10 @@ export default function InterestCollectionPage() {
 
   useEffect(() => {
     loadData();
-    return () => dispatch(clearInterestCollections());
+    dispatch(fetchCompanyDetails());
+    return () => {
+      dispatch(clearInterestCollections());
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, selectedDate, statusFilter]);
 
@@ -197,8 +203,9 @@ export default function InterestCollectionPage() {
         `${row.first_name || ""} ${row.last_name || ""}`.trim() ||
         "Customer",
       customer_id: row.customer_id,
+      schedule_id: row.id,
       schedule_no: row.schedule_no,
-      schedule_due: Number(row.balance_amount || 0),
+      schedule_due: Number(row.balance_amount || row.total_due || 0),
       outstanding_interest: outstandingInt,
       outstanding_principal: outstandingPrin,
       total_payable: totalDue,
@@ -208,6 +215,8 @@ export default function InterestCollectionPage() {
     setPayInitialValues({
       payment_amount: row.balance_amount,
       schedule_id: row.id,
+      schedule_no: row.schedule_no,
+      schedule_due: Number(row.balance_amount || row.total_due || 0),
       remarks: `Repayment for ${row.loan_no} Schedule #${row.schedule_no}`,
     });
   };
@@ -216,14 +225,41 @@ export default function InterestCollectionPage() {
   const handlePaymentSubmit = async (payload) => {
     const res = await dispatch(addInterestOnlyPayment(payload));
     if (!res.error) {
-      setPayTargetLoan(null);
-      setPayInitialValues(null);
-      setPaySuccessMsg(
-        `Payment of ${formatCurrency(payload.payment_amount)} successfully recorded!`,
-      );
       loadData();
-      setTimeout(() => setPaySuccessMsg(""), 5000);
+      return { success: true, data: res.payload?.data || res.payload };
+    } else {
+      return { success: false, error: res.payload || "Failed to record payment" };
     }
+  };
+
+  const handlePrintScheduleReceipt = (row) => {
+    printInterestReceipt({
+      loan: {
+        id: row.loan_id,
+        loan_no: row.loan_no,
+        customer_name:
+          row.customer_name ||
+          `${row.first_name || ""} ${row.last_name || ""}`.trim() ||
+          "Customer",
+        customer_mobile: row.customer_mobile || row.mobile,
+      },
+      payment: {
+        payment_amount: Number(row.paid_amount || row.interest_amount),
+        payment_date: row.paid_date || new Date().toISOString().slice(0, 10),
+        payment_mode: "Cash",
+        schedule_no: row.schedule_no,
+      },
+      allocations: [
+        {
+          schedule_no: row.schedule_no,
+          due_date: row.due_date,
+          type: "interest",
+          amount: Number(row.paid_amount || row.interest_amount),
+        },
+      ],
+      company: company || {},
+      remainingOutstanding: Number(row.balance_amount || 0),
+    });
   };
 
   // RBAC Access Guard
@@ -477,6 +513,7 @@ export default function InterestCollectionPage() {
           isOverdueTab={activeTab === "overdue"}
           canCollect={canCollect}
           onCollect={handleOpenCollect}
+          onPrintReceipt={handlePrintScheduleReceipt}
         />
 
         {/* Pagination Footer */}
@@ -498,6 +535,7 @@ export default function InterestCollectionPage() {
         <InterestOnlyPaymentModal
           open={Boolean(payTargetLoan)}
           loan={payTargetLoan}
+          company={company}
           initialValues={payInitialValues}
           onClose={() => {
             setPayTargetLoan(null);

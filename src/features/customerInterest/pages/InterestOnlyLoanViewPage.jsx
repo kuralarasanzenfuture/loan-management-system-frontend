@@ -10,15 +10,19 @@ import {
   IndianRupee,
   ShieldAlert,
   Edit3,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import {
   fetchInterestOnlyLoanById,
+  editInterestOnlyLoan,
   editInterestOnlyLoanStatus,
   removeInterestOnlyLoan,
   clearSelectedInterestOnlyLoan,
   clearInterestOnlyLoanError,
 } from "../../../redux/interestOnlyLoans/interestLoanSlice.js";
+import { fetchActiveInterestOnlyLoanPlans } from "../../../redux/interestLoanPlan/interestLoanPlanSlice.js";
+import { fetchCustomers } from "../../../redux/customers/customerSlice.js";
 import { addInterestOnlyPayment } from "../../../redux/interestOnlyPayment/interestOnlyPaymentSlice.js";
 import {
   fetchLoanSchedules,
@@ -35,8 +39,10 @@ import {
 import InterestOnlyScheduleTab from "../components/InterestOnlyScheduleTab.jsx";
 import InterestOnlyPaymentsTab from "../components/InterestOnlyPaymentsTab.jsx";
 import InterestOnlyPaymentModal from "../components/InterestOnlyPaymentModal.jsx";
+import InterestOnlyLoanFormModal from "../components/InterestOnlyLoanFormModal.jsx";
 import InterestOnlyLoanStatusModal from "../components/InterestOnlyLoanStatusModal.jsx";
 import InterestOnlyLoanDeleteModal from "../components/InterestOnlyLoanDeleteModal.jsx";
+import { fetchCompanyDetails } from "../../../redux/companyDetails/companyDetailsSlice.js";
 import usePermissions from "../../../common/hooks/usePermissions.js";
 import { PERMISSIONS } from "../../../constants/permissions.js";
 
@@ -84,6 +90,11 @@ export default function InterestOnlyLoanViewPage() {
   const { loan, loading, error } = useSelector(
     (state) => state.interestOnlyLoans || {},
   );
+  const company = useSelector((state) => state.companyDetails?.company);
+  const { customers = [] } = useSelector((state) => state.customers || {});
+  const { activePlans = [] } = useSelector(
+    (state) => state.interestLoanPlans || {},
+  );
 
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -96,6 +107,10 @@ export default function InterestOnlyLoanViewPage() {
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
 
+  // Edit Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
   // Status Modal State
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
@@ -107,6 +122,9 @@ export default function InterestOnlyLoanViewPage() {
   useEffect(() => {
     if (canView && id) {
       dispatch(fetchInterestOnlyLoanById(id));
+      dispatch(fetchCompanyDetails());
+      dispatch(fetchActiveInterestOnlyLoanPlans());
+      dispatch(fetchCustomers());
     }
     return () => {
       dispatch(clearSelectedInterestOnlyLoan());
@@ -130,11 +148,21 @@ export default function InterestOnlyLoanViewPage() {
       open: true,
       defaultAmount: config.amount ?? null,
       defaultRemarks: config.remarks ?? "",
+      scheduleId: config.schedule_id ?? null,
+      scheduleNo: config.schedule_no ?? null,
+      scheduleDue: config.schedule_due ?? config.amount ?? null,
     });
   };
 
   const handleClosePaymentModal = () => {
-    setPaymentModal({ open: false, defaultAmount: null, defaultRemarks: "" });
+    setPaymentModal({
+      open: false,
+      defaultAmount: null,
+      defaultRemarks: "",
+      scheduleId: null,
+      scheduleNo: null,
+      scheduleDue: null,
+    });
     setPaymentError(null);
   };
 
@@ -144,13 +172,30 @@ export default function InterestOnlyLoanViewPage() {
     try {
       const action = await dispatch(addInterestOnlyPayment(formData));
       if (addInterestOnlyPayment.fulfilled.match(action)) {
-        handleClosePaymentModal();
         handleRefreshAll();
+        return { success: true, data: action.payload?.data || action.payload };
       } else {
-        setPaymentError(action.payload || "Failed to record payment");
+        const errMsg = action.payload || "Failed to record payment";
+        setPaymentError(errMsg);
+        return { success: false, error: errMsg };
       }
     } finally {
       setPaymentSubmitting(false);
+    }
+  };
+
+  const handleEditLoanSubmit = async (formData) => {
+    setEditSubmitting(true);
+    try {
+      const action = await dispatch(
+        editInterestOnlyLoan({ id: loan.id, data: formData }),
+      );
+      if (editInterestOnlyLoan.fulfilled.match(action)) {
+        setEditModalOpen(false);
+        handleRefreshAll();
+      }
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -282,6 +327,17 @@ export default function InterestOnlyLoanViewPage() {
             >
               <Receipt size={15} />
               Record Payment
+            </button>
+          )}
+
+          {canEdit && !isClosed && (
+            <button
+              onClick={() => setEditModalOpen(true)}
+              className="btn btn-outline btn-sm gap-1.5"
+              title="Edit loan terms & recalculate schedule"
+            >
+              <Pencil size={15} />
+              Edit Loan
             </button>
           )}
 
@@ -473,13 +529,14 @@ export default function InterestOnlyLoanViewPage() {
           loanId={loan.id}
           loan={loan}
           onPayDue={(dueInfo) => handleOpenPaymentModal(dueInfo)}
-          onScheduleRegenerated={handleRefreshAll}
         />
       )}
 
       {activeTab === "payments" && (
         <InterestOnlyPaymentsTab
           loanId={loan.id}
+          loan={loan}
+          company={company}
           onRecordPayment={() => handleOpenPaymentModal()}
           onPaymentReversed={handleRefreshAll}
         />
@@ -489,13 +546,40 @@ export default function InterestOnlyLoanViewPage() {
       {paymentModal.open && (
         <InterestOnlyPaymentModal
           open={paymentModal.open}
-          loan={loan}
+          loan={{
+            ...loan,
+            schedule_id: paymentModal.scheduleId,
+            schedule_no: paymentModal.scheduleNo,
+            schedule_due: paymentModal.scheduleDue,
+          }}
+          initialValues={{
+            payment_amount: paymentModal.defaultAmount,
+            schedule_id: paymentModal.scheduleId,
+            schedule_no: paymentModal.scheduleNo,
+            schedule_due: paymentModal.scheduleDue,
+            remarks: paymentModal.defaultRemarks,
+          }}
+          company={company}
           defaultAmount={paymentModal.defaultAmount}
           defaultRemarks={paymentModal.defaultRemarks}
           loading={paymentSubmitting}
           error={paymentError}
           onClose={handleClosePaymentModal}
           onSubmit={handlePaymentSubmit}
+        />
+      )}
+
+      {/* Edit Loan Modal */}
+      {editModalOpen && (
+        <InterestOnlyLoanFormModal
+          open={editModalOpen}
+          initialData={loan}
+          customers={Array.isArray(customers) ? customers : []}
+          plans={Array.isArray(activePlans) ? activePlans : []}
+          loading={editSubmitting}
+          error={error}
+          onClose={() => setEditModalOpen(false)}
+          onSubmit={handleEditLoanSubmit}
         />
       )}
 
