@@ -287,6 +287,13 @@ export default function InterestOnlyLoanViewPage() {
 
   const isClosed = ["completed", "closed", "cancelled"].includes(loan.status);
 
+  const customerObj = useMemo(() => {
+    if (!loan?.customer_id) return null;
+    return (
+      customers.find((c) => String(c.id) === String(loan.customer_id)) || null
+    );
+  }, [customers, loan?.customer_id]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -476,14 +483,53 @@ export default function InterestOnlyLoanViewPage() {
           </div>
 
           <div className="rounded-2xl border border-base-300 bg-base-100 p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2 flex items-center gap-1.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-base-content/40 mb-3 flex items-center gap-1.5">
               <User size={13} /> Customer & Repayment
             </h3>
+
+            {/* Customer mini profile banner */}
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-base-200/50 border border-base-200 mb-4">
+              {customerObj?.photo || loan?.customer_photo || loan?.photo ? (
+                <img
+                  src={customerObj?.photo || loan?.customer_photo || loan?.photo}
+                  alt={loan.customer_name}
+                  className="w-11 h-11 rounded-full object-cover shrink-0 border border-base-300 shadow-xs"
+                />
+              ) : (
+                <div className="w-11 h-11 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center uppercase select-none shrink-0 border border-primary/20">
+                  {loan.customer_name
+                    ? loan.customer_name
+                        .trim()
+                        .split(" ")
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((w) => w[0])
+                        .join("")
+                        .toUpperCase()
+                    : `#${loan.customer_id}`}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="font-bold text-sm text-base-content truncate">
+                  {loan.customer_name || `Customer #${loan.customer_id}`}
+                </div>
+                <div className="text-[11px] text-base-content/60 font-mono flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-0.5">
+                  {(customerObj?.customer_no || loan.customer_no) && (
+                    <span className="badge badge-ghost badge-xs font-mono">
+                      {customerObj?.customer_no || loan.customer_no}
+                    </span>
+                  )}
+                  {(customerObj?.mobile || loan.customer_mobile) && (
+                    <span>📞 {customerObj?.mobile || loan.customer_mobile}</span>
+                  )}
+                  {customerObj?.city && (
+                    <span>📍 {customerObj.city}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="divide-y divide-base-200 mb-4">
-              <InfoRow
-                label="Customer"
-                value={loan.customer_name || `Customer #${loan.customer_id}`}
-              />
               <InfoRow
                 label="Interest Paid"
                 value={formatCurrency(loan.total_interest_paid)}

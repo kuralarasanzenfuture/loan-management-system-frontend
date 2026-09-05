@@ -20,6 +20,8 @@ import {
   GrowthAreaChart,
 } from "../components/Charts.jsx";
 import { fetchDashboard } from "../../../redux/analytics/analyticsSlice.js";
+import { fetchInterestOnlyLoans } from "../../../redux/interestOnlyLoans/interestLoanSlice.js";
+import { fetchInterestCollectionReports } from "../../../redux/interestOnlyPayment/interestOnlyPaymentSlice.js";
 
 const DATE_RANGES = [
   { value: "week", label: "This week" },
@@ -28,39 +30,103 @@ const DATE_RANGES = [
   { value: "year", label: "This year" },
 ];
 
+const LOAN_TYPES = [
+  { value: "all", label: "All Loans" },
+  { value: "regular", label: "EMI Loans" },
+  { value: "interest_only", label: "Interest-Only" },
+];
+
+const getDateRange = (rangeType) => {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const fmt = (d) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  if (rangeType === "week") {
+    const day = now.getDay();
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const start = new Date(now.getFullYear(), now.getMonth(), diffToMonday);
+    const end = new Date(now.getFullYear(), now.getMonth(), diffToMonday + 6);
+    return { from: fmt(start), to: fmt(end) };
+  }
+  if (rangeType === "month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { from: fmt(start), to: fmt(end) };
+  }
+  if (rangeType === "quarter") {
+    const qMonth = Math.floor(now.getMonth() / 3) * 3;
+    const start = new Date(now.getFullYear(), qMonth, 1);
+    const end = new Date(now.getFullYear(), qMonth + 3, 0);
+    return { from: fmt(start), to: fmt(end) };
+  }
+  if (rangeType === "year") {
+    const start = new Date(now.getFullYear(), 0, 1);
+    const end = new Date(now.getFullYear(), 11, 31);
+    return { from: fmt(start), to: fmt(end) };
+  }
+  return {};
+};
+
 export function formatCurrency(amount) {
   const num = Number(amount || 0);
-  if (isNaN(num)) return "₹0.00";
+  if (isNaN(num)) return "₹0";
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    minimumFractionDigits: 2,
+    minimumFractionDigits: num % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(num);
 }
 
-// Small stat card matching the icon-in-tinted-circle pattern
-function StatCard({ icon: Icon, tone, label, value }) {
+// Stat card with ample breathing room, top-level layout, and subtitle context
+function StatCard({ icon: Icon, tone = "primary", label, value, sub }) {
   const toneClasses = {
-    primary: "bg-primary/10 text-primary",
-    success: "bg-success/10 text-success",
-    info: "bg-info/10 text-info",
-    error: "bg-error/10 text-error",
-    warning: "bg-warning/10 text-warning",
+    primary: {
+      bg: "bg-primary/10 text-primary border-primary/20",
+    },
+    success: {
+      bg: "bg-success/10 text-success border-success/20",
+    },
+    info: {
+      bg: "bg-info/10 text-info border-info/20",
+    },
+    error: {
+      bg: "bg-error/10 text-error border-error/20",
+    },
+    warning: {
+      bg: "bg-warning/10 text-warning border-warning/20",
+    },
   };
+
+  const currentTone = toneClasses[tone] || toneClasses.primary;
+
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-5 py-4 shadow-sm hover:shadow-md transition-shadow">
-      <span
-        className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${toneClasses[tone] || toneClasses.primary}`}
-      >
-        <Icon size={18} />
-      </span>
-      <div className="min-w-0">
-        <div className="text-xs text-base-content/60 font-medium">{label}</div>
-        <div className="text-xl font-bold leading-tight truncate mt-0.5">
-          {value}
+    <div
+      title={typeof value === "string" ? value : undefined}
+      className="card bg-base-100 border border-base-300 shadow-xs hover:shadow-md transition-all rounded-2xl p-5 flex flex-col justify-between"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5 min-w-0 flex-1">
+          <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider block">
+            {label}
+          </span>
+          <p className="text-2xl font-bold tracking-tight text-base-content break-words">
+            {value}
+          </p>
+        </div>
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${currentTone.bg}`}
+        >
+          <Icon size={19} className="stroke-[2.2]" />
         </div>
       </div>
+
+      {sub && (
+        <div className="mt-3 pt-2.5 border-t border-base-200/70 flex items-center justify-between text-xs text-base-content/50">
+          <span>{sub}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -83,29 +149,64 @@ export default function Analytics() {
     (state) => state.analytics || {},
   );
 
+  const { loans: rawInterestLoans = [] } = useSelector(
+    (state) => state.interestOnlyLoans || {},
+  );
+  const interestLoans = Array.isArray(rawInterestLoans) ? rawInterestLoans : [];
+
+  const { reports: rawInterestPayments = [] } = useSelector(
+    (state) => state.interestOnlyPayments || {},
+  );
+  const interestPayments = Array.isArray(rawInterestPayments) ? rawInterestPayments : [];
+
   const [range, setRange] = useState("month");
+  const [loanType, setLoanType] = useState("all"); // "all" | "regular" | "interest_only"
   const [refreshedAt, setRefreshedAt] = useState(new Date());
 
   useEffect(() => {
-    dispatch(fetchDashboard({ range }));
-  }, [dispatch, range]);
+    const dates = getDateRange(range);
+    dispatch(fetchDashboard({ range, ...dates, loan_type: loanType }));
+    dispatch(fetchInterestOnlyLoans());
+    dispatch(
+      fetchInterestCollectionReports({
+        from_date: dates.from,
+        to_date: dates.to,
+      }),
+    );
+  }, [dispatch, range, loanType]);
 
   const handleRefresh = () => {
-    dispatch(fetchDashboard({ range })).then(() => {
+    const dates = getDateRange(range);
+    Promise.all([
+      dispatch(fetchDashboard({ range, ...dates, loan_type: loanType })),
+      dispatch(fetchInterestOnlyLoans()),
+      dispatch(
+        fetchInterestCollectionReports({
+          from_date: dates.from,
+          to_date: dates.to,
+        }),
+      ),
+    ]).then(() => {
       setRefreshedAt(new Date());
     });
   };
 
   const handleExport = () => {
     if (!dashboard) return;
+    const exportData = {
+      ...dashboard,
+      loan_type: loanType,
+      range,
+      exported_at: new Date().toISOString(),
+    };
     const dataStr =
       "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(dashboard, null, 2));
+      encodeURIComponent(JSON.stringify(exportData, null, 2));
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute(
       "download",
-      `analytics-dashboard-${range}-${new Date().toISOString().slice(0, 10)}.json`,
+      `analytics-dashboard-${loanType}-${range}-${new Date().toISOString().slice(0, 10)}.json`,
     );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
@@ -117,37 +218,168 @@ export default function Analytics() {
   const charts = dashboard?.charts || {};
   const lists = dashboard?.lists || {};
 
-  // Formatted stats
-  const collectionSuccessRate = summary.collection_success_rate !== undefined
-    ? `${Number(summary.collection_success_rate).toFixed(2)}%`
-    : "0.00%";
-
-  const totalOutstanding = formatCurrency(summary.total_outstanding);
-  const totalCollected = formatCurrency(summary.total_collected);
-  const totalCustomers = summary.total_customers ?? 0;
-  const defaultRate = summary.default_rate !== undefined
-    ? `${Number(summary.default_rate).toFixed(2)}%`
-    : "0.00%";
-
-  // Calculated active loans count
-  const activeLoansCount = useMemo(() => {
-    if (!charts.loan_distribution?.length) return 0;
-    return charts.loan_distribution.reduce(
-      (sum, item) => sum + (Number(item.loan_count) || 0),
+  // Interest loans metrics
+  const interestMetrics = useMemo(() => {
+    const activeList = interestLoans.filter((l) => l.status === "active");
+    const activeCount = activeList.length;
+    const totalOutstanding = activeList.reduce(
+      (s, l) =>
+        s +
+        (Number(l.outstanding_principal) || 0) +
+        (Number(l.outstanding_interest) || 0),
       0,
     );
+    const totalCollected = interestPayments.reduce(
+      (s, p) => s + (Number(p.payment_amount) || 0),
+      0,
+    );
+    const totalDue = interestLoans.reduce(
+      (s, l) => s + (Number(l.total_payable) || 0),
+      0,
+    );
+    const customersSet = new Set(
+      interestLoans.map((l) => l.customer_id).filter(Boolean),
+    );
+    const overdueCount = interestLoans.filter(
+      (l) => l.status === "default" || l.status === "overdue",
+    ).length;
+    const defaultRate =
+      interestLoans.length > 0 ? (overdueCount / interestLoans.length) * 100 : 0;
+    const successRate =
+      totalDue > 0 ? (totalCollected / totalDue) * 100 : 0;
+
+    return {
+      activeCount,
+      totalOutstanding,
+      totalCollected,
+      totalDue,
+      customerCount: customersSet.size,
+      defaultRate,
+      successRate,
+    };
+  }, [interestLoans, interestPayments]);
+
+  // Regular active loans count from distribution
+  const regularActiveLoansCount = useMemo(() => {
+    if (!charts.loan_distribution?.length) return 0;
+    const activeEntry = charts.loan_distribution.find(
+      (item) => item.status?.toLowerCase() === "active",
+    );
+    return Number(activeEntry?.loan_count ?? activeEntry?.value ?? 0);
   }, [charts.loan_distribution]);
+
+  // Combined Formatted Stats
+  const {
+    collectionSuccessRate,
+    totalOutstanding,
+    totalCollected,
+    totalCustomers,
+    activeLoansCount,
+    defaultRate,
+  } = useMemo(() => {
+    if (loanType === "regular") {
+      return {
+        collectionSuccessRate:
+          summary.collection_success_rate !== undefined
+            ? `${Number(summary.collection_success_rate).toFixed(2)}%`
+            : "0.00%",
+        totalOutstanding: formatCurrency(summary.total_outstanding),
+        totalCollected: formatCurrency(summary.total_collected),
+        totalCustomers: summary.total_customers ?? 0,
+        activeLoansCount: regularActiveLoansCount,
+        defaultRate:
+          summary.default_rate !== undefined
+            ? `${Number(summary.default_rate).toFixed(2)}%`
+            : "0.00%",
+      };
+    }
+
+    if (loanType === "interest_only") {
+      return {
+        collectionSuccessRate: `${interestMetrics.successRate.toFixed(2)}%`,
+        totalOutstanding: formatCurrency(interestMetrics.totalOutstanding),
+        totalCollected: formatCurrency(interestMetrics.totalCollected),
+        totalCustomers: interestMetrics.customerCount,
+        activeLoansCount: interestMetrics.activeCount,
+        defaultRate: `${interestMetrics.defaultRate.toFixed(2)}%`,
+      };
+    }
+
+    // "all" - Unified metrics
+    const regColl = Number(summary.total_collected) || 0;
+    const intColl = interestMetrics.totalCollected;
+    const combColl = regColl + intColl;
+
+    const regOut = Number(summary.total_outstanding) || 0;
+    const intOut = interestMetrics.totalOutstanding;
+    const combOut = regOut + intOut;
+
+    const combActive = regularActiveLoansCount + interestMetrics.activeCount;
+    const combCust =
+      (Number(summary.total_customers) || 0) + interestMetrics.customerCount;
+
+    const regDue = Number(summary.total_due) || regColl + regOut;
+    const intDue = interestMetrics.totalDue;
+    const combDue = regDue + intDue;
+
+    const combSuccessRate =
+      combDue > 0 ? (combColl / combDue) * 100 : 0;
+
+    const regDef = Number(summary.default_rate) || 0;
+    const intDef = interestMetrics.defaultRate;
+    const combDef =
+      combActive > 0
+        ? (regDef * regularActiveLoansCount + intDef * interestMetrics.activeCount) /
+          combActive
+        : 0;
+
+    return {
+      collectionSuccessRate: `${combSuccessRate.toFixed(2)}%`,
+      totalOutstanding: formatCurrency(combOut),
+      totalCollected: formatCurrency(combColl),
+      totalCustomers: combCust,
+      activeLoansCount: combActive,
+      defaultRate: `${combDef.toFixed(2)}%`,
+    };
+  }, [loanType, summary, interestMetrics, regularActiveLoansCount]);
 
   // Chart data normalization
   const dailyCollectionData = useMemo(() => {
-    return (charts.daily_collection || []).map((item) => ({
-      day: item.date || item.day || "",
-      date: item.date || item.day || "",
-      collected: Number(item.amount ?? item.collected ?? 0),
-      amount: Number(item.amount ?? item.collected ?? 0),
-      expected: item.expected !== undefined ? Number(item.expected) : undefined,
-    }));
-  }, [charts.daily_collection]);
+    const map = {};
+
+    if (loanType === "all" || loanType === "regular") {
+      (charts.daily_collection || []).forEach((item) => {
+        const d = String(item.date || item.day || "").slice(0, 10);
+        if (!d) return;
+        map[d] = {
+          day: d,
+          date: d,
+          collected: Number(item.amount ?? item.collected ?? 0),
+          expected:
+            item.expected !== undefined ? Number(item.expected) : undefined,
+        };
+      });
+    }
+
+    if (loanType === "all" || loanType === "interest_only") {
+      interestPayments.forEach((p) => {
+        if (!p.payment_date) return;
+        const d = String(p.payment_date).slice(0, 10);
+        if (!d) return;
+        if (!map[d]) {
+          map[d] = { day: d, date: d, collected: 0, expected: undefined };
+        }
+        map[d].collected += Number(p.payment_amount) || 0;
+      });
+    }
+
+    return Object.values(map)
+      .sort((a, b) => a.day.localeCompare(b.day))
+      .map((item) => ({
+        ...item,
+        amount: item.collected,
+      }));
+  }, [charts.daily_collection, interestPayments, loanType]);
 
   const loanDistributionData = useMemo(() => {
     const statusColorMap = {
@@ -157,44 +389,124 @@ export default function Analytics() {
       overdue: "#EF4444",
       pending: "#F59E0B",
       defaulted: "#DC2626",
+      default: "#DC2626",
+      cancelled: "#6B7280",
     };
 
-    return (charts.loan_distribution || []).map((item, idx) => ({
-      name: item.status
-        ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
-        : item.name || `Loan ${idx + 1}`,
+    const distMap = {};
+
+    if (loanType === "all" || loanType === "regular") {
+      (charts.loan_distribution || []).forEach((item) => {
+        const rawStatus = (item.status || "other").toLowerCase();
+        distMap[rawStatus] = {
+          status: rawStatus,
+          loan_count:
+            (distMap[rawStatus]?.loan_count || 0) +
+            Number(item.loan_count ?? item.value ?? 0),
+          loan_amount:
+            (distMap[rawStatus]?.loan_amount || 0) +
+            Number(item.loan_amount ?? item.amount ?? 0),
+        };
+      });
+    }
+
+    if (loanType === "all" || loanType === "interest_only") {
+      interestLoans.forEach((item) => {
+        const rawStatus = (item.status || "other").toLowerCase();
+        distMap[rawStatus] = {
+          status: rawStatus,
+          loan_count: (distMap[rawStatus]?.loan_count || 0) + 1,
+          loan_amount:
+            (distMap[rawStatus]?.loan_amount || 0) +
+            (Number(item.principal_amount) || 0),
+        };
+      });
+    }
+
+    return Object.values(distMap).map((item) => ({
+      name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
       status: item.status,
-      value: Number(item.loan_count ?? item.value ?? 0),
-      loan_count: Number(item.loan_count ?? item.value ?? 0),
-      loan_amount: Number(item.loan_amount ?? item.amount ?? 0),
-      color: statusColorMap[item.status?.toLowerCase()] || undefined,
+      value: item.loan_count,
+      loan_count: item.loan_count,
+      loan_amount: item.loan_amount,
+      color: statusColorMap[item.status] || undefined,
     }));
-  }, [charts.loan_distribution]);
+  }, [charts.loan_distribution, interestLoans, loanType]);
 
   const weeklyCollectionData = useMemo(() => {
-    return (charts.weekly_collection || []).map((item) => {
-      let label = item.week ? `W${String(item.week).slice(-2)}` : "";
-      if (item.week_start) {
-        label = label ? `${label} (${item.week_start})` : item.week_start;
-      }
-      return {
-        week: label || String(item.week || ""),
-        rawWeek: item.week,
-        week_start: item.week_start,
-        collected: Number(item.amount ?? item.collected ?? 0),
-        amount: Number(item.amount ?? item.collected ?? 0),
-        target: item.target !== undefined ? Number(item.target) : undefined,
-      };
-    });
-  }, [charts.weekly_collection]);
+    const weekMap = {};
+
+    if (loanType === "all" || loanType === "regular") {
+      (charts.weekly_collection || []).forEach((item) => {
+        let label = item.week ? `W${String(item.week).slice(-2)}` : "";
+        if (item.week_start) {
+          label = label ? `${label} (${item.week_start})` : item.week_start;
+        }
+        const key = item.week || label;
+        weekMap[key] = {
+          week: label || String(item.week || ""),
+          collected: Number(item.amount ?? item.collected ?? 0),
+          target: item.target !== undefined ? Number(item.target) : undefined,
+        };
+      });
+    }
+
+    if (loanType === "all" || loanType === "interest_only") {
+      interestPayments.forEach((p) => {
+        if (!p.payment_date) return;
+        const d = new Date(p.payment_date);
+        if (isNaN(d.getTime())) return;
+        const oneJan = new Date(d.getFullYear(), 0, 1);
+        const numberOfDays = Math.floor((d - oneJan) / (24 * 60 * 60 * 1000));
+        const weekNum = Math.ceil((d.getDay() + 1 + numberOfDays) / 7);
+        const weekKey = `${d.getFullYear()}W${String(weekNum).padStart(2, "0")}`;
+        const label = `W${String(weekNum).padStart(2, "0")}`;
+
+        if (!weekMap[weekKey]) {
+          weekMap[weekKey] = { week: label, collected: 0, target: undefined };
+        }
+        weekMap[weekKey].collected += Number(p.payment_amount) || 0;
+      });
+    }
+
+    return Object.values(weekMap).map((w) => ({
+      ...w,
+      amount: w.collected,
+    }));
+  }, [charts.weekly_collection, interestPayments, loanType]);
 
   const monthlyIncomeData = useMemo(() => {
-    return (charts.monthly_income || []).map((item) => ({
-      month: item.month,
-      income: Number(item.amount ?? item.income ?? 0),
-      amount: Number(item.amount ?? item.income ?? 0),
-    }));
-  }, [charts.monthly_income]);
+    const monthMap = {};
+
+    if (loanType === "all" || loanType === "regular") {
+      (charts.monthly_income || []).forEach((item) => {
+        if (!item.month) return;
+        monthMap[item.month] = {
+          month: item.month,
+          income: Number(item.amount ?? item.income ?? 0),
+        };
+      });
+    }
+
+    if (loanType === "all" || loanType === "interest_only") {
+      interestPayments.forEach((p) => {
+        if (!p.payment_date) return;
+        const m = String(p.payment_date).slice(0, 7);
+        if (!m || m.length < 7) return;
+        if (!monthMap[m]) {
+          monthMap[m] = { month: m, income: 0 };
+        }
+        monthMap[m].income += Number(p.payment_amount) || 0;
+      });
+    }
+
+    return Object.values(monthMap)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map((item) => ({
+        ...item,
+        amount: item.income,
+      }));
+  }, [charts.monthly_income, interestPayments, loanType]);
 
   const villageCustomerData = useMemo(() => {
     return (charts.village_customers || []).map((item) => ({
@@ -237,22 +549,42 @@ export default function Analytics() {
         subtitle="Full portfolio performance across collections, loans, and growth"
       />
 
-      {/* Toolbar: date range + refresh + export */}
+      {/* Toolbar: loan type + date range + refresh + export */}
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-        <div className="join">
-          {DATE_RANGES.map((r) => (
-            <button
-              key={r.value}
-              className={`join-item btn btn-sm ${
-                range === r.value
-                  ? "btn-primary"
-                  : "btn-ghost bg-base-100 border-base-300"
-              }`}
-              onClick={() => setRange(r.value)}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Loan Category Tabs */}
+          <div className="join bg-base-200 p-1 rounded-xl border border-base-300">
+            {LOAN_TYPES.map((tab) => (
+              <button
+                key={tab.value}
+                className={`join-item btn btn-xs sm:btn-sm border-none transition-all ${
+                  loanType === tab.value
+                    ? "btn-primary font-bold shadow-xs"
+                    : "btn-ghost text-base-content/70 hover:text-base-content"
+                }`}
+                onClick={() => setLoanType(tab.value)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Date Ranges */}
+          <div className="join bg-base-200 p-1 rounded-xl border border-base-300">
+            {DATE_RANGES.map((r) => (
+              <button
+                key={r.value}
+                className={`join-item btn btn-xs sm:btn-sm border-none transition-all ${
+                  range === r.value
+                    ? "btn-primary font-bold shadow-xs"
+                    : "btn-ghost text-base-content/70 hover:text-base-content"
+                }`}
+                onClick={() => setRange(r.value)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -301,43 +633,49 @@ export default function Analytics() {
         </div>
       )}
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        <StatCard
-          icon={TrendingUp}
-          tone="primary"
-          label="Collection Success"
-          value={collectionSuccessRate}
-        />
+      {/* Stat cards - 3 columns perfectly aligned with the charts below */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard
           icon={Wallet}
           tone="info"
           label="Outstanding Amount"
           value={totalOutstanding}
+          sub="Principal & accrued interest"
         />
         <StatCard
           icon={PiggyBank}
           tone="success"
           label="Total Collected"
           value={totalCollected}
+          sub="Realized repayments to date"
         />
         <StatCard
-          icon={Users}
+          icon={TrendingUp}
           tone="primary"
-          label="Total Customers"
-          value={totalCustomers}
+          label="Collection Success"
+          value={collectionSuccessRate}
+          sub="Target vs collected ratio"
         />
         <StatCard
           icon={FileCheck2}
           tone="info"
           label="Active Loans"
           value={activeLoansCount}
+          sub="Currently performing contracts"
         />
         <StatCard
-          icon={TrendingUp}
+          icon={Users}
+          tone="primary"
+          label="Total Customers"
+          value={totalCustomers}
+          sub="Registered borrower accounts"
+        />
+        <StatCard
+          icon={AlertCircle}
           tone="error"
           label="Default Rate"
           value={defaultRate}
+          sub="Non-performing / overdue loans"
         />
       </div>
 

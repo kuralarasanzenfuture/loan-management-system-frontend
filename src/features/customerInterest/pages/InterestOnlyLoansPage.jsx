@@ -113,16 +113,21 @@ export default function InterestOnlyLoansPage() {
 
   const enrichedLoans = useMemo(() => {
     const customerMap = Object.fromEntries(customerList.map((c) => [c.id, c]));
-    return loanList.map((loan) => ({
-      ...loan,
-      customer_name:
-        loan.customer_name ||
-        (customerMap[loan.customer_id]
-          ? `${customerMap[loan.customer_id].first_name} ${
-              customerMap[loan.customer_id].last_name || ""
-            }`.trim()
-          : null),
-    }));
+    return loanList.map((loan) => {
+      const c = customerMap[loan.customer_id];
+      return {
+        ...loan,
+        customer_name:
+          loan.customer_name ||
+          (c
+            ? `${c.first_name} ${c.last_name || ""}`.trim()
+            : null),
+        customer_no: loan.customer_no || c?.customer_no || null,
+        customer_mobile: loan.customer_mobile || c?.mobile || null,
+        customer_photo: loan.customer_photo || loan.photo || c?.photo || null,
+        customer_city: c?.city || null,
+      };
+    });
   }, [loanList, customerList]);
 
   const filteredLoans = useMemo(() => {

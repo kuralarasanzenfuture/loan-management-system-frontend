@@ -16,9 +16,9 @@ import {
 
 export const fetchDashboardOverview = createAsyncThunk(
   "dashboard/fetchDashboardOverview",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getDashboardOverview();
+      return await getDashboardOverview(params);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message ||
@@ -35,9 +35,9 @@ export const fetchDashboardOverview = createAsyncThunk(
 
 export const fetchPortfolioTrends = createAsyncThunk(
   "dashboard/fetchPortfolioTrends",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getPortfolioTrends();
+      return await getPortfolioTrends(params);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message ||
@@ -54,9 +54,9 @@ export const fetchPortfolioTrends = createAsyncThunk(
 
 export const fetchLoanPlanMix = createAsyncThunk(
   "dashboard/fetchLoanPlanMix",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getLoanPlanMix();
+      return await getLoanPlanMix(params);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message ||
@@ -73,9 +73,9 @@ export const fetchLoanPlanMix = createAsyncThunk(
 
 export const fetchPortfolioHealth = createAsyncThunk(
   "dashboard/fetchPortfolioHealth",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getPortfolioHealth();
+      return await getPortfolioHealth(params);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message ||
@@ -92,9 +92,9 @@ export const fetchPortfolioHealth = createAsyncThunk(
 
 export const fetchRecentLoans = createAsyncThunk(
   "dashboard/fetchRecentLoans",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getRecentLoans();
+      return await getRecentLoans(params);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message ||
@@ -111,9 +111,9 @@ export const fetchRecentLoans = createAsyncThunk(
 
 export const fetchQuickInsights = createAsyncThunk(
   "dashboard/fetchQuickInsights",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getQuickInsights();
+      return await getQuickInsights(params);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message ||
@@ -130,9 +130,9 @@ export const fetchQuickInsights = createAsyncThunk(
 
 export const fetchTopLoanOfficers = createAsyncThunk(
   "dashboard/fetchTopLoanOfficers",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await getTopLoanOfficers();
+      return await getTopLoanOfficers(params);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message ||

@@ -1,9 +1,9 @@
 import api from "../../common/services/api";
 
-export const getDashboardOverview = async () => {
+export const getDashboardOverview = async (params = {}) => {
   try {
     const response = await api.get("/dashboard/overview", {
-      params: {},
+      params,
     });
     return response.data;
   } catch (error) {
@@ -11,10 +11,10 @@ export const getDashboardOverview = async () => {
   }
 };
 
-export const getPortfolioTrends = async () => {
+export const getPortfolioTrends = async (params = {}) => {
   try {
     const response = await api.get("/dashboard/portfolio-trends", {
-      params: {},
+      params,
     });
     return response.data;
   } catch (error) {
@@ -22,10 +22,10 @@ export const getPortfolioTrends = async () => {
   }
 };
 
-export const getLoanPlanMix = async () => {
+export const getLoanPlanMix = async (params = {}) => {
   try {
     const response = await api.get("/dashboard/loan-plan-mix", {
-      params: {},
+      params,
     });
     return response.data;
   } catch (error) {
@@ -33,38 +33,47 @@ export const getLoanPlanMix = async () => {
   }
 };
 
-export const getPortfolioHealth = async () => {
+export const getPortfolioHealth = async (params = {}) => {
   try {
-    const response = await api.get("/dashboard/portfolio-health");
+    const response = await api.get("/dashboard/portfolio-health", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
 
-export const getRecentLoans = async () => {
+export const getRecentLoans = async (params = {}) => {
   try {
-    const response = await api.get("/dashboard/recent-loans");
+    const response = await api.get("/dashboard/recent-loans", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
 
-export const getQuickInsights = async () => {
+export const getQuickInsights = async (params = {}) => {
   try {
-    const response = await api.get("/dashboard/quick-insights");
+    const response = await api.get("/dashboard/quick-insights", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
 
-export const getTopLoanOfficers = async () => {
+export const getTopLoanOfficers = async (params = {}) => {
   try {
-    const response = await api.get("/dashboard/top-officers");
+    const response = await api.get("/dashboard/top-officers", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
+

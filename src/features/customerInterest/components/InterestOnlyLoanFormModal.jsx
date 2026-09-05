@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   X,
   Loader2,
@@ -9,6 +9,9 @@ import {
   CheckCircle2,
   Calendar,
   Clock,
+  Phone,
+  MapPin,
+  User,
 } from "lucide-react";
 import {
   calculateInterestOnlyLoan,
@@ -94,6 +97,62 @@ export default function InterestOnlyLoanFormModal({
     setFieldErrors({});
     setShowCustomerList(false);
   }, [open, isEdit, initialData, customers]);
+
+  const customerDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        customerDropdownRef.current &&
+        !customerDropdownRef.current.contains(event.target)
+      ) {
+        setShowCustomerList(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const selectedCustomer = useMemo(
+    () =>
+      customers.find((c) => String(c.id) === String(form.customer_id)) || null,
+    [customers, form.customer_id],
+  );
+
+  const selectedCustomerName = useMemo(() => {
+    if (selectedCustomer) {
+      return (
+        `${selectedCustomer.first_name || ""} ${selectedCustomer.last_name || ""}`.trim() ||
+        `Customer #${selectedCustomer.id}`
+      );
+    }
+    return customerQuery || "";
+  }, [selectedCustomer, customerQuery]);
+
+  const selectedCustomerInitials = useMemo(() => {
+    if (!selectedCustomerName) return "#";
+    return selectedCustomerName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase();
+  }, [selectedCustomerName]);
+
+  const selectedCustomerAddress = useMemo(() => {
+    if (!selectedCustomer) return "";
+    const parts = [
+      selectedCustomer.address,
+      selectedCustomer.city,
+      selectedCustomer.district,
+      selectedCustomer.state,
+      selectedCustomer.pincode,
+    ].filter(Boolean);
+    return parts.join(", ");
+  }, [selectedCustomer]);
 
   const selectedPlan = useMemo(
     () =>
@@ -246,61 +305,172 @@ export default function InterestOnlyLoanFormModal({
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {/* Customer search-select */}
-          <div className="form-control relative">
+          <div className="form-control">
             <label className="label pb-1 pt-0">
               <span className="label-text text-xs font-semibold">
                 Customer *
               </span>
             </label>
-            <label
-              className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${
-                fieldErrors.customer_id ? "input-error" : ""
-              } ${hasPayments ? "bg-base-200 opacity-80 cursor-not-allowed" : ""}`}
-            >
-              <Search size={14} className="text-base-content/40 shrink-0" />
-              <input
-                type="text"
-                disabled={hasPayments}
-                className="grow text-xs"
-                placeholder="Search customer by name, mobile, customer #…"
-                value={customerQuery}
-                onChange={(e) => {
-                  setCustomerQuery(e.target.value);
-                  setForm((prev) => ({ ...prev, customer_id: "" }));
-                  setShowCustomerList(true);
-                }}
-                onFocus={() => {
-                  if (!hasPayments) setShowCustomerList(true);
-                }}
-              />
-            </label>
-            <FieldError field="customer_id" />
-            {showCustomerList && !hasPayments && (
-              <ul className="absolute z-20 top-full mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-base-300 bg-base-100 shadow-dropdown py-1">
-                {filteredCustomers.length === 0 ? (
-                  <li className="px-3 py-2 text-xs text-base-content/40">
-                    No matching customers
-                  </li>
-                ) : (
-                  filteredCustomers.map((c) => (
-                    <li key={c.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectCustomer(c)}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-base-200 flex items-center justify-between gap-2"
-                      >
-                        <span className="font-medium">
-                          {c.first_name} {c.last_name || ""}
+
+            {form.customer_id && selectedCustomer ? (
+              <div className="flex items-center justify-between p-3 rounded-xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-base-200/30 shadow-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  {selectedCustomer.photo ? (
+                    <img
+                      src={selectedCustomer.photo}
+                      alt={selectedCustomerName}
+                      className="w-11 h-11 rounded-full object-cover shrink-0 border-2 border-primary/20 shadow-xs"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center uppercase select-none shrink-0 border border-primary/25">
+                      {selectedCustomerInitials}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-sm text-base-content leading-snug">
+                        {selectedCustomerName}
+                      </span>
+                      {selectedCustomer.customer_no && (
+                        <span className="badge badge-sm badge-ghost font-mono text-[10px] py-0.5">
+                          {selectedCustomer.customer_no}
                         </span>
-                        <span className="text-base-content/40 font-mono text-[11px]">
-                          {c.mobile}
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[11px] text-base-content/65">
+                      {selectedCustomer.mobile && (
+                        <span className="flex items-center gap-1 font-mono font-medium">
+                          <Phone size={11} className="text-primary/70 shrink-0" />
+                          {selectedCustomer.mobile}
                         </span>
-                      </button>
-                    </li>
-                  ))
+                      )}
+                      {selectedCustomerAddress && (
+                        <span
+                          className="flex items-center gap-1 truncate max-w-[280px]"
+                          title={selectedCustomerAddress}
+                        >
+                          <MapPin size={11} className="text-primary/70 shrink-0" />
+                          {selectedCustomerAddress}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {!hasPayments && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, customer_id: "" }));
+                      setCustomerQuery("");
+                      setShowCustomerList(true);
+                    }}
+                    className="btn btn-ghost btn-xs text-primary font-semibold ml-2 shrink-0 hover:bg-primary/10"
+                  >
+                    Change
+                  </button>
                 )}
-              </ul>
+              </div>
+            ) : (
+              <div ref={customerDropdownRef} className="relative">
+                <label
+                  className={`input input-bordered input-sm flex items-center gap-2 rounded-lg ${
+                    fieldErrors.customer_id ? "input-error" : ""
+                  } ${hasPayments ? "bg-base-200 opacity-80 cursor-not-allowed" : ""}`}
+                >
+                  <Search size={14} className="text-base-content/40 shrink-0" />
+                  <input
+                    type="text"
+                    disabled={hasPayments}
+                    className="grow text-xs"
+                    placeholder="Search customer by name, mobile, customer #…"
+                    value={customerQuery}
+                    onChange={(e) => {
+                      setCustomerQuery(e.target.value);
+                      setForm((prev) => ({ ...prev, customer_id: "" }));
+                      setShowCustomerList(true);
+                    }}
+                    onFocus={() => {
+                      if (!hasPayments) setShowCustomerList(true);
+                    }}
+                  />
+                </label>
+
+                {showCustomerList && !hasPayments && (
+                  <ul className="absolute z-30 top-full mt-1.5 w-full max-h-56 overflow-y-auto rounded-xl border border-base-300 bg-base-100 shadow-2xl py-1 divide-y divide-base-200/60">
+                    {filteredCustomers.length === 0 ? (
+                      <li className="px-3 py-4 text-xs text-base-content/40 text-center">
+                        No matching customers found
+                      </li>
+                    ) : (
+                      filteredCustomers.map((c) => {
+                        const fullName =
+                          `${c.first_name || ""} ${c.last_name || ""}`.trim() ||
+                          `Customer #${c.id}`;
+                        const initials = fullName
+                          ? fullName
+                              .split(" ")
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((w) => w[0])
+                              .join("")
+                              .toUpperCase()
+                          : `#${c.id}`;
+                        const loc = [c.address, c.city].filter(Boolean).join(", ");
+
+                        return (
+                          <li key={c.id}>
+                            <button
+                              type="button"
+                              onClick={() => handleSelectCustomer(c)}
+                              className="w-full text-left px-3 py-2 hover:bg-base-200/70 flex items-center justify-between gap-3 transition-colors"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                {c.photo ? (
+                                  <img
+                                    src={c.photo}
+                                    alt={fullName}
+                                    className="w-8 h-8 rounded-full object-cover shrink-0 border border-base-300"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center uppercase select-none shrink-0 border border-primary/20">
+                                    {initials}
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-xs text-base-content truncate">
+                                    {fullName}
+                                  </div>
+                                  <div className="text-[10px] text-base-content/50 flex items-center gap-1.5 mt-0.5">
+                                    {c.customer_no && (
+                                      <span className="badge badge-ghost badge-xs font-mono">
+                                        {c.customer_no}
+                                      </span>
+                                    )}
+                                    {loc && (
+                                      <span className="truncate max-w-[190px] text-base-content/60 flex items-center gap-0.5">
+                                        <MapPin size={9} className="shrink-0 text-base-content/40" />
+                                        {loc}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <span className="text-xs font-mono text-base-content/70 shrink-0 flex items-center gap-1">
+                                <Phone size={10} className="text-base-content/40" />
+                                {c.mobile || "—"}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })
+                    )}
+                  </ul>
+                )}
+              </div>
             )}
+            <FieldError field="customer_id" />
           </div>
 
           {/* Interest Plan selection */}

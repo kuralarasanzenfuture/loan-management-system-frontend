@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -36,6 +36,9 @@ import {
   fetchQuickInsights,
   fetchTopLoanOfficers,
 } from "../../../redux/dashboard/dashboardSlice.js";
+import { fetchInterestOnlyLoans } from "../../../redux/interestOnlyLoans/interestLoanSlice.js";
+import { fetchInterestCollectionReports } from "../../../redux/interestOnlyPayment/interestOnlyPaymentSlice.js";
+import { fetchInterestOnlyLoanPlans } from "../../../redux/interestLoanPlan/interestLoanPlanSlice.js";
 
 const PLAN_COLORS = [
   "#C7A248",
@@ -55,6 +58,7 @@ const STATUS_BADGE = {
   defaulted: "badge-error",
   rejected: "badge-error",
   completed: "badge-success",
+  cancelled: "badge-ghost",
 };
 
 function formatCurrency(value) {
@@ -123,6 +127,8 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const [loanType, setLoanType] = useState("all"); // "all" | "regular" | "interest_only"
+
   const {
     overview,
     portfolioTrends,
@@ -135,103 +141,322 @@ export default function DashboardPage() {
     error,
   } = useSelector((state) => state.dashboard);
 
+  const { loans: rawInterestLoans = [] } = useSelector(
+    (state) => state.interestOnlyLoans || {},
+  );
+  const interestLoans = Array.isArray(rawInterestLoans) ? rawInterestLoans : [];
+
+  const { reports: rawInterestPayments = [] } = useSelector(
+    (state) => state.interestOnlyPayments || {},
+  );
+  const interestPayments = Array.isArray(rawInterestPayments) ? rawInterestPayments : [];
+
   useEffect(() => {
-    dispatch(fetchDashboardOverview());
-    dispatch(fetchPortfolioTrends());
-    dispatch(fetchLoanPlanMix());
-    dispatch(fetchPortfolioHealth());
-    dispatch(fetchRecentLoans());
-    dispatch(fetchQuickInsights());
-    dispatch(fetchTopLoanOfficers());
-  }, [dispatch]);
+    dispatch(fetchDashboardOverview({ loan_type: loanType }));
+    dispatch(fetchPortfolioTrends({ loan_type: loanType }));
+    dispatch(fetchLoanPlanMix({ loan_type: loanType }));
+    dispatch(fetchPortfolioHealth({ loan_type: loanType }));
+    dispatch(fetchRecentLoans({ loan_type: loanType }));
+    dispatch(fetchQuickInsights({ loan_type: loanType }));
+    dispatch(fetchTopLoanOfficers({ loan_type: loanType }));
+
+    dispatch(fetchInterestOnlyLoans());
+    dispatch(fetchInterestCollectionReports());
+    dispatch(fetchInterestOnlyLoanPlans());
+  }, [dispatch, loanType]);
+
+  // ---- Interest-only loans computed overview ----
+  const interestOverview = useMemo(() => {
+    const activeList = interestLoans.filter((l) => l.status === "active");
+    const activePortfolio = activeList.reduce(
+      (sum, l) => sum + (Number(l.principal_amount) || 0),
+      0,
+    );
+    const activeBorrowersSet = new Set(
+      activeList.map((l) => l.customer_id).filter(Boolean),
+    );
+    const avgLoanSize =
+      activeList.length > 0 ? activePortfolio / activeList.length : 0;
+
+    const outstandingReceivables = activeList.reduce(
+      (sum, l) =>
+        sum +
+        (Number(l.outstanding_principal) || 0) +
+        (Number(l.outstanding_interest) || 0),
+      0,
+    );
+
+    const overdueList = interestLoans.filter(
+      (l) => l.status === "default" || l.status === "overdue",
+    );
+    const overdueAmount = overdueList.reduce(
+      (sum, l) =>
+        sum +
+        (Number(l.outstanding_principal) || 0) +
+        (Number(l.outstanding_interest) || 0),
+      0,
+    );
+
+    const totalPaid = interestLoans.reduce(
+      (sum, l) =>
+        sum +
+        (Number(l.total_interest_paid) || 0) +
+        (Number(l.total_principal_paid) || 0),
+      0,
+    );
+
+    const totalDue = interestLoans.reduce(
+      (sum, l) => sum + (Number(l.total_payable) || 0),
+      0,
+    );
+
+    const collectionRate =
+      totalDue > 0 ? Number(((totalPaid / totalDue) * 100).toFixed(2)) : 0;
+
+    return {
+      active_portfolio: activePortfolio,
+      active_loans: activeList.length,
+      active_borrowers: activeBorrowersSet.size,
+      average_loan_size: avgLoanSize,
+      outstanding_receivables: outstandingReceivables,
+      overdue_amount: overdueAmount,
+      total_paid: totalPaid,
+      total_due: totalDue,
+      collection_rate: collectionRate,
+    };
+  }, [interestLoans]);
+
+  // ---- Effective merged overview ----
+  const effectiveOverview = useMemo(() => {
+    if (loanType === "regular") return overview;
+    if (loanType === "interest_only") return interestOverview;
+
+    if (!overview && !interestOverview) return null;
+    const reg = overview || {};
+    const int = interestOverview || {};
+
+    const activePortfolio =
+      (Number(reg.active_portfolio) || 0) + (Number(int.active_portfolio) || 0);
+    const activeLoans =
+      (Number(reg.active_loans) || 0) + (Number(int.active_loans) || 0);
+    const activeBorrowers =
+      (Number(reg.active_borrowers) || 0) + (Number(int.active_borrowers) || 0);
+    const averageLoanSize =
+      activeLoans > 0 ? activePortfolio / activeLoans : 0;
+    const outstandingReceivables =
+      (Number(reg.outstanding_receivables) || 0) +
+      (Number(int.outstanding_receivables) || 0);
+    const overdueAmount =
+      (Number(reg.overdue_amount) || 0) + (Number(int.overdue_amount) || 0);
+    const totalPaid =
+      (Number(reg.total_paid) || 0) + (Number(int.total_paid) || 0);
+    const totalDue =
+      (Number(reg.total_due) || 0) + (Number(int.total_due) || 0);
+    const collectionRate =
+      totalDue > 0 ? Number(((totalPaid / totalDue) * 100).toFixed(2)) : 0;
+
+    return {
+      active_portfolio: activePortfolio,
+      active_loans: activeLoans,
+      active_borrowers: activeBorrowers,
+      average_loan_size: averageLoanSize,
+      outstanding_receivables: outstandingReceivables,
+      overdue_amount: overdueAmount,
+      total_paid: totalPaid,
+      total_due: totalDue,
+      collection_rate: collectionRate,
+    };
+  }, [overview, interestOverview, loanType]);
 
   // ---- KPI cards ----
   const kpiCards = useMemo(() => {
-    if (!overview) return [];
+    if (!effectiveOverview) return [];
     return [
       {
         title: "Active Portfolio",
-        value: formatCurrency(overview.active_portfolio),
-        sub: `${overview.active_loans || 0} active loans`,
+        value: formatCurrency(effectiveOverview.active_portfolio),
+        sub: `${effectiveOverview.active_loans || 0} active loans`,
         icon: DollarSign,
         iconColor: "text-primary bg-primary/10",
       },
       {
         title: "Active Borrowers",
-        value: (overview.active_borrowers || 0).toLocaleString("en-IN"),
-        sub: `Avg loan ${formatCurrency(overview.average_loan_size)}`,
+        value: (effectiveOverview.active_borrowers || 0).toLocaleString("en-IN"),
+        sub: `Avg loan ${formatCurrency(effectiveOverview.average_loan_size)}`,
         icon: Users,
         iconColor: "text-success bg-success/10",
       },
       {
         title: "Outstanding Receivables",
-        value: formatCurrency(overview.outstanding_receivables),
-        sub: `${formatCurrency(overview.overdue_amount)} overdue`,
+        value: formatCurrency(effectiveOverview.outstanding_receivables),
+        sub: `${formatCurrency(effectiveOverview.overdue_amount)} overdue`,
         icon: FileText,
         iconColor: "text-info bg-info/10",
       },
       {
         title: "Collection Rate",
-        value: `${overview.collection_rate || 0}%`,
-        sub: `${formatCurrency(overview.total_paid)} of ${formatCurrency(overview.total_due)}`,
+        value: `${effectiveOverview.collection_rate || 0}%`,
+        sub: `${formatCurrency(effectiveOverview.total_paid)} of ${formatCurrency(effectiveOverview.total_due)}`,
         icon: Percent,
         iconColor: "text-warning bg-warning/10",
       },
     ];
-  }, [overview]);
+  }, [effectiveOverview]);
 
   // ---- Merge portfolio / collections / overdue trend arrays by month ----
   const trendData = useMemo(() => {
-    const {
-      portfolio = [],
-      collections = [],
-      overdue = [],
-    } = portfolioTrends || {};
-
     const byMonth = {};
 
-    portfolio.forEach((r) => {
-      if (!r.month) return;
-      byMonth[r.month] = {
-        month: r.month,
-        disbursed: Number(r.disbursed_amount) || 0,
-        loan_count: Number(r.loan_count) || 0,
-        collected: 0,
-        overdue: 0,
-      };
-    });
+    if (loanType === "all" || loanType === "regular") {
+      const {
+        portfolio = [],
+        collections = [],
+        overdue = [],
+      } = portfolioTrends || {};
 
-    collections.forEach((r) => {
-      if (!r.month) return;
-      byMonth[r.month] = {
-        ...(byMonth[r.month] || { month: r.month, disbursed: 0, loan_count: 0, overdue: 0 }),
-        collected: Number(r.collected_amount) || 0,
-      };
-    });
+      portfolio.forEach((r) => {
+        if (!r.month) return;
+        byMonth[r.month] = {
+          month: r.month,
+          disbursed: Number(r.disbursed_amount) || 0,
+          loan_count: Number(r.loan_count) || 0,
+          collected: 0,
+          overdue: 0,
+        };
+      });
 
-    overdue.forEach((r) => {
-      if (!r.month) return;
-      byMonth[r.month] = {
-        ...(byMonth[r.month] || { month: r.month, disbursed: 0, loan_count: 0, collected: 0 }),
-        overdue: Number(r.overdue_amount) || 0,
-      };
-    });
+      collections.forEach((r) => {
+        if (!r.month) return;
+        byMonth[r.month] = {
+          ...(byMonth[r.month] || {
+            month: r.month,
+            disbursed: 0,
+            loan_count: 0,
+            overdue: 0,
+          }),
+          collected: Number(r.collected_amount) || 0,
+        };
+      });
+
+      overdue.forEach((r) => {
+        if (!r.month) return;
+        byMonth[r.month] = {
+          ...(byMonth[r.month] || {
+            month: r.month,
+            disbursed: 0,
+            loan_count: 0,
+            collected: 0,
+          }),
+          overdue: Number(r.overdue_amount) || 0,
+        };
+      });
+    }
+
+    if (loanType === "all" || loanType === "interest_only") {
+      interestLoans.forEach((l) => {
+        if (!l.start_date) return;
+        const m = String(l.start_date).slice(0, 7);
+        if (!m || m.length < 7) return;
+        if (!byMonth[m]) {
+          byMonth[m] = { month: m, disbursed: 0, loan_count: 0, collected: 0, overdue: 0 };
+        }
+        byMonth[m].disbursed += Number(l.principal_amount) || 0;
+        byMonth[m].loan_count += 1;
+      });
+
+      interestPayments.forEach((p) => {
+        if (!p.payment_date) return;
+        const m = String(p.payment_date).slice(0, 7);
+        if (!m || m.length < 7) return;
+        if (!byMonth[m]) {
+          byMonth[m] = { month: m, disbursed: 0, loan_count: 0, collected: 0, overdue: 0 };
+        }
+        byMonth[m].collected += Number(p.payment_amount) || 0;
+      });
+    }
 
     return Object.values(byMonth)
       .sort((a, b) => a.month.localeCompare(b.month))
       .map((r) => ({ ...r, monthLabel: formatMonthLabel(r.month) }));
-  }, [portfolioTrends]);
+  }, [portfolioTrends, interestLoans, interestPayments, loanType]);
 
-  const loanPlanMixData = useMemo(
-    () =>
-      (loanPlanMix || []).map((p, i) => ({
-        name: p.plan_name,
-        value: Number(p.portfolio_percentage) || 0,
-        amount: Number(p.total_loan_amount) || 0,
+  const loanPlanMixData = useMemo(() => {
+    const plans = [];
+
+    if (loanType === "all" || loanType === "regular") {
+      (loanPlanMix || []).forEach((p) => {
+        plans.push({
+          name: p.plan_name,
+          category: "EMI",
+          amount: Number(p.total_loan_amount) || 0,
+        });
+      });
+    }
+
+    if (loanType === "all" || loanType === "interest_only") {
+      const planTotals = {};
+      interestLoans.forEach((l) => {
+        const planName = l.plan_name || "Interest Plan";
+        planTotals[planName] =
+          (planTotals[planName] || 0) + (Number(l.principal_amount) || 0);
+      });
+
+      Object.entries(planTotals).forEach(([name, amount]) => {
+        plans.push({
+          name: loanType === "all" ? `${name} (Interest)` : name,
+          category: "Interest",
+          amount,
+        });
+      });
+    }
+
+    const totalAmount = plans.reduce((sum, p) => sum + p.amount, 0);
+
+    return plans
+      .sort((a, b) => b.amount - a.amount)
+      .map((p, i) => ({
+        ...p,
+        value:
+          totalAmount > 0 ? Number(((p.amount / totalAmount) * 100).toFixed(1)) : 0,
         color: PLAN_COLORS[i % PLAN_COLORS.length],
-      })),
-    [loanPlanMix],
-  );
+      }));
+  }, [loanPlanMix, interestLoans, loanType]);
+
+  const combinedRecentLoans = useMemo(() => {
+    const regularList = (recentLoans || []).map((l) => ({
+      ...l,
+      loan_type: "regular",
+    }));
+
+    const interestList = interestLoans.map((l) => ({
+      id: l.id,
+      loan_no: l.loan_no,
+      loan_amount: l.principal_amount,
+      status: l.status,
+      created_at: l.created_at,
+      first_name:
+        l.first_name || l.customer_name?.split(" ")[0] || "Customer",
+      last_name:
+        l.last_name ||
+        l.customer_name?.split(" ").slice(1).join(" ") ||
+        "",
+      mobile: l.mobile || l.customer_mobile || "—",
+      loan_type: "interest_only",
+    }));
+
+    let list = [];
+    if (loanType === "regular") {
+      list = regularList;
+    } else if (loanType === "interest_only") {
+      list = interestList;
+    } else {
+      list = [...regularList, ...interestList];
+    }
+
+    return list
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, 10);
+  }, [recentLoans, interestLoans, loanType]);
 
   const onTimeRate = Number(portfolioHealth?.on_time_payment_rate) || 0;
   const nplRatio = Number(portfolioHealth?.npl_ratio) || 0;
@@ -254,30 +479,64 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-base-content">
             Dashboard
           </h1>
-          <p className="text-sm text-base-content/50 mt-1">
-            Welcome back. Here's a high-level overview of loans, collections, and portfolio health.
+          <p className="text-sm text-base-content/50 mt-1 max-w-xl">
+            Welcome back. High-level portfolio overview across standard EMI and interest-only loans.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => navigate("/loan-reports")}
-            className="btn btn-outline btn-sm rounded-xl border-base-300"
-          >
-            <FileText size={15} />
-            Reports
-          </button>
-          <button
-            onClick={() => navigate("/loan-applications")}
-            className="btn btn-primary btn-sm rounded-xl gap-1.5 shadow-md shadow-primary/20"
-          >
-            <Plus size={16} />
-            <span>New Application</span>
-          </button>
+
+        {/* Primary Action Controls & Filter Tabs */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
+          {/* Segmented Filter Tabs */}
+          <div className="join bg-base-200/80 p-0.5 sm:p-1 rounded-xl border border-base-300/80 shrink-0">
+            {[
+              { key: "all", label: "All Loans" },
+              { key: "regular", label: "Regular EMI" },
+              { key: "interest_only", label: "Interest-Only" },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setLoanType(tab.key)}
+                className={`join-item btn btn-xs sm:btn-sm rounded-lg border-none px-2.5 sm:px-3.5 transition-all ${
+                  loanType === tab.key
+                    ? "btn-primary shadow-xs font-bold"
+                    : "btn-ghost text-base-content/70 hover:text-base-content"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Action Buttons Group */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => navigate("/loan-reports")}
+              className="btn btn-outline btn-sm rounded-xl border-base-300 gap-1.5"
+            >
+              <FileText size={15} />
+              <span>Reports</span>
+            </button>
+            <button
+              onClick={() => navigate("/interest-only-loans")}
+              className="btn btn-outline btn-sm rounded-xl border-base-300 gap-1.5"
+              title="Manage Interest-Only Loans"
+            >
+              <Percent size={14} />
+              <span>Interest Loans</span>
+            </button>
+            <button
+              onClick={() => navigate("/loan-applications")}
+              className="btn btn-primary btn-sm rounded-xl gap-1.5 shadow-md shadow-primary/20"
+            >
+              <Plus size={16} />
+              <span>New Application</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -452,9 +711,9 @@ export default function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-1.5 mt-2 max-h-36 overflow-y-auto">
-                {loanPlanMixData.map((item) => (
+                {loanPlanMixData.map((item, i) => (
                   <div
-                    key={item.name}
+                    key={`${item.name}-${i}`}
                     className="flex items-center justify-between text-[11px]"
                   >
                     <div className="flex items-center gap-2 min-w-0">
@@ -545,7 +804,13 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-base-200 bg-base-200/10">
             <h3 className="font-bold text-sm tracking-tight">Recent Loans</h3>
             <button
-              onClick={() => navigate("/loan-applications")}
+              onClick={() =>
+                navigate(
+                  loanType === "interest_only"
+                    ? "/interest-only-loans"
+                    : "/loan-applications",
+                )
+              }
               className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
             >
               View all
@@ -572,7 +837,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-base-100">
-                {loading && recentLoans.length === 0 ? (
+                {loading && combinedRecentLoans.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -581,7 +846,7 @@ export default function DashboardPage() {
                       Loading…
                     </td>
                   </tr>
-                ) : recentLoans.length === 0 ? (
+                ) : combinedRecentLoans.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -591,10 +856,16 @@ export default function DashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  recentLoans.map((loan) => (
+                  combinedRecentLoans.map((loan) => (
                     <tr
-                      key={loan.id}
-                      onClick={() => navigate(`/loans/${loan.id}`)}
+                      key={`${loan.loan_type}-${loan.id}`}
+                      onClick={() => {
+                        if (loan.loan_type === "interest_only") {
+                          navigate(`/interest-only-loans/${loan.id}`);
+                        } else {
+                          navigate(`/loans/${loan.id}`);
+                        }
+                      }}
                       className="hover:bg-base-200/40 cursor-pointer transition-colors"
                     >
                       <td className="py-3.5 px-6">
@@ -613,9 +884,22 @@ export default function DashboardPage() {
                         </div>
                       </td>
                       <td className="py-3.5 px-6 leading-tight">
-                        <p className="text-xs font-semibold text-base-content">
-                          {formatCurrency(loan.loan_amount)}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-semibold text-base-content">
+                            {formatCurrency(loan.loan_amount)}
+                          </p>
+                          <span
+                            className={`badge badge-xs font-semibold text-[9px] ${
+                              loan.loan_type === "interest_only"
+                                ? "badge-info text-info-content"
+                                : "badge-ghost"
+                            }`}
+                          >
+                            {loan.loan_type === "interest_only"
+                              ? "Interest"
+                              : "EMI"}
+                          </span>
+                        </div>
                         <p className="text-[10px] text-base-content/40 font-mono">
                           {loan.loan_no}
                         </p>

@@ -135,11 +135,45 @@ export default function InterestOnlyLoanTable({
                   </div>
                 </td>
 
-                <td className="text-xs">
-                  <span className="flex items-center gap-1.5 font-semibold text-base-content/80">
-                    <User size={11} className="text-base-content/30" />
-                    {loan.customer_name || `Customer #${loan.customer_id}`}
-                  </span>
+                <td className="py-3 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    {loan.customer_photo || loan.photo ? (
+                      <img
+                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-base-200 shadow-xs"
+                        src={loan.customer_photo || loan.photo}
+                        alt={loan.customer_name || "Customer Photo"}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center uppercase select-none shrink-0 border border-primary/20">
+                        {loan.customer_name
+                          ? loan.customer_name
+                              .trim()
+                              .split(" ")
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((word) => word[0])
+                              .join("")
+                              .toUpperCase()
+                          : `#${loan.customer_id}`}
+                      </div>
+                    )}
+
+                    <div className="min-w-0">
+                      <div className="font-semibold text-base-content/90 truncate">
+                        {loan.customer_name || `Customer #${loan.customer_id}`}
+                      </div>
+                      <div className="text-[11px] text-base-content/50 font-mono flex items-center gap-1.5 mt-0.5">
+                        {loan.customer_no && (
+                          <span className="badge badge-ghost badge-xs font-mono">
+                            {loan.customer_no}
+                          </span>
+                        )}
+                        {loan.customer_mobile && (
+                          <span>{loan.customer_mobile}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </td>
 
                 <td className="text-right text-xs font-bold text-base-content">
