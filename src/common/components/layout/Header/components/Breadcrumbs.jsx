@@ -11,6 +11,9 @@ const ROUTE_LABELS = {
   borrowers: "Borrowers",
   documents: "Documents",
   settings: "Settings",
+  "loan-collections": "Loan Collections Report",
+  "interest-collections": "Interest Collection Reports",
+  "interest-collection-reports": "Interest Collection Reports",
 };
 
 /**

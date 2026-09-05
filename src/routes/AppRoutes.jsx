@@ -249,6 +249,10 @@ import UserPermissionsPage from "../features/permissions/pages/UserPermissionsPa
 import UnauthorizedPage from "../common/pages/UnauthorizedPage.jsx";
 import InterestLoanPlansPage from "../features/interestLoanPlan/pages/InterestLoanPlansPage.jsx";
 import InterestLoanPlanViewPage from "../features/interestLoanPlan/pages/InterestLoanPlanViewPage.jsx";
+import InterestOnlyLoansPage from "../features/customerInterest/pages/InterestOnlyLoansPage.jsx";
+import InterestOnlyLoanViewPage from "../features/customerInterest/pages/InterestOnlyLoanViewPage.jsx";
+import InterestCollectionPage from "../features/interestCollection/pages/InterestCollectionPage.jsx";
+import InterestCollectionReportsPage from "../features/interestCollection/reports/pages/InterestCollectionReportsPage.jsx";
 
 // Centralized configuration for protected routes inside MainLayout
 const protectedRoutesConfig = [
@@ -532,6 +536,27 @@ const protectedRoutesConfig = [
     element: <CollectionReportsPage />,
     permission: "COLLECTION_REPORT_VIEW",
   },
+  {
+    path: "/reports/interest-collections",
+    element: <InterestCollectionReportsPage />,
+    permission: [
+      "INTEREST_COLLECTION_REPORT_VIEW",
+      "COLLECTION_REPORT_VIEW",
+      "INTEREST_COLLECTION_VIEW",
+      "INTEREST_ONLY_LOAN_VIEW",
+    ],
+  },
+  {
+    path: "/interest-collection-reports",
+    element: <InterestCollectionReportsPage />,
+    permission: [
+      "INTEREST_COLLECTION_REPORT_VIEW",
+      "COLLECTION_REPORT_VIEW",
+      "INTEREST_COLLECTION_VIEW",
+      "INTEREST_ONLY_LOAN_VIEW",
+    ],
+  },
+
 
   {
     path: "/interest-loan-plans",
@@ -542,6 +567,28 @@ const protectedRoutesConfig = [
     path: "/interest-loan-plans/:id",
     element: <InterestLoanPlanViewPage />,
     permission: ["INTEREST_LOAN_PLAN_VIEW", "LOAN_PLAN_VIEW"],
+  },
+
+  {
+    path: "/interest-only-loans",
+    element: <InterestOnlyLoansPage />,
+    permission: ["INTEREST_ONLY_LOAN_VIEW", "LOAN_VIEW"],
+  },
+  {
+    path: "/interest-only-loans/:id",
+    element: <InterestOnlyLoanViewPage />,
+    permission: ["INTEREST_ONLY_LOAN_VIEW", "LOAN_VIEW"],
+  },
+
+  {
+    path: "/interest-collections",
+    element: <InterestCollectionPage />,
+    permission: [
+      "INTEREST_COLLECTION_VIEW",
+      "LOAN_COLLECTION_VIEW",
+      "COLLECTION_VIEW",
+      "INTEREST_ONLY_LOAN_VIEW",
+    ],
   },
 
   // Profile & Settings (Authenticated, no specific permission required)

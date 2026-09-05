@@ -22,6 +22,9 @@ import modulesActionsReducer from "../redux/modulesActions/modulesActionsSlice.j
 import rolePermissionReducer from "../redux/rolePermissions/rolePermissionSlice.js";
 import userPermissionReducer from "../redux/userPermissions/userPermissionSlice.js";
 import interestLoanPlanReducer from "../redux/interestLoanPlan/interestLoanPlanSlice.js";
+import interestOnlyLoanReducer from "../redux/interestOnlyLoans/interestLoanSlice.js";
+import interestOnlyScheduleReducer from "../redux/interestOnlySchedule/interestOnlyScheduleSlice.js";
+import interestOnlyPaymentReducer from "../redux/interestOnlyPayment/interestOnlyPaymentSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -47,6 +50,9 @@ export const store = configureStore({
     rolePermissions: rolePermissionReducer,
     userPermissions: userPermissionReducer,
     interestLoanPlans: interestLoanPlanReducer,
+    interestOnlyLoans: interestOnlyLoanReducer,
+    interestOnlySchedules: interestOnlyScheduleReducer,
+    interestOnlyPayments: interestOnlyPaymentReducer,
     // },
     // middleware: (getDefaultMiddleware) => {
     //   return getDefaultMiddleware({

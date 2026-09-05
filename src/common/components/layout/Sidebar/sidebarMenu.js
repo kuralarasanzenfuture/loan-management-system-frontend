@@ -18,6 +18,7 @@ import {
   HandCoins,
   Wallet,
   Percent,
+  Coins,
 } from "lucide-react";
 import { PERMISSIONS, ROLES } from "../../../../constants/permissions.js";
 
@@ -88,6 +89,15 @@ export const NAV_SECTIONS = [
           PERMISSIONS.LOAN_PLAN_VIEW,
         ],
       },
+      {
+        label: "Customer Interest Loans",
+        icon: Receipt,
+        path: "/interest-only-loans",
+        permission: [
+          PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
+          PERMISSIONS.LOAN_VIEW,
+        ],
+      },
     ],
   },
 
@@ -105,6 +115,17 @@ export const NAV_SECTIONS = [
         icon: CalendarDays,
         path: "/due-collections",
         permission: PERMISSIONS.DUE_COLLECTION_VIEW,
+      },
+      {
+        label: "Interest Collections",
+        icon: Coins,
+        path: "/interest-collections",
+        permission: [
+          PERMISSIONS.INTEREST_COLLECTION_VIEW,
+          PERMISSIONS.LOAN_COLLECTION_VIEW,
+          PERMISSIONS.COLLECTION_VIEW,
+          PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
+        ],
       },
     ],
   },
@@ -225,6 +246,17 @@ export const NAV_SECTIONS = [
         icon: Receipt,
         path: "/reports/loan-collections",
         permission: PERMISSIONS.COLLECTION_REPORT_VIEW,
+      },
+      {
+        label: "Interest Collection Reports",
+        icon: Coins,
+        path: "/reports/interest-collections",
+        permission: [
+          PERMISSIONS.INTEREST_COLLECTION_REPORT_VIEW,
+          PERMISSIONS.COLLECTION_REPORT_VIEW,
+          PERMISSIONS.INTEREST_COLLECTION_VIEW,
+          PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
+        ],
       },
       {
         label: "Customer Reports",
