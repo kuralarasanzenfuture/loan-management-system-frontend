@@ -41,6 +41,7 @@ export default function InterestOnlyLoanFormModal({
   plans = [],
   loading,
   error,
+  lockedCustomer = false,
   onClose,
   onSubmit,
 }) {
@@ -86,13 +87,30 @@ export default function InterestOnlyLoanFormModal({
         setCustomerQuery(initialData.customer_name);
       }
     } else {
+      const initialCustId = initialData?.customer_id ? String(initialData.customer_id) : "";
       setForm({
-        customer_id: "",
-        interest_plan_id: "",
-        principal_amount: "",
-        start_date: new Date().toISOString().slice(0, 10),
+        customer_id: initialCustId,
+        interest_plan_id: initialData?.interest_plan_id || "",
+        principal_amount: initialData?.principal_amount || "",
+        start_date: initialData?.start_date
+          ? String(initialData.start_date).slice(0, 10)
+          : new Date().toISOString().slice(0, 10),
       });
-      setCustomerQuery("");
+
+      if (initialCustId) {
+        const foundCustomer = customers.find(
+          (c) => String(c.id) === initialCustId,
+        );
+        if (foundCustomer) {
+          setCustomerQuery(
+            `${foundCustomer.first_name} ${foundCustomer.last_name || ""}`.trim(),
+          );
+        } else if (initialData?.customer_name) {
+          setCustomerQuery(initialData.customer_name);
+        }
+      } else {
+        setCustomerQuery("");
+      }
     }
     setFieldErrors({});
     setShowCustomerList(false);
@@ -115,11 +133,23 @@ export default function InterestOnlyLoanFormModal({
     };
   }, []);
 
-  const selectedCustomer = useMemo(
-    () =>
-      customers.find((c) => String(c.id) === String(form.customer_id)) || null,
-    [customers, form.customer_id],
-  );
+  const selectedCustomer = useMemo(() => {
+    const fromList = customers.find((c) => String(c.id) === String(form.customer_id));
+    if (fromList) return fromList;
+    if (initialData && String(initialData.customer_id) === String(form.customer_id)) {
+      return {
+        id: initialData.customer_id,
+        first_name: initialData.first_name || initialData.customer_name?.split(" ")[0] || "Customer",
+        last_name: initialData.last_name || initialData.customer_name?.split(" ").slice(1).join(" ") || "",
+        mobile: initialData.mobile || initialData.customer_mobile || "",
+        customer_no: initialData.customer_no || "",
+        photo: initialData.photo || null,
+        city: initialData.city || "",
+        state: initialData.state || "",
+      };
+    }
+    return null;
+  }, [customers, form.customer_id, initialData]);
 
   const selectedCustomerName = useMemo(() => {
     if (selectedCustomer) {
@@ -357,7 +387,7 @@ export default function InterestOnlyLoanFormModal({
                   </div>
                 </div>
 
-                {!hasPayments && (
+                {!hasPayments && !lockedCustomer && (
                   <button
                     type="button"
                     onClick={() => {

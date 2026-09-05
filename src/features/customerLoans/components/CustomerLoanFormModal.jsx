@@ -34,6 +34,7 @@ export default function CustomerLoanFormModal({
   plans = [],
   loading,
   error,
+  lockedCustomer = false,
   onClose,
   onSubmit,
 }) {
@@ -58,8 +59,22 @@ export default function CustomerLoanFormModal({
       const c = customers.find((c) => c.id === initialData.customer_id);
       setCustomerQuery(c ? `${c.first_name} ${c.last_name || ""}`.trim() : "");
     } else {
-      setForm(emptyForm);
-      setCustomerQuery("");
+      const initialCustId = initialData?.customer_id ? String(initialData.customer_id) : "";
+      setForm({
+        ...emptyForm,
+        customer_id: initialCustId,
+        start_date: initialData?.start_date
+          ? String(initialData.start_date).slice(0, 10)
+          : new Date().toISOString().slice(0, 10),
+      });
+      const c = customers.find((c) => String(c.id) === initialCustId);
+      if (c) {
+        setCustomerQuery(`${c.first_name} ${c.last_name || ""}`.trim());
+      } else if (initialData?.customer_name) {
+        setCustomerQuery(initialData.customer_name);
+      } else {
+        setCustomerQuery("");
+      }
     }
     setFieldErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,10 +85,23 @@ export default function CustomerLoanFormModal({
     [plans, form.loan_plan_id],
   );
 
-  const selectedCustomerObj = useMemo(
-    () => customers.find((c) => String(c.id) === String(form.customer_id)) || null,
-    [customers, form.customer_id]
-  );
+  const selectedCustomerObj = useMemo(() => {
+    const fromList = customers.find((c) => String(c.id) === String(form.customer_id));
+    if (fromList) return fromList;
+    if (initialData && String(initialData.customer_id) === String(form.customer_id)) {
+      return {
+        id: initialData.customer_id,
+        first_name: initialData.first_name || initialData.customer_name?.split(" ")[0] || "Customer",
+        last_name: initialData.last_name || initialData.customer_name?.split(" ").slice(1).join(" ") || "",
+        mobile: initialData.mobile || initialData.customer_mobile || "",
+        customer_no: initialData.customer_no || "",
+        photo: initialData.photo || null,
+        city: initialData.city || "",
+        state: initialData.state || "",
+      };
+    }
+    return null;
+  }, [customers, form.customer_id, initialData]);
 
   const selectedCustomerName = useMemo(() => {
     if (!selectedCustomerObj) return "";
@@ -283,7 +311,7 @@ export default function CustomerLoanFormModal({
                   </div>
                 </div>
 
-                {!isEdit && (
+                {!isEdit && !lockedCustomer && (
                   <button
                     type="button"
                     onClick={() => {
