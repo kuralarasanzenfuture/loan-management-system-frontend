@@ -65,6 +65,34 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ---- Table Density Settings ---- */
+html[data-density="compact"] :is(table, .table) :is(th, td) {
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+  font-size: 0.8125rem !important;
+}
+
+html[data-density="comfortable"] :is(table, .table) :is(th, td) {
+  padding-top: 0.65rem !important;
+  padding-bottom: 0.65rem !important;
+  font-size: 0.875rem !important;
+}
+
+html[data-density="spacious"] :is(table, .table) :is(th, td) {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+  font-size: 0.9375rem !important;
+}
+
+/* ---- Reduce Motion ---- */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
 /* ---- Scrollbars (dark shell) ---- */
 ::-webkit-scrollbar {
   width: 8px;

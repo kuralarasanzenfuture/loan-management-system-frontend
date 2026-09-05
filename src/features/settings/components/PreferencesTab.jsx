@@ -187,9 +187,14 @@ export default function PreferencesTab() {
   const [reduceMotion, setReduceMotion] = useState(
     () => localStorage.getItem("meridian-reduce-motion") === "true"
   );
-  const [sidebarAutoCollapse, setSidebarAutoCollapse] = useState(
-    () => localStorage.getItem("meridian-sidebar-autocollapse") === "true"
-  );
+  const [sidebarAutoCollapse, setSidebarAutoCollapse] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sidebar_collapsed");
+      return saved ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
 
   const [savedBanner, setSavedBanner] = useState(null);
 
@@ -197,12 +202,6 @@ export default function PreferencesTab() {
   useEffect(() => {
     applyFont(font);
   }, []);
-
-  // Reduce motion listener
-  useEffect(() => {
-    document.documentElement.classList.toggle("reduce-motion", reduceMotion);
-    localStorage.setItem("meridian-reduce-motion", String(reduceMotion));
-  }, [reduceMotion]);
 
   const showToast = (msg) => {
     setSavedBanner(msg);
@@ -230,6 +229,20 @@ export default function PreferencesTab() {
     showToast(`Table density set to "${key}"`);
   };
 
+  const handleToggleReduceMotion = (val) => {
+    setReduceMotion(val);
+    document.documentElement.classList.toggle("reduce-motion", val);
+    localStorage.setItem("meridian-reduce-motion", String(val));
+    showToast(`Animations & motion ${val ? "reduced" : "restored"}`);
+  };
+
+  const handleSidebarCollapseToggle = (val) => {
+    setSidebarAutoCollapse(val);
+    localStorage.setItem("sidebar_collapsed", JSON.stringify(val));
+    window.dispatchEvent(new CustomEvent("sidebar_collapse_changed", { detail: val }));
+    showToast(`Sidebar ${val ? "collapsed" : "expanded"} by default`);
+  };
+
   const handleLanguageChange = (val) => {
     setLanguage(val);
     localStorage.setItem("meridian-language", val);
@@ -252,12 +265,6 @@ export default function PreferencesTab() {
     setDateFormat(val);
     localStorage.setItem("meridian-date-format", val);
     showToast("Date format saved");
-  };
-
-  const handleSidebarCollapseToggle = (val) => {
-    setSidebarAutoCollapse(val);
-    localStorage.setItem("meridian-sidebar-autocollapse", String(val));
-    showToast(`Sidebar auto-collapse ${val ? "enabled" : "disabled"}`);
   };
 
   // Filter themes
@@ -590,9 +597,9 @@ export default function PreferencesTab() {
           Fine-tune row heights, animations, and navigational behavior.
         </p>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* Table Density */}
-          <div className="flex items-center justify-between gap-4 flex-wrap p-3 rounded-xl bg-base-200/50 border border-base-200">
+          <div className="flex items-center justify-between gap-4 flex-wrap p-4 rounded-xl bg-base-200/50 border border-base-200">
             <div className="flex items-start gap-3">
               <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-base-200 text-primary shrink-0">
                 <Rows3 size={16} />
@@ -610,6 +617,7 @@ export default function PreferencesTab() {
               {DENSITY_OPTIONS.map((d) => (
                 <button
                   key={d.key}
+                  type="button"
                   className={`join-item btn btn-sm font-medium ${
                     density === d.key
                       ? "btn-primary"
@@ -624,7 +632,7 @@ export default function PreferencesTab() {
           </div>
 
           {/* Reduce Motion */}
-          <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-base-200/50 border border-base-200">
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-base-200/50 border border-base-200">
             <div className="flex items-start gap-3">
               <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-base-200 text-primary shrink-0">
                 <Zap size={16} />
@@ -642,13 +650,13 @@ export default function PreferencesTab() {
               type="checkbox"
               className="toggle toggle-primary shrink-0"
               checked={reduceMotion}
-              onChange={(e) => setReduceMotion(e.target.checked)}
+              onChange={(e) => handleToggleReduceMotion(e.target.checked)}
               aria-label="Reduce motion"
             />
           </div>
 
           {/* Auto collapse sidebar on smaller screens */}
-          <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-base-200/50 border border-base-200">
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-base-200/50 border border-base-200">
             <div className="flex items-start gap-3">
               <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-base-200 text-primary shrink-0">
                 <Layout size={16} />

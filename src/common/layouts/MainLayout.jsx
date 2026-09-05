@@ -97,7 +97,7 @@ export default function MainLayout() {
   }, [dispatch]);
 
   // ---------------------------------------------------------
-  // Persist sidebar state
+  // Persist sidebar state & listen to preference changes
   // ---------------------------------------------------------
   useEffect(() => {
     localStorage.setItem(
@@ -105,6 +105,27 @@ export default function MainLayout() {
       JSON.stringify(sidebarCollapsed),
     );
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === "sidebar_collapsed") {
+        try {
+          setSidebarCollapsed(JSON.parse(e.newValue || "false"));
+        } catch {}
+      }
+    };
+    const handleCustomChange = (e) => {
+      if (typeof e.detail === "boolean") {
+        setSidebarCollapsed(e.detail);
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("sidebar_collapse_changed", handleCustomChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("sidebar_collapse_changed", handleCustomChange);
+    };
+  }, []);
 
   // ---------------------------------------------------------
   // Close mobile sidebar

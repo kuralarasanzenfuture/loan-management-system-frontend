@@ -70,27 +70,28 @@ body {
 }
 
 /* ---- Table Density Settings ---- */
-[data-density="compact"] table :is(th, td) {
+html[data-density="compact"] :is(table, .table) :is(th, td) {
   padding-top: 0.35rem !important;
   padding-bottom: 0.35rem !important;
-  font-size: 0.8125rem;
+  font-size: 0.8125rem !important;
 }
 
-[data-density="comfortable"] table :is(th, td) {
+html[data-density="comfortable"] :is(table, .table) :is(th, td) {
   padding-top: 0.65rem !important;
   padding-bottom: 0.65rem !important;
+  font-size: 0.875rem !important;
 }
 
-[data-density="spacious"] table :is(th, td) {
+html[data-density="spacious"] :is(table, .table) :is(th, td) {
   padding-top: 1rem !important;
   padding-bottom: 1rem !important;
-  font-size: 0.9375rem;
+  font-size: 0.9375rem !important;
 }
 
 /* ---- Reduce Motion ---- */
-.reduce-motion *,
-.reduce-motion *::before,
-.reduce-motion *::after {
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
