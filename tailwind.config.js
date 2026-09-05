@@ -108,7 +108,13 @@ module.exports = {
     extend: {
       fontFamily: {
         display: ["Fraunces", "Georgia", "serif"],
-        sans: ["Inter", "-apple-system", "sans-serif"],
+        sans: [
+          "var(--font-app)",
+          "var(--font-body)",
+          "Inter",
+          "-apple-system",
+          "sans-serif",
+        ],
         mono: ["IBM Plex Mono", "SFMono-Regular", "Menlo", "monospace"],
       },
       boxShadow: {

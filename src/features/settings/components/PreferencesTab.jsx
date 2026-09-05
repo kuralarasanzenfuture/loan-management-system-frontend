@@ -66,6 +66,13 @@ export const FONT_OPTIONS = [
     family: "'Plus Jakarta Sans', -apple-system, sans-serif",
   },
   {
+    key: "poppins",
+    label: "Poppins",
+    blurb: "Geometric, friendly & modern banking standard",
+    google: "Poppins:wght@400;500;600;700",
+    family: "'Poppins', -apple-system, sans-serif",
+  },
+  {
     key: "source-sans",
     label: "Source Sans 3",
     blurb: "Adobe's workhorse, exceptionally clear",
@@ -100,10 +107,26 @@ export function applyFont(fontKey) {
     link.rel = "stylesheet";
     document.head.appendChild(link);
   }
-  link.href = `https://fonts.googleapis.com/css2?family=${font.google}&display=swap`;
+  // Only override href if link doesn't already contain the target google font
+  if (!link.href || (!link.href.includes(font.google) && !link.href.includes("family=" + font.label.replace(/\s+/g, "+")))) {
+    link.href = `https://fonts.googleapis.com/css2?family=${font.google}&display=swap`;
+  }
 
+  // Set CSS custom properties on documentElement
   document.documentElement.style.setProperty("--font-app", font.family);
-  localStorage.setItem(FONT_STORAGE_KEY, fontKey);
+  document.documentElement.style.setProperty("--font-body", font.family);
+
+  // Directly assign inline font family to root and body for immediate propagation
+  document.documentElement.style.fontFamily = font.family;
+  if (typeof document !== "undefined" && document.body) {
+    document.body.style.fontFamily = font.family;
+  }
+
+  try {
+    localStorage.setItem(FONT_STORAGE_KEY, font.key);
+  } catch (err) {
+    console.error("Failed to save font to localStorage", err);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -364,7 +387,7 @@ export default function PreferencesTab() {
 
       {/* 2. Typography Selection */}
       <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
           <div>
             <h3 className="font-semibold text-base flex items-center gap-2 text-base-content">
               <Type size={18} className="text-primary" />
@@ -374,11 +397,51 @@ export default function PreferencesTab() {
               Live font injection for optimal readability in tables, forms, and charts.
             </p>
           </div>
-          <span className="badge badge-sm badge-ghost font-mono">
-            Active: {FONT_OPTIONS.find((f) => f.key === font)?.label || font}
-          </span>
+          <div className="flex items-center gap-2">
+            <label htmlFor="pref-font-select" className="text-xs font-semibold text-base-content/70 whitespace-nowrap">
+              Font Select:
+            </label>
+            <select
+              id="pref-font-select"
+              className="select select-bordered select-sm rounded-xl font-medium min-w-[170px]"
+              value={font}
+              onChange={(e) => handleSelectFont(e.target.value)}
+            >
+              {FONT_OPTIONS.map((f) => (
+                <option key={f.key} value={f.key}>
+                  {f.label} {f.key === "inter" ? "(Default)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
+        {/* Live Font Typography Preview Banner */}
+        <div
+          className="p-4 rounded-xl border border-base-300 bg-base-200/50 mb-4 transition-all"
+          style={{ fontFamily: FONT_OPTIONS.find((f) => f.key === font)?.family }}
+        >
+          <div className="flex items-center justify-between gap-2 mb-2 text-xs font-semibold text-base-content/60">
+            <span>Live Typography Preview ({FONT_OPTIONS.find((f) => f.key === font)?.label || "Inter"})</span>
+            <span className="badge badge-xs badge-primary badge-outline">Active Font</span>
+          </div>
+          <div className="space-y-1">
+            <div className="text-base sm:text-lg font-bold text-base-content">
+              CM Micro Finance — Professional Loan & Portfolio Management
+            </div>
+            <div className="flex items-center gap-3 text-xs sm:text-sm text-base-content/80 flex-wrap">
+              <span className="font-semibold text-primary">₹12,50,000.00 Principal</span>
+              <span>•</span>
+              <span>Loan ID: #LN-2026-0891</span>
+              <span>•</span>
+              <span className="badge badge-sm badge-success text-white">Active (14.5% APR)</span>
+              <span>•</span>
+              <span className="text-base-content/60">Updated 05 Sep 2026</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Font Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[380px] overflow-y-auto p-1 -m-1 custom-scrollbar">
           {FONT_OPTIONS.map((f) => {
             const isActive = font === f.key;
