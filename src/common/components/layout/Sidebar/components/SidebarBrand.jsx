@@ -13,8 +13,12 @@ import logo from "../../../../../assets/logo/CM Micro Finance.png";
  */
 export default function SidebarBrand({ collapsed = false, onClose = () => {} }) {
   return (
-    <div className="flex items-center justify-between h-16 px-4 border-b border-base-300 shrink-0">
-      <div className="flex items-center gap-3 overflow-hidden">
+    <div
+      className={`flex items-center ${
+        collapsed ? "justify-center px-0" : "justify-between px-4"
+      } h-16 border-b border-base-300 shrink-0`}
+    >
+      <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} overflow-hidden`}>
         {/* Brand Logo */}
         <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-primary-content shrink-0 shadow-md shadow-primary/20">
           {/* <ShieldCheck size={20} className="stroke-[2.5]" /> */}

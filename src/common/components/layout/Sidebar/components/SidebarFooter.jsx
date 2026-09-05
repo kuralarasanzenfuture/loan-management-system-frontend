@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { ChevronDown, Heart, ShieldCheck, AlertTriangle } from "lucide-react";
 import { fetchPortfolioHealth } from "../../../../../redux/dashboard/dashboardSlice.js";
@@ -20,6 +21,7 @@ function formatCompactCurrency(val) {
 export default function SidebarFooter({ collapsed = false }) {
   const dispatch = useDispatch();
   const [expanded, setExpanded] = useState(false);
+  const [footerTooltip, setFooterTooltip] = useState(null);
 
   const { portfolioHealth } = useSelector((state) => state.dashboard);
 
@@ -40,13 +42,39 @@ export default function SidebarFooter({ collapsed = false }) {
 
   if (collapsed) {
     return (
-      <div className="p-3 border-t border-base-300 flex justify-center">
+      <div className="p-3 border-t border-base-300 flex justify-center relative">
         <div 
-          className={`tooltip tooltip-right tooltip-primary cursor-pointer flex items-center justify-center w-10 h-10 rounded-xl ${badgeBgClass}`}
-          data-tip={`Portfolio Health: ${onTimeRate}% on-time`}
+          onMouseEnter={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setFooterTooltip({
+              top: rect.top + rect.height / 2,
+              left: rect.right + 10,
+              text: `Portfolio Health: ${onTimeRate}% on-time`,
+            });
+          }}
+          onMouseLeave={() => setFooterTooltip(null)}
+          className={`cursor-pointer flex items-center justify-center w-10 h-10 rounded-xl ${badgeBgClass} transition-transform hover:scale-105`}
         >
           <Heart size={18} className="fill-current/20 stroke-[2.5]" />
         </div>
+
+        {footerTooltip && typeof document !== "undefined" && createPortal(
+          <div
+            className="fixed z-[9999] pointer-events-none px-3 py-1.5 rounded-lg bg-primary text-primary-content text-xs font-semibold shadow-2xl flex items-center gap-2 whitespace-nowrap"
+            style={{
+              top: `${footerTooltip.top}px`,
+              left: `${footerTooltip.left}px`,
+              transform: "translateY(-50%)",
+            }}
+          >
+            <span>{footerTooltip.text}</span>
+            <span
+              className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-primary"
+              aria-hidden="true"
+            />
+          </div>,
+          document.body
+        )}
       </div>
     );
   }
