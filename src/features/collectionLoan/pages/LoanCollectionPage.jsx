@@ -30,7 +30,7 @@ import { fetchCompanyDetails } from "../../../redux/companyDetails/companyDetail
 import LoanInstallmentTable from "../components/LoanInstallmentTable.jsx";
 import PayInstallmentModal from "../components/PayInstallmentModal.jsx";
 import ApplyPenaltyModal from "../components/ApplyPenaltyModal.jsx";
-import { formatCurrency } from "../utils/collectionHelpers.js";
+import { formatCurrency, formatLoanTenure } from "../utils/collectionHelpers.js";
 import usePermissions from "../../../common/hooks/usePermissions.js";
 import { PERMISSIONS } from "../../../constants/permissions.js";
 
@@ -420,9 +420,9 @@ export default function LoanCollectionPage() {
                             <div className="text-xs font-bold text-base-content">
                               ₹{Number(l.loan_amount || 0).toLocaleString("en-IN")}
                             </div>
-                            {l.tenure && (
-                              <div className="text-[10px] text-base-content/40">
-                                {l.tenure} {l.tenure_type || "months"}
+                            {formatLoanTenure(l) && (
+                              <div className="text-[10px] text-base-content/40 font-medium">
+                                {formatLoanTenure(l)}
                               </div>
                             )}
                           </div>

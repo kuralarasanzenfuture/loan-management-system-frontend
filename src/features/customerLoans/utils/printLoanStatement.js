@@ -1143,7 +1143,7 @@ export function printLoanStatement({
         </div>
         <div class="info-row">
           <span class="info-label">Tenure & Frequency</span>
-          <span class="info-val">${loan.tenure ? `${loan.tenure} ${loan.tenure_type || "Months"}` : "—"} · ${(loan.collection_frequency || "Monthly").toUpperCase()}</span>
+          <span class="info-val">${loan.tenure ? `${loan.tenure} ${loan.tenure_type || plan?.tenure_type || (loan.collection_frequency === "daily" ? "Days" : loan.collection_frequency === "weekly" ? "Weeks" : "Months")}` : "—"} · ${(loan.collection_frequency || "Monthly").toUpperCase()}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Net Disbursed</span>
