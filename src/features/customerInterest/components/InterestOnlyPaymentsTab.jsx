@@ -50,15 +50,10 @@ export default function InterestOnlyPaymentsTab({
   const { can, isAdmin } = usePermissions();
   const canPay = can([
     PERMISSIONS.INTEREST_ONLY_PAYMENT_CREATE,
-    PERMISSIONS.LOAN_COLLECTION_CREATE,
+    PERMISSIONS.INTEREST_ONLY_LOAN_PAY,
   ]);
   const canDeletePayment =
-    isAdmin ||
-    can([
-      PERMISSIONS.INTEREST_ONLY_PAYMENT_DELETE,
-      PERMISSIONS.LOAN_COLLECTION_DELETE,
-      PERMISSIONS.LOAN_DELETE,
-    ]);
+    isAdmin || can(PERMISSIONS.INTEREST_ONLY_PAYMENT_DELETE);
 
   const [expandedId, setExpandedId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);

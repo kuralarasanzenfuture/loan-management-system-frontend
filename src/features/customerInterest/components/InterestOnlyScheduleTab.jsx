@@ -48,7 +48,7 @@ export default function InterestOnlyScheduleTab({
   const { can } = usePermissions();
   const canPay = can([
     PERMISSIONS.INTEREST_ONLY_PAYMENT_CREATE,
-    PERMISSIONS.LOAN_COLLECTION_CREATE,
+    PERMISSIONS.INTEREST_ONLY_LOAN_PAY,
   ]);
 
   const [filter, setFilter] = useState("all");

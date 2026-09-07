@@ -37,31 +37,22 @@ export default function InterestOnlyLoanTable({
   const canView =
     canViewProp !== undefined
       ? canViewProp
-      : can([
-          PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
-          PERMISSIONS.LOAN_VIEW,
-        ]);
+      : can(PERMISSIONS.INTEREST_ONLY_LOAN_VIEW);
   const canEdit =
     canEditProp !== undefined
       ? canEditProp
-      : can([
-          PERMISSIONS.INTEREST_ONLY_LOAN_EDIT,
-          PERMISSIONS.LOAN_EDIT,
-        ]);
+      : can(PERMISSIONS.INTEREST_ONLY_LOAN_EDIT);
   const canPay =
     canPayProp !== undefined
       ? canPayProp
       : can([
           PERMISSIONS.INTEREST_ONLY_PAYMENT_CREATE,
-          PERMISSIONS.LOAN_COLLECTION_CREATE,
+          PERMISSIONS.INTEREST_ONLY_LOAN_PAY,
         ]);
   const canDelete =
     canDeleteProp !== undefined
       ? canDeleteProp
-      : can([
-          PERMISSIONS.INTEREST_ONLY_LOAN_DELETE,
-          PERMISSIONS.LOAN_DELETE,
-        ]);
+      : can(PERMISSIONS.INTEREST_ONLY_LOAN_DELETE);
 
   const hasAnyAction = canView || canEdit || canPay || canDelete;
   const loanList = Array.isArray(loans) ? loans : [];

@@ -1,109 +1,3 @@
-// /**
-//  * src/common/utils/permissionUtils.js
-//  * Universal, highly resilient Role and Permission evaluation engine.
-//  */
-
-// import { ROLES, PERMISSIONS } from "../../constants/permissions.js";
-
-// // Module aliases dictionary to normalize between backend DB codes and frontend permission keys
-// const MODULE_ALIASES = {
-//   MOD_DASHBOARD: ["DASHBOARD", "MOD_DASHBOARD"],
-//   MOD_ANALYTICS: ["ANALYTICS", "MOD_ANALYTICS"],
-//   MOD_CUSTOMERS: ["CUSTOMER", "CUSTOMERS", "MOD_CUSTOMERS"],
-//   MOD_CUSTOMER_DOCS: ["CUSTOMER_DOCUMENT", "CUSTOMER_DOCUMENTS", "CUSTOMER_DOCS"],
-//   MOD_GUARANTORS: ["GUARANTOR", "GUARANTORS"],
-//   MOD_LOAN_APPS: ["LOAN_APPLICATION", "LOAN_APPLICATIONS", "LOAN_APPS", "LOAN_APP"],
-//   MOD_LOAN_PLANS: ["LOAN_PLAN", "LOAN_PLANS"],
-//   MOD_LOAN_APPROVAL: ["LOAN_APPROVAL"],
-//   MOD_ACTIVE_LOANS: ["LOAN", "LOANS", "ACTIVE_LOANS"],
-//   MOD_LOANS: ["LOAN", "LOANS"],
-//   MOD_HAND_LOANS: ["HAND_LOAN", "HAND_LOANS"],
-//   MOD_PERSONAL_CHITS: ["PERSONAL_CHIT", "PERSONAL_CHITS"],
-//   MOD_LOAN_COLLECTIONS: ["LOAN_COLLECTION", "LOAN_COLLECTIONS"],
-//   MOD_DUE_COLLECTIONS: ["DUE_COLLECTION", "DUE_COLLECTIONS"],
-//   MOD_EMI_COLLECTION: ["EMI_COLLECTION", "DUE_COLLECTION", "LOAN_COLLECTION"],
-//   MOD_COMPANIES: ["COMPANY", "COMPANIES"],
-//   MOD_BANK_ACCOUNTS: ["BANK_ACCOUNT", "BANK_ACCOUNTS"],
-//   MOD_BANK_TRANSACTIONS: ["BANK_TRANSACTION", "BANK_TRANSACTIONS"],
-//   MOD_ASSET_CATEGORIES: ["ASSET_CATEGORY", "ASSET_CATEGORIES"],
-//   MOD_ASSETS: ["ASSET", "ASSETS"],
-//   MOD_USERS: ["USER", "USERS"],
-//   MOD_ROLES: ["ROLE", "ROLES"],
-//   MOD_ROLE_PERMISSIONS: ["ROLE_PERMISSION", "ROLE_PERMISSIONS"],
-//   MOD_USER_PERMISSIONS: ["USER_PERMISSION", "USER_PERMISSIONS"],
-//   MOD_REP_LOANS: ["LOAN_REPORT", "LOAN_REPORTS", "REP_LOANS"],
-//   MOD_REP_INSTALLMENTS: ["LOAN_INSTALLMENT_REPORT", "INSTALLMENT_REPORT", "INSTALLMENT_REPORTS", "REP_INSTALLMENTS"],
-//   MOD_REP_COLLECTIONS: ["COLLECTION_REPORT", "COLLECTION_REPORTS", "REP_COLLECTIONS"],
-//   MOD_REP_CUSTOMERS: ["CUSTOMER_REPORT", "CUSTOMER_REPORTS", "REP_CUSTOMERS"],
-//   MOD_SETTINGS: ["SETTINGS", "SETTING"],
-// };
-
-// // Manager permissions bundle
-// const MANAGER_DEFAULT_PERMISSIONS = [
-//   PERMISSIONS.DASHBOARD_VIEW,
-//   PERMISSIONS.ANALYTICS_VIEW,
-
-//   // Customer Management
-//   PERMISSIONS.CUSTOMER_VIEW,
-//   PERMISSIONS.CUSTOMER_CREATE,
-//   PERMISSIONS.CUSTOMER_EDIT,
-//   PERMISSIONS.CUSTOMER_DELETE,
-//   PERMISSIONS.CUSTOMER_DOCUMENTS_VIEW,
-//   PERMISSIONS.GUARANTORS_VIEW,
-
-//   // Loan Plans
-//   PERMISSIONS.LOAN_PLAN_VIEW,
-//   PERMISSIONS.LOAN_PLAN_CREATE,
-//   PERMISSIONS.LOAN_PLAN_EDIT,
-//   PERMISSIONS.LOAN_PLAN_DELETE,
-
-//   // Loan Applications & Loans
-//   PERMISSIONS.LOAN_APPLICATION_VIEW,
-//   PERMISSIONS.LOAN_APPLICATION_CREATE,
-//   PERMISSIONS.LOAN_APPLICATION_EDIT,
-//   PERMISSIONS.LOAN_APPLICATION_DELETE,
-//   PERMISSIONS.LOAN_VIEW,
-//   PERMISSIONS.LOAN_CREATE,
-//   PERMISSIONS.LOAN_EDIT,
-//   PERMISSIONS.LOAN_DELETE,
-//   PERMISSIONS.LOAN_APPROVAL_VIEW,
-//   PERMISSIONS.LOAN_APPROVAL_ACTION,
-
-//   // Hand Loans & Personal Chits
-//   PERMISSIONS.HAND_LOAN_VIEW,
-//   PERMISSIONS.HAND_LOAN_CREATE,
-//   PERMISSIONS.HAND_LOAN_EDIT,
-//   PERMISSIONS.HAND_LOAN_DELETE,
-//   PERMISSIONS.PERSONAL_CHIT_VIEW,
-//   PERMISSIONS.PERSONAL_CHIT_CREATE,
-//   PERMISSIONS.PERSONAL_CHIT_EDIT,
-//   PERMISSIONS.PERSONAL_CHIT_DELETE,
-
-//   // Collections
-//   PERMISSIONS.LOAN_COLLECTION_VIEW,
-//   PERMISSIONS.LOAN_COLLECTION_CREATE,
-//   PERMISSIONS.DUE_COLLECTION_VIEW,
-
-//   // Companies & Banks
-//   PERMISSIONS.COMPANY_VIEW,
-//   PERMISSIONS.BANK_ACCOUNT_VIEW,
-//   PERMISSIONS.BANK_TRANSACTION_VIEW,
-
-//   // Assets
-//   PERMISSIONS.ASSET_CATEGORY_VIEW,
-//   PERMISSIONS.ASSET_VIEW,
-
-//   // System Administration
-//   PERMISSIONS.USER_VIEW,
-//   PERMISSIONS.USER_CREATE,
-//   PERMISSIONS.USER_EDIT,
-//   PERMISSIONS.USER_DELETE,
-//   PERMISSIONS.ROLE_VIEW,
-//   PERMISSIONS.ROLE_CREATE,
-//   PERMISSIONS.ROLE_EDIT,
-//   PERMISSIONS.ROLE_DELETE,
-//   PERMISSIONS.USER_PERMISSION_VIEW,
-//   PERMISSIONS.USER_PERMISSION_EDIT,
 //   PERMISSIONS.ROLE_PERMISSION_VIEW,
 //   PERMISSIONS.ROLE_PERMISSION_EDIT,
 
@@ -522,33 +416,17 @@ const MODULE_ALIASES = {
     "CUSTOMER_DOCUMENT",
     "CUSTOMER_DOCUMENTS",
     "CUSTOMER_DOCS",
+    "MOD_CUSTOMER_DOCS",
   ],
-  MOD_GUARANTORS: ["GUARANTOR", "GUARANTORS"],
+  MOD_GUARANTORS: ["GUARANTOR", "GUARANTORS", "MOD_GUARANTORS"],
   MOD_LOAN_APPS: [
     "LOAN_APPLICATION",
     "LOAN_APPLICATIONS",
     "LOAN_APPS",
     "LOAN_APP",
-    "LOAN",
-    "LOANS",
-    "CUSTOMER_LOAN",
-    "CUSTOMER_LOANS",
-    "ACTIVE_LOAN",
-    "ACTIVE_LOANS",
+    "MOD_LOAN_APPS",
   ],
-  MOD_LOAN_APPLICATIONS: [
-    "LOAN_APPLICATION",
-    "LOAN_APPLICATIONS",
-    "LOAN_APPS",
-    "LOAN_APP",
-    "LOAN",
-    "LOANS",
-    "CUSTOMER_LOAN",
-    "CUSTOMER_LOANS",
-    "ACTIVE_LOAN",
-    "ACTIVE_LOANS",
-  ],
-  MOD_LOAN_PLANS: ["LOAN_PLAN", "LOAN_PLANS"],
+  MOD_LOAN_PLANS: ["LOAN_PLAN", "LOAN_PLANS", "MOD_LOAN_PLANS"],
   MOD_INTEREST_LOAN_PLANS: [
     "INTEREST_LOAN_PLAN",
     "INTEREST_LOAN_PLANS",
@@ -565,8 +443,6 @@ const MODULE_ALIASES = {
     "CUSTOMER_INTEREST_LOANS",
     "MOD_CUSTOMER_INTEREST",
     "MOD_INTEREST_ONLY_LOANS",
-    "INTEREST_LOAN",
-    "INTEREST_LOANS",
   ],
   MOD_INTEREST_COLLECTIONS: [
     "INTEREST_COLLECTION",
@@ -576,47 +452,25 @@ const MODULE_ALIASES = {
     "INTEREST_ONLY_COLLECTION",
     "INTEREST_ONLY_COLLECTIONS",
   ],
-  MOD_LOAN_APPROVAL: ["LOAN_APPROVAL"],
-  MOD_ACTIVE_LOANS: [
-    "LOAN",
-    "LOANS",
-    "ACTIVE_LOAN",
-    "ACTIVE_LOANS",
-    "LOAN_APPLICATION",
-    "LOAN_APPLICATIONS",
-    "LOAN_APPS",
+  MOD_LOAN_APPROVAL: ["LOAN_APPROVAL", "MOD_LOAN_APPROVAL"],
+  MOD_ACTIVE_LOANS: ["ACTIVE_LOAN", "ACTIVE_LOANS", "MOD_ACTIVE_LOANS"],
+  MOD_LOANS: ["LOAN", "LOANS", "CUSTOMER_LOAN", "CUSTOMER_LOANS", "MOD_LOANS"],
+  MOD_HAND_LOANS: ["HAND_LOAN", "HAND_LOANS", "MOD_HAND_LOANS"],
+  MOD_PERSONAL_CHITS: [
+    "PERSONAL_CHIT",
+    "PERSONAL_CHITS",
+    "CHIT",
+    "CHITS",
+    "PERSONAL_CHIT_MANAGEMENT",
+    "CHIT_MANAGEMENT",
+    "MOD_PERSONAL_CHITS",
   ],
-  MOD_LOANS: [
-    "LOAN",
-    "LOANS",
-    "LOAN_APPLICATION",
-    "LOAN_APPLICATIONS",
-    "LOAN_APPS",
-    "LOAN_APP",
-    "CUSTOMER_LOAN",
-    "CUSTOMER_LOANS",
-    "ACTIVE_LOAN",
-    "ACTIVE_LOANS",
-  ],
-  MOD_CUSTOMER_LOANS: [
-    "CUSTOMER_LOAN",
-    "CUSTOMER_LOANS",
-    "LOAN",
-    "LOANS",
-    "LOAN_APPLICATION",
-    "LOAN_APPLICATIONS",
-    "LOAN_APPS",
-  ],
-  MOD_HAND_LOANS: ["HAND_LOAN", "HAND_LOANS"],
-  MOD_PERSONAL_CHITS: ["PERSONAL_CHIT", "PERSONAL_CHITS"],
   MOD_LOAN_COLLECTIONS: [
     "LOAN_COLLECTION",
     "LOAN_COLLECTIONS",
-    "COLLECTION",
-    "COLLECTIONS",
     "COLLECTION_LOAN",
     "COLLECTION_LOANS",
-    "LOAN_COLLECTION_VIEW",
+    "MOD_LOAN_COLLECTIONS",
   ],
   MOD_DUE_COLLECTIONS: [
     "DUE_COLLECTION",
@@ -625,56 +479,30 @@ const MODULE_ALIASES = {
     "EMI_COLLECTIONS",
     "DUE",
     "DUES",
-    "COLLECTION",
-    "COLLECTIONS",
-    "DUE_COLLECTION_VIEW",
+    "MOD_DUE_COLLECTIONS",
+    "MOD_EMI_COLLECTION",
   ],
-  MOD_EMI_COLLECTION: [
-    "EMI_COLLECTION",
-    "EMI_COLLECTIONS",
-    "DUE_COLLECTION",
-    "DUE_COLLECTIONS",
-    "LOAN_COLLECTION",
-    "LOAN_COLLECTIONS",
-    "COLLECTION",
-    "COLLECTIONS",
+  MOD_COMPANIES: [
+    "COMPANY",
+    "COMPANIES",
+    "COMPANY_DETAILS",
+    "COMPANIES_DETAILS",
+    "COMPANY_DETAIL",
+    "MOD_COMPANIES",
   ],
-  MOD_COLLECTION: [
-    "COLLECTION",
-    "COLLECTIONS",
-    "LOAN_COLLECTION",
-    "LOAN_COLLECTIONS",
-    "DUE_COLLECTION",
-    "DUE_COLLECTIONS",
-  ],
-  MOD_COLLECTIONS: [
-    "COLLECTION",
-    "COLLECTIONS",
-    "LOAN_COLLECTION",
-    "LOAN_COLLECTIONS",
-    "DUE_COLLECTION",
-    "DUE_COLLECTIONS",
-  ],
-  MOD_COMPANIES: ["COMPANY", "COMPANIES"],
   MOD_BANK_ACCOUNTS: [
     "BANK_ACCOUNT",
     "BANK_ACCOUNTS",
     "COMPANY_BANK",
     "COMPANY_BANKS",
-    "BANK",
-    "BANKS",
-    "BANK_TRANSACTION",
-    "BANK_TRANSACTIONS",
+    "MOD_BANK_ACCOUNTS",
   ],
   MOD_BANK_TRANSACTIONS: [
     "BANK_TRANSACTION",
     "BANK_TRANSACTIONS",
-    "BANK_ACCOUNT",
-    "BANK_ACCOUNTS",
     "TRANSACTION",
     "TRANSACTIONS",
-    "BANK",
-    "BANKS",
+    "MOD_BANK_TRANSACTIONS",
   ],
   MOD_ASSET_CATEGORIES: [
     "ASSET_CATEGORY",
@@ -683,42 +511,54 @@ const MODULE_ALIASES = {
     "ASSET_CATS",
     "CATEGORY_ASSET",
     "CATEGORY_ASSETS",
-    "ASSET",
-    "ASSETS",
+    "MOD_ASSET_CATEGORIES",
   ],
   MOD_ASSETS: [
     "ASSET",
     "ASSETS",
-    "ASSET_CATEGORY",
-    "ASSET_CATEGORIES",
     "ASSET_ITEM",
     "ASSET_ITEMS",
+    "MOD_ASSETS",
   ],
-  MOD_USERS: ["USER", "USERS"],
-  MOD_ROLES: ["ROLE", "ROLES"],
-  MOD_ROLE_PERMISSIONS: ["ROLE_PERMISSION", "ROLE_PERMISSIONS"],
-  MOD_USER_PERMISSIONS: ["USER_PERMISSION", "USER_PERMISSIONS"],
-  MOD_REP_LOANS: ["LOAN_REPORT", "LOAN_REPORTS", "REP_LOANS"],
+  MOD_USERS: ["USER", "USERS", "MOD_USERS"],
+  MOD_ROLES: ["ROLE", "ROLES", "MOD_ROLES"],
+  MOD_ROLE_PERMISSIONS: [
+    "ROLE_PERMISSION",
+    "ROLE_PERMISSIONS",
+    "MOD_ROLE_PERMISSIONS",
+  ],
+  MOD_USER_PERMISSIONS: [
+    "USER_PERMISSION",
+    "USER_PERMISSIONS",
+    "MOD_USER_PERMISSIONS",
+  ],
+  MOD_REP_LOANS: ["LOAN_REPORT", "LOAN_REPORTS", "REP_LOANS", "MOD_REP_LOANS"],
   MOD_REP_INSTALLMENTS: [
     "LOAN_INSTALLMENT_REPORT",
     "INSTALLMENT_REPORT",
     "INSTALLMENT_REPORTS",
     "REP_INSTALLMENTS",
+    "MOD_REP_INSTALLMENTS",
   ],
   MOD_REP_COLLECTIONS: [
     "COLLECTION_REPORT",
     "COLLECTION_REPORTS",
     "REP_COLLECTIONS",
+    "MOD_REP_COLLECTIONS",
   ],
   MOD_REP_INTEREST_COLLECTIONS: [
     "INTEREST_COLLECTION_REPORT",
     "INTEREST_COLLECTION_REPORTS",
     "REP_INTEREST_COLLECTIONS",
-    "INTEREST_COLLECTION",
-    "INTEREST_COLLECTIONS",
+    "MOD_REP_INTEREST_COLLECTIONS",
   ],
-  MOD_REP_CUSTOMERS: ["CUSTOMER_REPORT", "CUSTOMER_REPORTS", "REP_CUSTOMERS"],
-  MOD_SETTINGS: ["SETTINGS", "SETTING"],
+  MOD_REP_CUSTOMERS: [
+    "CUSTOMER_REPORT",
+    "CUSTOMER_REPORTS",
+    "REP_CUSTOMERS",
+    "MOD_REP_CUSTOMERS",
+  ],
+  MOD_SETTINGS: ["SETTINGS", "SETTING", "MOD_SETTINGS"],
 };
 
 /**
@@ -782,9 +622,31 @@ export const isAdmin = (user) => {
 // Canonical action synonyms dictionary
 export const ACTION_SYNONYMS = {
   VIEW: ["VIEW", "READ", "LIST", "SHOW", "GET", "INDEX", "DETAILS"],
-  CREATE: ["CREATE", "ADD", "INSERT", "NEW", "POST", "STORE"],
+  CREATE: [
+    "CREATE",
+    "ADD",
+    "INSERT",
+    "NEW",
+    "POST",
+    "STORE",
+    "COLLECT",
+    "PAY",
+    "RECORD",
+  ],
   EDIT: ["EDIT", "UPDATE", "MODIFY", "PUT", "PATCH", "CHANGE"],
-  DELETE: ["DELETE", "REMOVE", "DESTROY", "DEL", "DROP"],
+  DELETE: [
+    "DELETE",
+    "REMOVE",
+    "DESTROY",
+    "DEL",
+    "DROP",
+    "REVERSE",
+    "CANCEL",
+    "ROLLBACK",
+  ],
+  COLLECT: ["COLLECT", "PAY", "CREATE", "ADD", "RECORD"],
+  PAY: ["PAY", "COLLECT", "CREATE", "ADD", "RECORD"],
+  REVERSE: ["REVERSE", "DELETE", "REMOVE", "ROLLBACK", "CANCEL"],
 };
 
 /**
@@ -948,16 +810,33 @@ export const extractUserPermissions = (user) => {
 
   if (!user || typeof user !== "object") return permissionsSet;
 
-  // Direct permissions collection exclusively from backend response payload
-  collectCodes(user.permissions, permissionsSet);
-  collectCodes(user.effective_permissions, permissionsSet);
-  collectCodes(user.effectivePermissions, permissionsSet);
-  collectCodes(user.user_permissions, permissionsSet);
-  collectCodes(user.userPermissions, permissionsSet);
-  collectCodes(user.actions, permissionsSet);
-  collectCodes(user.role_permissions, permissionsSet);
-  collectCodes(user.rolePermissions, permissionsSet);
-  collectCodes(user.role?.permissions, permissionsSet);
+  // Direct permissions collection: user-specific permissions from backend already evaluate
+  // user override over role permission: COALESCE(up.is_allowed, rp.is_allowed, 0).
+  // When user.permissions is populated, it is the authoritative effective permission set.
+  const hasDirectUserPermissions =
+    Array.isArray(user.permissions) && user.permissions.length > 0;
+
+  if (hasDirectUserPermissions) {
+    collectCodes(user.permissions, permissionsSet);
+  } else if (
+    Array.isArray(user.effective_permissions) &&
+    user.effective_permissions.length > 0
+  ) {
+    collectCodes(user.effective_permissions, permissionsSet);
+  } else if (
+    Array.isArray(user.effectivePermissions) &&
+    user.effectivePermissions.length > 0
+  ) {
+    collectCodes(user.effectivePermissions, permissionsSet);
+  } else {
+    // Fallback if direct user permissions are not yet loaded
+    collectCodes(user.user_permissions, permissionsSet);
+    collectCodes(user.userPermissions, permissionsSet);
+    collectCodes(user.actions, permissionsSet);
+    collectCodes(user.role_permissions, permissionsSet);
+    collectCodes(user.rolePermissions, permissionsSet);
+    collectCodes(user.role?.permissions, permissionsSet);
+  }
 
   return permissionsSet;
 };

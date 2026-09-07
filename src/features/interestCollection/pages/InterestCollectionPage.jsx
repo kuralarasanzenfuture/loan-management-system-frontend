@@ -50,18 +50,10 @@ export default function InterestCollectionPage() {
   // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────────
   const { can } = usePermissions();
   const company = useSelector((state) => state.companyDetails?.company);
-  const canView = can([
-    PERMISSIONS.INTEREST_COLLECTION_VIEW,
-    PERMISSIONS.LOAN_COLLECTION_VIEW,
-    PERMISSIONS.COLLECTION_VIEW,
-    PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
-  ]);
+  const canView = can(PERMISSIONS.INTEREST_COLLECTION_VIEW);
   const canCollect = can([
+    PERMISSIONS.INTEREST_COLLECTION_COLLECT,
     PERMISSIONS.INTEREST_COLLECTION_CREATE,
-    PERMISSIONS.INTEREST_ONLY_PAYMENT_CREATE,
-    PERMISSIONS.LOAN_COLLECTION_CREATE,
-    PERMISSIONS.COLLECTION_CREATE,
-    PERMISSIONS.LOAN_CREATE,
   ]);
 
   const {

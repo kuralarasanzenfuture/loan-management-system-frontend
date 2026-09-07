@@ -47,18 +47,9 @@ export default function InterestLoanPlanViewPage() {
 
   // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────
   const { can } = usePermissions();
-  const canView = can([
-    PERMISSIONS.INTEREST_LOAN_PLAN_VIEW,
-    PERMISSIONS.LOAN_PLAN_VIEW,
-  ]);
-  const canEdit = can([
-    PERMISSIONS.INTEREST_LOAN_PLAN_EDIT,
-    PERMISSIONS.LOAN_PLAN_EDIT,
-  ]);
-  const canDelete = can([
-    PERMISSIONS.INTEREST_LOAN_PLAN_DELETE,
-    PERMISSIONS.LOAN_PLAN_DELETE,
-  ]);
+  const canView = can(PERMISSIONS.INTEREST_LOAN_PLAN_VIEW);
+  const canEdit = can(PERMISSIONS.INTEREST_LOAN_PLAN_EDIT);
+  const canDelete = can(PERMISSIONS.INTEREST_LOAN_PLAN_DELETE);
 
   const { plan, loading, error } = useSelector(
     (state) => state.interestLoanPlans || {},

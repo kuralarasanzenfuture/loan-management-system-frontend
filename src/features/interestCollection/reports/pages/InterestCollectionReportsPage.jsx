@@ -28,12 +28,7 @@ export default function InterestCollectionReportsPage() {
   const dispatch = useDispatch();
   const { can } = usePermissions();
 
-  const canView = can([
-    PERMISSIONS.INTEREST_COLLECTION_REPORT_VIEW,
-    PERMISSIONS.COLLECTION_REPORT_VIEW,
-    PERMISSIONS.INTEREST_COLLECTION_VIEW,
-    PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
-  ]);
+  const canView = can(PERMISSIONS.INTEREST_COLLECTION_REPORT_VIEW);
 
   const {
     collectionReports = [],

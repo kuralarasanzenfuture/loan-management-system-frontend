@@ -47,26 +47,14 @@ export default function InterestOnlyLoansPage() {
 
   // ── Global RBAC/PBAC Permissions ──────────────────────────────────────────
   const { can } = usePermissions();
-  const canView = can([
-    PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
-    PERMISSIONS.LOAN_VIEW,
-  ]);
-  const canCreate = can([
-    PERMISSIONS.INTEREST_ONLY_LOAN_CREATE,
-    PERMISSIONS.LOAN_CREATE,
-  ]);
-  const canEdit = can([
-    PERMISSIONS.INTEREST_ONLY_LOAN_EDIT,
-    PERMISSIONS.LOAN_EDIT,
-  ]);
+  const canView = can(PERMISSIONS.INTEREST_ONLY_LOAN_VIEW);
+  const canCreate = can(PERMISSIONS.INTEREST_ONLY_LOAN_CREATE);
+  const canEdit = can(PERMISSIONS.INTEREST_ONLY_LOAN_EDIT);
   const canPay = can([
     PERMISSIONS.INTEREST_ONLY_PAYMENT_CREATE,
-    PERMISSIONS.LOAN_COLLECTION_CREATE,
+    PERMISSIONS.INTEREST_ONLY_LOAN_PAY,
   ]);
-  const canDelete = can([
-    PERMISSIONS.INTEREST_ONLY_LOAN_DELETE,
-    PERMISSIONS.LOAN_DELETE,
-  ]);
+  const canDelete = can(PERMISSIONS.INTEREST_ONLY_LOAN_DELETE);
 
   const { loans = [], loading, error } = useSelector(
     (state) => state.interestOnlyLoans || {},

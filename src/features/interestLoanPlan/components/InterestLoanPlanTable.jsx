@@ -42,24 +42,15 @@ export default function InterestLoanPlanTable({
   const canView =
     canViewProp !== undefined
       ? canViewProp
-      : can([
-          PERMISSIONS.INTEREST_LOAN_PLAN_VIEW,
-          PERMISSIONS.LOAN_PLAN_VIEW,
-        ]);
+      : can(PERMISSIONS.INTEREST_LOAN_PLAN_VIEW);
   const canEdit =
     canEditProp !== undefined
       ? canEditProp
-      : can([
-          PERMISSIONS.INTEREST_LOAN_PLAN_EDIT,
-          PERMISSIONS.LOAN_PLAN_EDIT,
-        ]);
+      : can(PERMISSIONS.INTEREST_LOAN_PLAN_EDIT);
   const canDelete =
     canDeleteProp !== undefined
       ? canDeleteProp
-      : can([
-          PERMISSIONS.INTEREST_LOAN_PLAN_DELETE,
-          PERMISSIONS.LOAN_PLAN_DELETE,
-        ]);
+      : can(PERMISSIONS.INTEREST_LOAN_PLAN_DELETE);
 
   const hasAnyAction = canView || canEdit || canDelete;
   const planList = Array.isArray(plans) ? plans : [];

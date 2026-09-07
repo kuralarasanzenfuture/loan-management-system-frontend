@@ -401,59 +401,39 @@ const protectedRoutesConfig = [
   {
     path: "/bank-accounts",
     element: <CompanyBanksPage />,
-    permission: [
-      "BANK_ACCOUNT_VIEW",
-      "BANK_VIEW",
-      "COMPANY_BANK_VIEW",
-      "COMPANY_VIEW",
-    ],
+    permission: "BANK_ACCOUNT_VIEW",
   },
   {
     path: "/bank-accounts/:id",
     element: <CompanyBankViewPage />,
-    permission: [
-      "BANK_ACCOUNT_VIEW",
-      "BANK_VIEW",
-      "COMPANY_BANK_VIEW",
-      "COMPANY_VIEW",
-    ],
+    permission: "BANK_ACCOUNT_VIEW",
   },
   {
     path: "/bank-transactions",
     element: <BankTransactionsPage />,
-    permission: [
-      "BANK_TRANSACTION_VIEW",
-      "BANK_VIEW",
-      "BANK_ACCOUNT_VIEW",
-      "COMPANY_VIEW",
-    ],
+    permission: "BANK_TRANSACTION_VIEW",
   },
   {
     path: "/bank-transactions/:id",
     element: <BankTransactionViewPage />,
-    permission: [
-      "BANK_TRANSACTION_VIEW",
-      "BANK_VIEW",
-      "BANK_ACCOUNT_VIEW",
-      "COMPANY_VIEW",
-    ],
+    permission: "BANK_TRANSACTION_VIEW",
   },
 
   // Assets & Categories
   {
     path: "/asset-categories",
     element: <AssetCategoriesPage />,
-    permission: ["ASSET_CATEGORY_VIEW", "ASSET_VIEW"],
+    permission: "ASSET_CATEGORY_VIEW",
   },
   {
     path: "/assets",
     element: <AssetsPage />,
-    permission: ["ASSET_VIEW", "ASSET_CATEGORY_VIEW"],
+    permission: "ASSET_VIEW",
   },
   {
     path: "/assets/:id",
     element: <AssetViewPage />,
-    permission: ["ASSET_VIEW", "ASSET_CATEGORY_VIEW"],
+    permission: "ASSET_VIEW",
   },
 
   // Hand Loans & Chits
@@ -470,49 +450,49 @@ const protectedRoutesConfig = [
   {
     path: "/personal-chits",
     element: <PersonalChitsPage />,
-    permission: "CHIT_VIEW",
+    permission: "PERSONAL_CHIT_VIEW",
   },
   {
     path: "/personal-chits/:id",
     element: <PersonalChitViewPage />,
-    permission: "CHIT_VIEW",
+    permission: "PERSONAL_CHIT_VIEW",
   },
 
   // Collection & EMI routes
   {
     path: "/loan-collections",
     element: <LoanCollectionPage />,
-    permission: ["LOAN_COLLECTION_VIEW", "COLLECTION_VIEW"],
+    permission: "LOAN_COLLECTION_VIEW",
   },
   {
     path: "/loan-collections/:loanId",
     element: <LoanCollectionPage />,
-    permission: ["LOAN_COLLECTION_VIEW", "COLLECTION_VIEW"],
+    permission: "LOAN_COLLECTION_VIEW",
   },
   {
     path: "/loans/:loanId/collections",
     element: <LoanCollectionPage />,
-    permission: ["LOAN_COLLECTION_VIEW", "COLLECTION_VIEW"],
+    permission: "LOAN_COLLECTION_VIEW",
   },
   {
     path: "/loans/:loanId/collection",
     element: <LoanCollectionPage />,
-    permission: ["LOAN_COLLECTION_VIEW", "COLLECTION_VIEW"],
+    permission: "LOAN_COLLECTION_VIEW",
   },
   {
     path: "/due-collections",
     element: <CollectionDashboardPage />,
-    permission: ["DUE_COLLECTION_VIEW", "COLLECTION_VIEW"],
+    permission: "DUE_COLLECTION_VIEW",
   },
   {
     path: "/emi-collection",
     element: <CollectionDashboardPage />,
-    permission: ["DUE_COLLECTION_VIEW", "COLLECTION_VIEW"],
+    permission: "DUE_COLLECTION_VIEW",
   },
   {
     path: "/collection",
     element: <CollectionDashboardPage />,
-    permission: ["DUE_COLLECTION_VIEW", "COLLECTION_VIEW"],
+    permission: "DUE_COLLECTION_VIEW",
   },
 
   // Reports
@@ -539,56 +519,40 @@ const protectedRoutesConfig = [
   {
     path: "/reports/interest-collections",
     element: <InterestCollectionReportsPage />,
-    permission: [
-      "INTEREST_COLLECTION_REPORT_VIEW",
-      "COLLECTION_REPORT_VIEW",
-      "INTEREST_COLLECTION_VIEW",
-      "INTEREST_ONLY_LOAN_VIEW",
-    ],
+    permission: "INTEREST_COLLECTION_REPORT_VIEW",
   },
   {
     path: "/interest-collection-reports",
     element: <InterestCollectionReportsPage />,
-    permission: [
-      "INTEREST_COLLECTION_REPORT_VIEW",
-      "COLLECTION_REPORT_VIEW",
-      "INTEREST_COLLECTION_VIEW",
-      "INTEREST_ONLY_LOAN_VIEW",
-    ],
+    permission: "INTEREST_COLLECTION_REPORT_VIEW",
   },
-
 
   {
     path: "/interest-loan-plans",
     element: <InterestLoanPlansPage />,
-    permission: ["INTEREST_LOAN_PLAN_VIEW", "LOAN_PLAN_VIEW"],
+    permission: "INTEREST_LOAN_PLAN_VIEW",
   },
   {
     path: "/interest-loan-plans/:id",
     element: <InterestLoanPlanViewPage />,
-    permission: ["INTEREST_LOAN_PLAN_VIEW", "LOAN_PLAN_VIEW"],
+    permission: "INTEREST_LOAN_PLAN_VIEW",
   },
 
   {
     path: "/interest-only-loans",
     element: <InterestOnlyLoansPage />,
-    permission: ["INTEREST_ONLY_LOAN_VIEW", "LOAN_VIEW"],
+    permission: "INTEREST_ONLY_LOAN_VIEW",
   },
   {
     path: "/interest-only-loans/:id",
     element: <InterestOnlyLoanViewPage />,
-    permission: ["INTEREST_ONLY_LOAN_VIEW", "LOAN_VIEW"],
+    permission: "INTEREST_ONLY_LOAN_VIEW",
   },
 
   {
     path: "/interest-collections",
     element: <InterestCollectionPage />,
-    permission: [
-      "INTEREST_COLLECTION_VIEW",
-      "LOAN_COLLECTION_VIEW",
-      "COLLECTION_VIEW",
-      "INTEREST_ONLY_LOAN_VIEW",
-    ],
+    permission: "INTEREST_COLLECTION_VIEW",
   },
 
   // Profile & Settings (Authenticated, no specific permission required)

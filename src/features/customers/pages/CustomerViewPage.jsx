@@ -108,10 +108,8 @@ export default function CustomerViewPage() {
   const canView = can(PERMISSIONS.CUSTOMER_VIEW);
   const canEdit = can(PERMISSIONS.CUSTOMER_EDIT);
   const canDelete = can(PERMISSIONS.CUSTOMER_DELETE);
-  const canCreateLoan = can([
-    PERMISSIONS.INTEREST_ONLY_LOAN_CREATE,
-    PERMISSIONS.LOAN_CREATE,
-  ]);
+  const canCreateLoan = can(PERMISSIONS.LOAN_CREATE);
+  const canCreateInterestLoan = can(PERMISSIONS.INTEREST_ONLY_LOAN_CREATE);
 
   const { customer, loading, error } = useSelector((state) => state.customers);
   const { customerLoans, loading: loansLoading } = useSelector(
@@ -266,7 +264,7 @@ export default function CustomerViewPage() {
 
   // Interest Loan creation handlers
   const handleOpenCreateInterestLoan = () => {
-    if (!canCreateLoan) return;
+    if (!canCreateInterestLoan) return;
     setInterestLoanError(null);
     setInterestLoanModalOpen(true);
   };
@@ -455,7 +453,7 @@ export default function CustomerViewPage() {
           interestLoans={customerInterestLoansList}
           loading={loansLoading || interestLoansLoading}
           onOpenCreateLoan={canCreateLoan ? handleOpenCreateLoan : undefined}
-          onOpenCreateInterestLoan={canCreateLoan ? handleOpenCreateInterestLoan : undefined}
+          onOpenCreateInterestLoan={canCreateInterestLoan ? handleOpenCreateInterestLoan : undefined}
         />
       )}
 
