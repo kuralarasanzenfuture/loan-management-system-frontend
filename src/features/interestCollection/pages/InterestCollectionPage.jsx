@@ -454,7 +454,7 @@ export default function InterestCollectionPage() {
               <button
                 type="button"
                 onClick={() => handleShiftDate(-1)}
-                className="btn btn-ghost btn-xs btn-square border border-base-300"
+                className="btn btn-ghost btn-xs btn-square rounded-lg border border-base-300"
                 title="Previous Day"
               >
                 <ChevronLeft size={14} />
@@ -463,12 +463,12 @@ export default function InterestCollectionPage() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="input input-bordered input-xs font-mono text-xs"
+                className="input input-bordered input-xs rounded-lg bg-base-100 font-sans font-medium text-xs"
               />
               <button
                 type="button"
                 onClick={() => handleShiftDate(1)}
-                className="btn btn-ghost btn-xs btn-square border border-base-300"
+                className="btn btn-ghost btn-xs btn-square rounded-lg border border-base-300"
                 title="Next Day"
               >
                 <ChevronRight size={14} />
@@ -479,7 +479,7 @@ export default function InterestCollectionPage() {
                   onClick={() =>
                     setSelectedDate(new Date().toISOString().slice(0, 10))
                   }
-                  className="btn btn-ghost btn-xs text-[11px] text-primary"
+                  className="btn btn-ghost btn-xs text-[11px] rounded-lg text-primary"
                 >
                   Today
                 </button>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -10,6 +10,10 @@ import {
   Search,
   ExternalLink,
   Wallet,
+  ChevronDown,
+  Check,
+  X,
+  FileText,
 } from "lucide-react";
 import {
   fetchInstallmentsByLoan,
@@ -66,6 +70,33 @@ export default function LoanCollectionPage() {
 
   const [selectedLoanId, setSelectedLoanId] = useState(loanId || "");
   const [loanSearch, setLoanSearch] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  // Close dropdown on click outside or Escape key
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+      setTimeout(() => searchInputRef.current?.focus(), 60);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [dropdownOpen]);
 
   const [payTarget, setPayTarget] = useState(null);
   const [paySubmitting, setPaySubmitting] = useState(false);
@@ -184,12 +215,16 @@ export default function LoanCollectionPage() {
 
   const filteredLoansForPicker = useMemo(() => {
     if (!loanSearch.trim()) return loans;
-    const q = loanSearch.toLowerCase();
+    const q = loanSearch.toLowerCase().trim();
     return loans.filter(
       (l) =>
         l.loan_no?.toLowerCase().includes(q) ||
         l.customer_name?.toLowerCase().includes(q) ||
-        String(l.id).includes(q),
+        l.customer_mobile?.toLowerCase().includes(q) ||
+        l.mobile?.toLowerCase().includes(q) ||
+        String(l.id).includes(q) ||
+        String(l.loan_amount || "").includes(q) ||
+        l.status?.toLowerCase().includes(q),
     );
   }, [loans, loanSearch]);
 
@@ -212,35 +247,197 @@ export default function LoanCollectionPage() {
           </p>
         </div>
 
-        {/* Loan Picker Dropdown / Switcher */}
-        <div className="flex items-center gap-2">
-          <div className="form-control min-w-[240px]">
-            <select
-              value={selectedLoanId}
-              onChange={(e) => handleSelectLoan(e.target.value)}
-              className="select select-bordered select-sm rounded-xl w-full"
-              disabled={loansLoading && loans.length === 0}
-            >
-              {loans.length === 0 ? (
-                <option value="">No loans available</option>
-              ) : (
-                loans.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.loan_no || `#${l.id}`} - {l.customer_name || `Customer #${l.customer_id}`} (₹{Number(l.loan_amount || 0).toLocaleString("en-IN")})
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+        {/* Professional Searchable Loan Selector */}
+        <div className="flex items-center gap-2 relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            disabled={loansLoading && loans.length === 0}
+            className={`flex items-center justify-between gap-3 px-3.5 py-2 rounded-xl border bg-base-100 text-left transition-all shadow-xs min-w-[260px] sm:min-w-[340px] max-w-[420px] ${
+              dropdownOpen
+                ? "border-primary ring-2 ring-primary/20 shadow-md"
+                : "border-base-300 hover:border-base-content/30"
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 text-primary shrink-0">
+                <FileText size={15} />
+              </span>
+              <div className="min-w-0">
+                {currentLoan ? (
+                  <div className="flex items-center gap-1.5 text-xs truncate">
+                    <span className="font-semibold text-base-content shrink-0">
+                      {currentLoan.loan_no || `#${currentLoan.id}`}
+                    </span>
+                    <span className="text-base-content/40">·</span>
+                    <span className="text-base-content/80 truncate">
+                      {currentLoan.customer_name || `Customer #${currentLoan.customer_id}`}
+                    </span>
+                    {currentLoan.loan_amount && (
+                      <span className="text-[11px] font-medium text-primary shrink-0 hidden sm:inline">
+                        (₹{Number(currentLoan.loan_amount).toLocaleString("en-IN")})
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs text-base-content/50">
+                    {loansLoading ? "Loading loans…" : "Select loan…"}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <ChevronDown
+              size={15}
+              className={`text-base-content/50 shrink-0 transition-transform duration-200 ${
+                dropdownOpen ? "rotate-180 text-primary" : ""
+              }`}
+            />
+          </button>
 
           {selectedLoanId && (
             <button
               onClick={() => navigate(`/loans/${selectedLoanId}`)}
-              className="btn btn-ghost btn-sm btn-square rounded-xl"
+              className="btn btn-ghost btn-sm btn-square rounded-xl border border-base-300"
               title="View full loan details"
             >
-              <ExternalLink size={16} />
+              <ExternalLink size={15} />
             </button>
+          )}
+
+          {/* Search & Select Popover */}
+          {dropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-[90vw] sm:w-[420px] max-w-[460px] bg-base-100 border border-base-300 rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col animate-fade-in">
+              {/* Search Header */}
+              <div className="p-3 border-b border-base-200 bg-base-200/40">
+                <div className="relative flex items-center">
+                  <Search
+                    size={14}
+                    className="absolute left-3 text-base-content/40 pointer-events-none"
+                  />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={loanSearch}
+                    onChange={(e) => setLoanSearch(e.target.value)}
+                    placeholder="Search by loan #, customer, mobile, amount…"
+                    className="input input-sm input-bordered w-full pl-9 pr-8 text-xs rounded-xl bg-base-100 focus:border-primary"
+                  />
+                  {loanSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setLoanSearch("")}
+                      className="absolute right-2.5 text-base-content/40 hover:text-base-content"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center justify-between px-1 pt-2 text-[11px] text-base-content/50 font-medium">
+                  <span>
+                    {filteredLoansForPicker.length} loan{filteredLoansForPicker.length === 1 ? "" : "s"} found
+                  </span>
+                  {loanSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setLoanSearch("")}
+                      className="text-primary hover:underline"
+                    >
+                      Clear search
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Scrollable Results List */}
+              <div className="max-h-72 overflow-y-auto divide-y divide-base-200/50 p-1.5">
+                {filteredLoansForPicker.length === 0 ? (
+                  <div className="py-8 text-center px-4">
+                    <p className="text-xs text-base-content/50">
+                      No loans matching "{loanSearch}"
+                    </p>
+                    {loanSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setLoanSearch("")}
+                        className="btn btn-ghost btn-xs text-primary mt-2"
+                      >
+                        Reset search
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  filteredLoansForPicker.map((l) => {
+                    const isSelected = String(l.id) === String(selectedLoanId);
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        onClick={() => {
+                          handleSelectLoan(l.id);
+                          setDropdownOpen(false);
+                          setLoanSearch("");
+                        }}
+                        className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between gap-3 transition-colors ${
+                          isSelected
+                            ? "bg-primary/10 border border-primary/20 text-primary font-medium"
+                            : "hover:bg-base-200/70 text-base-content border border-transparent"
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-xs text-base-content">
+                              {l.loan_no || `#${l.id}`}
+                            </span>
+                            {l.status && (
+                              <span
+                                className={`badge badge-xs text-[10px] uppercase font-semibold ${
+                                  l.status === "active"
+                                    ? "badge-success/20 text-success"
+                                    : l.status === "overdue" || l.status === "defaulted"
+                                    ? "badge-error/20 text-error"
+                                    : "badge-ghost"
+                                }`}
+                              >
+                                {l.status}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-base-content/70 mt-0.5 truncate">
+                            <span className="truncate">
+                              {l.customer_name || `Customer #${l.customer_id}`}
+                            </span>
+                            {(l.customer_mobile || l.mobile) && (
+                              <span className="text-base-content/40 text-[11px] shrink-0">
+                                · {l.customer_mobile || l.mobile}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0 flex items-center gap-2">
+                          <div>
+                            <div className="text-xs font-bold text-base-content">
+                              ₹{Number(l.loan_amount || 0).toLocaleString("en-IN")}
+                            </div>
+                            {l.tenure && (
+                              <div className="text-[10px] text-base-content/40">
+                                {l.tenure} {l.tenure_type || "months"}
+                              </div>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-content shrink-0">
+                              <Check size={12} />
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>

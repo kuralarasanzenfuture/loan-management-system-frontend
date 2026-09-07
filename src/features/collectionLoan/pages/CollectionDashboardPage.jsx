@@ -381,7 +381,7 @@ export default function CollectionDashboardPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => handleDateChange(e.target.value)}
-              className="input input-bordered input-xs rounded-lg bg-base-100 font-medium"
+              className="input input-bordered input-xs rounded-lg bg-base-100 font-sans font-medium text-xs"
             />
             <button
               onClick={() => handleShiftDate(1)}

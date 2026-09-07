@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useParams, useNavigate, } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   ArrowLeft,
@@ -140,6 +140,13 @@ export default function InterestOnlyLoanViewPage() {
       dispatch(fetchInterestOnlyPayments(id));
     }
   }, [dispatch, id]);
+
+  const customerObj = useMemo(() => {
+    if (!loan?.customer_id) return null;
+    return (
+      customers.find((c) => String(c.id) === String(loan.customer_id)) || null
+    );
+  }, [customers, loan?.customer_id]);
 
   const handleOpenPaymentModal = (config = {}) => {
     if (!canPay) return;
@@ -286,13 +293,6 @@ export default function InterestOnlyLoanViewPage() {
       : 0;
 
   const isClosed = ["completed", "closed", "cancelled"].includes(loan.status);
-
-  const customerObj = useMemo(() => {
-    if (!loan?.customer_id) return null;
-    return (
-      customers.find((c) => String(c.id) === String(loan.customer_id)) || null
-    );
-  }, [customers, loan?.customer_id]);
 
   return (
     <div className="space-y-6">

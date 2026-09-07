@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Award,
+  IndianRupee,
 } from "lucide-react";
 import {
   AreaChart,
@@ -276,7 +277,8 @@ export default function DashboardPage() {
         title: "Active Portfolio",
         value: formatCurrency(effectiveOverview.active_portfolio),
         sub: `${effectiveOverview.active_loans || 0} active loans`,
-        icon: DollarSign,
+        // icon: DollarSign,
+        icon: IndianRupee,
         iconColor: "text-primary bg-primary/10",
       },
       {
