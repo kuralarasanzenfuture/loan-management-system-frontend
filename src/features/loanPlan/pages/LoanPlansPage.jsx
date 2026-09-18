@@ -68,7 +68,8 @@ export default function LoanPlansPage() {
         (p) =>
           p.plan_name?.toLowerCase().includes(q) ||
           p.plan_code?.toLowerCase().includes(q) ||
-          p.collection_frequency?.toLowerCase().includes(q)
+          p.collection_frequency?.toLowerCase().includes(q) ||
+          ((q.includes("sunday") || q.includes("skip")) && p.skip_sunday)
       );
     }
 

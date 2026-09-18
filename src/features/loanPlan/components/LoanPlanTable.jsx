@@ -140,9 +140,19 @@ export default function LoanPlanTable({
               </td>
 
               <td className="py-3">
-                <div className="text-xs text-base-content/70 font-medium">
-                  {FREQUENCY_LABELS[plan.collection_frequency] ||
-                    plan.collection_frequency}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-base-content/70 font-medium">
+                    {FREQUENCY_LABELS[plan.collection_frequency] ||
+                      plan.collection_frequency}
+                  </span>
+                  {plan.skip_sunday && (
+                    <span
+                      className="badge badge-warning badge-outline text-[10px] px-1.5 py-0 h-4 font-medium"
+                      title="Sundays are skipped in collection schedule"
+                    >
+                      Skip Sun
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-base-content/40">
                   {plan.tenure} {plan.tenure_type}

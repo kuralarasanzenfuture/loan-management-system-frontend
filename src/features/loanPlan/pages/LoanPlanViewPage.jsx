@@ -280,6 +280,18 @@ export default function LoanPlanViewPage() {
               }
             />
             <InfoRow
+              label="Skip Sunday"
+              value={
+                plan.skip_sunday ? (
+                  <span className="badge badge-warning badge-outline badge-sm font-medium">
+                    Yes (Skipped)
+                  </span>
+                ) : (
+                  <span className="text-base-content/60">No</span>
+                )
+              }
+            />
+            <InfoRow
               label="Tenure"
               value={`${plan.tenure} ${plan.tenure_type}`}
             />

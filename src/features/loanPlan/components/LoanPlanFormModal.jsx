@@ -10,6 +10,7 @@ const emptyForm = {
   plan_name: "",
   plan_code: "",
   collection_frequency: "daily",
+  skip_sunday: false,
   tenure: "",
   tenure_type: "days",
   commission_type: "fixed",
@@ -57,6 +58,7 @@ export default function LoanPlanFormModal({
         plan_name: initialData.plan_name || "",
         plan_code: initialData.plan_code || "",
         collection_frequency: initialData.collection_frequency || "daily",
+        skip_sunday: Boolean(initialData.skip_sunday),
         tenure: initialData.tenure ?? "",
         tenure_type: initialData.tenure_type || "days",
         commission_type: initialData.commission_type || "fixed",
@@ -166,6 +168,7 @@ export default function LoanPlanFormModal({
     // Only include core fields if plan is not in use (backend would reject them anyway)
     if (!isUsed) {
       payload.collection_frequency = String(form.collection_frequency).toLowerCase();
+      payload.skip_sunday = Boolean(form.skip_sunday);
       payload.tenure = Number(form.tenure);
       payload.tenure_type = String(form.tenure_type).toLowerCase();
       payload.commission_type = String(form.commission_type).toLowerCase();
@@ -280,6 +283,25 @@ export default function LoanPlanFormModal({
               <div className="form-control">
                 <label className="label pb-1">
                   <span className="label-text text-xs font-semibold">
+                    Status
+                  </span>
+                </label>
+                <select
+                  value={form.status}
+                  onChange={handleChange("status")}
+                  className="select select-bordered select-sm rounded-lg w-full capitalize"
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s} className="capitalize">
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-control">
+                <label className="label pb-1">
+                  <span className="label-text text-xs font-semibold">
                     Collection Frequency *
                   </span>
                 </label>
@@ -300,20 +322,34 @@ export default function LoanPlanFormModal({
               <div className="form-control">
                 <label className="label pb-1">
                   <span className="label-text text-xs font-semibold">
-                    Status
+                    Skip Sunday
                   </span>
                 </label>
-                <select
-                  value={form.status}
-                  onChange={handleChange("status")}
-                  className="select select-bordered select-sm rounded-lg w-full capitalize"
+                <label
+                  className={`flex items-center justify-between h-8 px-3 rounded-lg border border-base-300 bg-base-100 ${
+                    isUsed
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer hover:bg-base-200/50"
+                  }`}
                 >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s} className="capitalize">
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
-                    </option>
-                  ))}
-                </select>
+                  <span className="text-xs text-base-content/70">
+                    Exclude Sundays
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.skip_sunday)}
+                    onChange={(e) => {
+                      if (!isUsed) {
+                        setForm((prev) => ({
+                          ...prev,
+                          skip_sunday: e.target.checked,
+                        }));
+                      }
+                    }}
+                    disabled={isUsed}
+                    className="toggle toggle-primary toggle-sm"
+                  />
+                </label>
               </div>
 
               <div className="form-control">
