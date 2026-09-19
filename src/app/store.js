@@ -25,6 +25,7 @@ import interestLoanPlanReducer from "../redux/interestLoanPlan/interestLoanPlanS
 import interestOnlyLoanReducer from "../redux/interestOnlyLoans/interestLoanSlice.js";
 import interestOnlyScheduleReducer from "../redux/interestOnlySchedule/interestOnlyScheduleSlice.js";
 import interestOnlyPaymentReducer from "../redux/interestOnlyPayment/interestOnlyPaymentSlice.js";
+import loanPaymentReducer from "../redux/loanPayments/loanPaymentSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -36,6 +37,7 @@ export const store = configureStore({
     customerLoans: customerLoanReducer,
     loanReports: loanReportsReducer,
     installments: installmentReducer,
+    loanPayments: loanPaymentReducer,
     companyDetails: companyDetailsReducer,
     companyBanks: companyBankReducer,
     bankTransactions: bankTransactionReducer,

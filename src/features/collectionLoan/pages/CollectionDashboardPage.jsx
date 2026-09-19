@@ -22,6 +22,7 @@ import {
   clearInstallmentError,
   clearCollectionDashboard,
 } from "../../../redux/installments/installmentSlice.js";
+import { recordInstallmentPayment } from "../../../redux/loanPayments/loanPaymentSlice.js";
 import CollectionTable from "../components/CollectionTable.jsx";
 import PayInstallmentModal from "../components/PayInstallmentModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
@@ -167,14 +168,33 @@ export default function CollectionDashboardPage() {
         }
       }
 
-      const action = await dispatch(payInstallmentAction({ id, formData }));
-      if (payInstallmentAction.fulfilled.match(action)) {
-        // Refresh collections
+      // Record official payment via /api/loan-payments
+      const paymentPayload = {
+        loan_id: payTarget?.loan_id,
+        installment_id: id,
+        payment_amount: Number(formData.payment_amount || formData.paid_amount),
+        payment_date: formData.paid_date,
+        payment_mode: formData.payment_mode || "cash",
+        transaction_reference: formData.transaction_reference || undefined,
+        remarks: formData.remarks || undefined,
+      };
+
+      const resultAction = await dispatch(recordInstallmentPayment(paymentPayload));
+      if (recordInstallmentPayment.fulfilled.match(resultAction)) {
         loadData();
-        return { success: true, data: action.payload };
+        return { success: true, data: resultAction.payload?.data || resultAction.payload };
       } else {
-        return { success: false, error: action.payload };
+        const action = await dispatch(payInstallmentAction({ id, formData }));
+        if (payInstallmentAction.fulfilled.match(action)) {
+          // Refresh collections
+          loadData();
+          return { success: true, data: action.payload };
+        } else {
+          return { success: false, error: action.payload };
+        }
       }
+    } catch (err) {
+      return { success: false, error: err?.message || "Failed to record payment" };
     } finally {
       setPaySubmitting(false);
     }

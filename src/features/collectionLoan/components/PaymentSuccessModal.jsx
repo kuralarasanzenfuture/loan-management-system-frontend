@@ -9,6 +9,7 @@ import {
   Printer,
 } from "lucide-react";
 import { printInstallmentReceipt } from "../../customerLoans/utils/printLoanStatement.js";
+import { sendWhatsAppPaymentReceipt, WhatsAppIcon } from "../../customerLoans/utils/whatsappShare.js";
 
 /**
  * PaymentSuccessModal
@@ -50,6 +51,22 @@ export default function PaymentSuccessModal({
         paidDate: data.paymentDate,
         status: data.status,
         receiptNo: data.receiptNo || `REC-${Date.now().toString().slice(-4)}`,
+      },
+    });
+  };
+
+  const handleWhatsApp = () => {
+    sendWhatsAppPaymentReceipt({
+      installment: { id: data.installmentId || data.id, installment_no: data.installmentNo, balance_amount: data.remainingBalance },
+      company: company || {},
+      successData: {
+        amountPaidNow: data.amount,
+        cumulativePaid: data.cumulativePaid || data.amount,
+        remainingBalance: data.remainingBalance || 0,
+        paidDate: data.paymentDate,
+        status: data.status,
+        receiptNo: data.receiptNo || `REC-${Date.now().toString().slice(-4)}`,
+        paymentMode: data.paymentMode,
       },
     });
   };
@@ -218,10 +235,19 @@ export default function PaymentSuccessModal({
             <button
               type="button"
               onClick={handlePrint}
-              className="btn btn-outline btn-sm rounded-lg flex-1 gap-1.5 border-base-300"
+              className="btn btn-sm rounded-lg flex-1 gap-1.5 border border-base-300 bg-base-100 hover:bg-primary/10 hover:border-primary/50 text-base-content hover:text-primary font-bold transition-all"
             >
               <Printer size={14} />
-              <span>Print Receipt</span>
+              <span>Print</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleWhatsApp}
+              className="btn btn-sm rounded-lg flex-1 gap-1.5 border border-emerald-500/40 bg-emerald-50 hover:bg-emerald-600 hover:border-emerald-600 text-emerald-700 hover:text-white font-bold transition-all"
+              title="Share receipt via WhatsApp"
+            >
+              <WhatsAppIcon size={14} />
+              <span>WhatsApp</span>
             </button>
             <button
               type="button"

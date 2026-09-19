@@ -1434,3 +1434,225 @@ export function printInstallmentReceipt({
     }, 1500);
   }, 400);
 }
+
+/**
+ * printOfficialPaymentReceipt
+ * Directly prints the server-generated receipt voucher payload from GET /api/loan-payments/receipt/:id
+ */
+export function printOfficialPaymentReceipt(receiptData) {
+  if (!receiptData || !receiptData.payment) return;
+
+  const receiptNo = receiptData.receipt_no || `RCP-${receiptData.payment?.id || Date.now()}`;
+  const payment = receiptData.payment || {};
+  const company = receiptData.company || {};
+
+  const companyName = company.company_name || company.legal_name || "MICRO FINANCE SOLUTIONS";
+  const addressParts = [
+    company.address_line_1,
+    company.address_line_2,
+    company.city,
+    company.pincode,
+  ].filter(Boolean);
+  const fullAddress = addressParts.length ? addressParts.join(", ") : "Head Office";
+  const companyPhone = company.phone || "";
+  const companyEmail = company.email || "";
+  const gstNumber = company.gst_number ? `GSTIN: ${company.gst_number}` : "";
+
+  const amountPaid = Number(payment.payment_amount || 0);
+  const formattedAmount = amountPaid.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const formattedDate = payment.payment_date
+    ? new Date(payment.payment_date).toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : new Date().toLocaleDateString("en-GB");
+
+  const modeBadgeText = (payment.payment_mode || "CASH").toUpperCase();
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Payment Receipt - ${receiptNo}</title>
+  <style>
+    @page { size: A5 landscape; margin: 8mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background: #fff; color: #0f172a; padding: 12px; font-size: 11px; }
+    .receipt-box { border: 2px solid #0f172a; border-radius: 10px; padding: 16px; max-width: 780px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; }
+    .company-title { font-size: 16px; font-weight: 800; text-transform: uppercase; color: #0f172a; }
+    .company-sub { font-size: 10px; color: #475569; margin-top: 2px; }
+    .receipt-badge { text-align: right; }
+    .badge-title { font-size: 12px; font-weight: 800; background: #0f172a; color: #fff; padding: 4px 10px; border-radius: 4px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .receipt-no { font-size: 11px; font-weight: 700; margin-top: 4px; color: #0f172a; font-family: monospace; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; }
+    .card-title { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 6px; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; }
+    .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .row:last-child { margin-bottom: 0; }
+    .label { color: #64748b; font-size: 10px; }
+    .val { font-weight: 600; color: #0f172a; font-size: 11px; }
+    .payment-hero { background: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .hero-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #15803d; }
+    .hero-amount { font-size: 22px; font-weight: 900; color: #166534; font-family: monospace; }
+    .mode-pill { display: inline-block; background: #16a34a; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-top: 2px; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
+    .sign-box { text-align: center; width: 180px; }
+    .sign-line { border-top: 1px solid #0f172a; margin-top: 30px; margin-bottom: 3px; }
+    .sign-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #475569; }
+    .footer { text-align: center; font-size: 9px; color: #94a3b8; margin-top: 10px; }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt-box">
+    <div class="header">
+      <div>
+        <div class="company-title">${companyName}</div>
+        <div class="company-sub">${fullAddress}</div>
+        ${companyPhone || companyEmail ? `<div class="company-sub">${[companyPhone ? `Phone: ${companyPhone}` : "", companyEmail ? `Email: ${companyEmail}` : ""].filter(Boolean).join(" | ")}</div>` : ""}
+        ${gstNumber ? `<div class="company-sub">${gstNumber}</div>` : ""}
+      </div>
+      <div class="receipt-badge">
+        <div class="badge-title">Official Receipt</div>
+        <div class="receipt-no">${receiptNo}</div>
+        <div class="company-sub" style="margin-top: 3px;">Date: ${formattedDate}</div>
+      </div>
+    </div>
+
+    <div class="payment-hero">
+      <div>
+        <div class="hero-label">Payment Received</div>
+        <span class="mode-pill">${modeBadgeText}</span>
+        ${payment.transaction_reference ? `<div style="font-size: 10px; color: #15803d; margin-top: 3px;">Ref: <strong>${payment.transaction_reference}</strong></div>` : ""}
+        ${payment.cheque_number ? `<div style="font-size: 10px; color: #15803d; margin-top: 3px;">Cheque #: <strong>${payment.cheque_number}</strong></div>` : ""}
+      </div>
+      <div style="text-align: right;">
+        <div class="hero-amount">₹${formattedAmount}</div>
+        <div style="font-size: 10px; color: #15803d; font-weight: 600;">Payment #${payment.payment_no || 1}</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">Customer & Loan Account</div>
+        <div class="row">
+          <span class="label">Customer:</span>
+          <span class="val">${payment.customer_name || "—"}</span>
+        </div>
+        <div class="row">
+          <span class="label">Customer Code:</span>
+          <span class="val">${payment.customer_no || "—"}</span>
+        </div>
+        <div class="row">
+          <span class="label">Mobile:</span>
+          <span class="val">${payment.customer_mobile || "—"}</span>
+        </div>
+        <div class="row">
+          <span class="label">Loan Account:</span>
+          <span class="val" style="font-family: monospace;">${payment.loan_no || `LN-${payment.loan_id}`}</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Installment Settlement Details</div>
+        <div class="row">
+          <span class="label">Installment:</span>
+          <span class="val">#${payment.installment_no} (Due: ${payment.installment_due_date ? new Date(payment.installment_due_date).toLocaleDateString("en-GB") : "—"})</span>
+        </div>
+        <div class="row">
+          <span class="label">Total Installment Due:</span>
+          <span class="val">₹${Number(payment.installment_total_due || 0).toLocaleString("en-IN")}</span>
+        </div>
+        <div class="row">
+          <span class="label">Total Paid to Date:</span>
+          <span class="val" style="color: #16a34a;">₹${Number(payment.installment_paid_amount || 0).toLocaleString("en-IN")}</span>
+        </div>
+        <div class="row">
+          <span class="label">Remaining Due:</span>
+          <span class="val" style="color: ${Number(payment.installment_balance_amount || 0) > 0 ? '#d97706' : '#16a34a'};">
+            ₹${Number(payment.installment_balance_amount || 0).toLocaleString("en-IN")} (${payment.installment_status ? payment.installment_status.toUpperCase() : "CLEARED"})
+          </span>
+        </div>
+      </div>
+    </div>
+
+    ${payment.remarks ? `
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; font-size: 10px;">
+      <span style="color: #64748b; font-weight: bold;">Remarks:</span> ${payment.remarks}
+    </div>` : ""}
+
+    <div class="signatures">
+      <div class="sign-box">
+        <div class="sign-line"></div>
+        <div class="sign-label">Customer Signature</div>
+      </div>
+      <div class="sign-box">
+        <div class="sign-line"></div>
+        <div class="sign-label">Received By (${payment.received_by_user || "Authorized Cashier"})</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      This is a computer-generated official receipt voucher. Valid without physical stamp.
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        window.print();
+      }, 350);
+    });
+  </script>
+</body>
+</html>
+  `;
+
+  try {
+    const printWindow = window.open("", "_blank", "width=850,height=750,menubar=no,toolbar=no,location=no,status=no");
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      return;
+    }
+  } catch (err) {
+    console.warn("Direct window.open restricted:", err);
+  }
+
+  // Fallback iframe
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  setTimeout(() => {
+    iframe.contentWindow.print();
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 1500);
+  }, 400);
+}

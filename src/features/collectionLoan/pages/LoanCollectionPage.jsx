@@ -14,6 +14,10 @@ import {
   Check,
   X,
   FileText,
+  Coins,
+  Receipt,
+  RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
 import {
   fetchInstallmentsByLoan,
@@ -27,9 +31,19 @@ import {
 } from "../../../redux/installments/installmentSlice.js";
 import { fetchCustomerLoans } from "../../../redux/customerLoans/customerLoanSlice.js";
 import { fetchCompanyDetails } from "../../../redux/companyDetails/companyDetailsSlice.js";
+import {
+  fetchPaymentsByLoan,
+  recordInstallmentPayment,
+  payLoanLumpSum,
+  revertPaymentAction,
+} from "../../../redux/loanPayments/loanPaymentSlice.js";
 import LoanInstallmentTable from "../components/LoanInstallmentTable.jsx";
 import PayInstallmentModal from "../components/PayInstallmentModal.jsx";
 import ApplyPenaltyModal from "../components/ApplyPenaltyModal.jsx";
+import LoanPaymentHistoryTable from "../../customerLoans/components/LoanPaymentHistoryTable.jsx";
+import LoanLumpSumPaymentModal from "../../customerLoans/components/LoanLumpSumPaymentModal.jsx";
+import RevertPaymentModal from "../../customerLoans/components/RevertPaymentModal.jsx";
+import PaymentReceiptModal from "../../customerLoans/components/PaymentReceiptModal.jsx";
 import { formatCurrency, formatLoanTenure } from "../utils/collectionHelpers.js";
 import usePermissions from "../../../common/hooks/usePermissions.js";
 import { PERMISSIONS } from "../../../constants/permissions.js";
@@ -66,13 +80,27 @@ export default function LoanCollectionPage() {
   const { customerLoans: loans = [], loading: loansLoading } = useSelector(
     (state) => state.customerLoans,
   );
+  const {
+    loanPayments = [],
+    loanPaymentsLoading,
+  } = useSelector((state) => state.loanPayments);
   const { company } = useSelector((state) => state.companyDetails);
 
+  const [activeTab, setActiveTab] = useState("installments");
   const [selectedLoanId, setSelectedLoanId] = useState(loanId || "");
   const [loanSearch, setLoanSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
+
+  // Lump sum payment modal state
+  const [lumpSumModalOpen, setLumpSumModalOpen] = useState(false);
+  const [lumpSumSubmitting, setLumpSumSubmitting] = useState(false);
+
+  // Payment reversal & receipt voucher modal state
+  const [revertTarget, setRevertTarget] = useState(null);
+  const [revertSubmitting, setRevertSubmitting] = useState(false);
+  const [receiptModalPaymentId, setReceiptModalPaymentId] = useState(null);
 
   // Close dropdown on click outside or Escape key
   useEffect(() => {
@@ -134,13 +162,14 @@ export default function LoanCollectionPage() {
     return loans.find((l) => String(l.id) === String(selectedLoanId)) || null;
   }, [loans, selectedLoanId]);
 
-  // Fetch loan installments & due when selectedLoanId changes
+  // Fetch loan installments, summary & payments when selectedLoanId changes
   useEffect(() => {
     if (!selectedLoanId || isNaN(Number(selectedLoanId))) return;
 
     dispatch(fetchInstallmentsByLoan(selectedLoanId));
     dispatch(fetchCurrentDue(selectedLoanId));
     dispatch(fetchLoanSummary(selectedLoanId));
+    dispatch(fetchPaymentsByLoan(selectedLoanId));
   }, [dispatch, selectedLoanId]);
 
   const refetch = () => {
@@ -148,6 +177,7 @@ export default function LoanCollectionPage() {
     dispatch(fetchInstallmentsByLoan(selectedLoanId));
     dispatch(fetchCurrentDue(selectedLoanId));
     dispatch(fetchLoanSummary(selectedLoanId));
+    dispatch(fetchPaymentsByLoan(selectedLoanId));
     dispatch(fetchCustomerLoans());
   };
 
@@ -173,15 +203,56 @@ export default function LoanCollectionPage() {
         }
       }
 
-      const action = await dispatch(payInstallmentAction({ id, formData }));
-      if (payInstallmentAction.fulfilled.match(action)) {
+      // Record official payment via /api/loan-payments
+      const paymentPayload = {
+        loan_id: selectedLoanId || payTarget?.loan_id,
+        installment_id: id,
+        payment_amount: Number(formData.payment_amount || formData.paid_amount),
+        payment_date: formData.paid_date,
+        payment_mode: formData.payment_mode || "cash",
+        transaction_reference: formData.transaction_reference || undefined,
+        remarks: formData.remarks || undefined,
+      };
+
+      const resultAction = await dispatch(recordInstallmentPayment(paymentPayload));
+      if (recordInstallmentPayment.fulfilled.match(resultAction)) {
+        refetch();
+        return { success: true, data: resultAction.payload?.data || resultAction.payload };
+      } else {
+        const action = await dispatch(payInstallmentAction({ id, formData }));
         refetch();
         return { success: true, data: action.payload };
-      } else {
-        return { success: false, error: action.payload };
       }
+    } catch (err) {
+      return { success: false, error: err?.message || "Failed to record payment" };
     } finally {
       setPaySubmitting(false);
+    }
+  };
+
+  const handleLumpSumSubmit = async (payload) => {
+    setLumpSumSubmitting(true);
+    try {
+      const res = await dispatch(payLoanLumpSum(payload)).unwrap();
+      refetch();
+      return { success: true, data: res };
+    } catch (err) {
+      return { success: false, error: err };
+    } finally {
+      setLumpSumSubmitting(false);
+    }
+  };
+
+  const handleConfirmRevert = async ({ id, reason }) => {
+    setRevertSubmitting(true);
+    try {
+      await dispatch(revertPaymentAction({ id, reason })).unwrap();
+      setRevertTarget(null);
+      refetch();
+    } catch (err) {
+      console.error("Payment reversal failed:", err);
+    } finally {
+      setRevertSubmitting(false);
     }
   };
 
@@ -503,24 +574,121 @@ export default function LoanCollectionPage() {
         </div>
       </div>
 
-      {/* Installments table */}
-      <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
-        <LoanInstallmentTable
-          installments={installments}
-          loading={installmentsLoading}
-          canCollect={canCollect}
-          canApplyPenalty={canApplyPenalty}
-          onPay={(inst) => {
-            if (!canCollect) return;
-            dispatch(clearInstallmentError());
-            setPayTarget(inst);
-          }}
-          onApplyPenalty={(inst) => {
-            if (!canApplyPenalty) return;
-            handleOpenPenalty(inst);
-          }}
-        />
+      {/* ── Navigation Tabs: Installment Schedule & Payment Ledger ───────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-base-300 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="inline-flex p-1 rounded-xl bg-base-200/80 border border-base-300/70 gap-1 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab("installments")}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "installments"
+                  ? "bg-primary text-primary-content shadow-xs"
+                  : "text-base-content/70 hover:text-base-content hover:bg-base-100/60"
+              }`}
+            >
+              <Calendar size={13} />
+              <span>Installment Schedule</span>
+              <span
+                className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold leading-none ${
+                  activeTab === "installments"
+                    ? "bg-white/25 text-white"
+                    : "bg-base-300 text-base-content/70"
+                }`}
+              >
+                {installments.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("payments")}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "payments"
+                  ? "bg-primary text-primary-content shadow-xs"
+                  : "text-base-content/70 hover:text-base-content hover:bg-base-100/60"
+              }`}
+            >
+              <Receipt size={13} />
+              <span>Payment History</span>
+              <span
+                className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold leading-none ${
+                  activeTab === "payments"
+                    ? "bg-white/25 text-white"
+                    : "bg-base-300 text-base-content/70"
+                }`}
+              >
+                {loanPayments.length}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Pay Lump Sum Action */}
+          {canCollect && (summary?.total_balance > 0 || currentLoan?.status === "active") && (
+            <button
+              type="button"
+              onClick={() => setLumpSumModalOpen(true)}
+              className="btn btn-sm btn-success text-success-content rounded-xl gap-1.5 font-bold shadow-xs hover:shadow-sm"
+              title="Pay lump sum across multiple installments"
+            >
+              <Coins size={14} />
+              <span>Pay Lump Sum</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Tab Content: Installments Schedule */}
+      {activeTab === "installments" && (
+        <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
+          <LoanInstallmentTable
+            installments={installments}
+            loading={installmentsLoading}
+            canCollect={canCollect}
+            canApplyPenalty={canApplyPenalty}
+            onPay={(inst) => {
+              if (!canCollect) return;
+              dispatch(clearInstallmentError());
+              setPayTarget(inst);
+            }}
+            onApplyPenalty={(inst) => {
+              if (!canApplyPenalty) return;
+              handleOpenPenalty(inst);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Tab Content: Payment History Ledger */}
+      {activeTab === "payments" && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="text-xs text-base-content/60 font-medium">
+              Payment Transactions: <span className="text-primary font-bold">{loanPayments.length}</span> record{loanPayments.length !== 1 ? "s" : ""} on ledger
+            </div>
+          </div>
+          <div className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
+            <LoanPaymentHistoryTable
+              payments={loanPayments}
+              loading={loanPaymentsLoading}
+              loan={selectedLoan}
+              customer={selectedLoan?.customer || { name: selectedLoan?.customer_name, mobile: selectedLoan?.customer_mobile }}
+              company={company}
+              onPrintReceipt={(payment) => {
+                setReceiptModalPaymentId(payment.id);
+              }}
+              onViewReceipt={(payment) => {
+                setReceiptModalPaymentId(payment.id);
+              }}
+              onRevertPayment={(payment) => {
+                setRevertTarget(payment);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Pay modal with Receipt & Success UI */}
       <PayInstallmentModal
@@ -545,6 +713,34 @@ export default function LoanCollectionPage() {
         onOpenCalculate={handleCalculatePenalty}
         onClose={() => setPenaltyTarget(null)}
         onSubmit={handlePenaltySubmit}
+      />
+
+      {/* Lump Sum Payment Modal */}
+      <LoanLumpSumPaymentModal
+        open={lumpSumModalOpen}
+        loan={selectedLoan}
+        installments={installments}
+        company={company}
+        loading={lumpSumSubmitting}
+        onClose={() => setLumpSumModalOpen(false)}
+        onSubmit={handleLumpSumSubmit}
+      />
+
+      {/* Revert / Void Payment Modal */}
+      <RevertPaymentModal
+        open={Boolean(revertTarget)}
+        payment={revertTarget}
+        loading={revertSubmitting}
+        onClose={() => setRevertTarget(null)}
+        onConfirm={handleConfirmRevert}
+      />
+
+      {/* Payment Receipt Voucher Modal */}
+      <PaymentReceiptModal
+        open={Boolean(receiptModalPaymentId)}
+        paymentId={receiptModalPaymentId}
+        company={company}
+        onClose={() => setReceiptModalPaymentId(null)}
       />
     </div>
   );

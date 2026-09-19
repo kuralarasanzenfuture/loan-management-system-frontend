@@ -253,6 +253,7 @@ import InterestOnlyLoansPage from "../features/customerInterest/pages/InterestOn
 import InterestOnlyLoanViewPage from "../features/customerInterest/pages/InterestOnlyLoanViewPage.jsx";
 import InterestCollectionPage from "../features/interestCollection/pages/InterestCollectionPage.jsx";
 import InterestCollectionReportsPage from "../features/interestCollection/reports/pages/InterestCollectionReportsPage.jsx";
+import PublicReceiptViewerPage from "../features/customerLoans/pages/PublicReceiptViewerPage.jsx";
 
 // Centralized configuration for protected routes inside MainLayout
 const protectedRoutesConfig = [
@@ -568,6 +569,10 @@ const AppRoutes = () => {
         <Route path="/" element={<LoanLoginPage />} />
         <Route path="/login" element={<LoanLoginPage />} />
       </Route>
+
+      {/* Standalone Public Receipt Viewer (1-tap WhatsApp Receipt Link) */}
+      <Route path="/receipt" element={<PublicReceiptViewerPage />} />
+      <Route path="/receipt/:id" element={<PublicReceiptViewerPage />} />
 
       {/* Base Token Authentication Check */}
       <Route element={<ProtectedRoute />}>

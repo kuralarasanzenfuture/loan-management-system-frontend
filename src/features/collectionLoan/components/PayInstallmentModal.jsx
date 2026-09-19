@@ -22,6 +22,7 @@ import {
 } from "../utils/collectionHelpers.js";
 import { calculatePenalty } from "../../../redux/installments/installment.service.js";
 import { printInstallmentReceipt } from "../../customerLoans/utils/printLoanStatement.js";
+import { sendWhatsAppPaymentReceipt, WhatsAppIcon } from "../../customerLoans/utils/whatsappShare.js";
 
 /**
  * PayInstallmentModal
@@ -345,6 +346,14 @@ export default function PayInstallmentModal({
     });
 
     if (res && res.success !== false) {
+      const paymentData = res.data?.payment || res.data || {};
+      const receiptNo =
+        paymentData.payment_no
+          ? `RCP-${paymentData.loan_id || installment.loan_id || loan?.id}-${String(paymentData.payment_no).padStart(4, "0")}`
+          : paymentData.id
+          ? `RCP-${paymentData.id}`
+          : `REC-${installment.id}-${Math.floor(1000 + Math.random() * 9000)}`;
+
       setSuccessData({
         amountPaidNow: currentPayingNow,
         cumulativePaid: projectedCumulativePaid,
@@ -354,7 +363,8 @@ export default function PayInstallmentModal({
         paymentMode: form.payment_mode,
         transactionReference: form.transaction_reference,
         status: autoStatus,
-        receiptNo: `REC-${installment.id}-${Math.floor(1000 + Math.random() * 9000)}`,
+        receiptNo,
+        rawPayment: paymentData,
       });
     }
   };
@@ -367,6 +377,18 @@ export default function PayInstallmentModal({
       customer,
       company,
       successData,
+    });
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!successData) return;
+    sendWhatsAppPaymentReceipt({
+      loan,
+      installment,
+      customer,
+      company,
+      successData,
+      payment: successData.rawPayment,
     });
   };
 
@@ -473,21 +495,32 @@ export default function PayInstallmentModal({
               </div>
             </div>
 
-            {/* Action Buttons: Print Receipt & Done */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+            {/* Action Buttons: Print Receipt, WhatsApp Share & Done */}
+            <div className="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={handlePrintReceipt}
-                className="btn btn-outline btn-sm rounded-xl gap-2 w-full sm:w-1/2 border-base-300 hover:border-primary hover:bg-primary/5 font-bold"
+                className="btn btn-sm rounded-xl gap-1.5 border border-base-300 bg-base-100 hover:bg-primary/10 hover:border-primary/50 text-base-content hover:text-primary font-bold transition-all shadow-2xs"
+                title="Print official payment receipt"
               >
                 <Printer size={15} className="text-primary" />
-                <span>Print Receipt</span>
+                <span>Print</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleWhatsAppShare}
+                className="btn btn-sm rounded-xl gap-1.5 border border-emerald-500/40 bg-emerald-50 hover:bg-emerald-600 hover:border-emerald-600 text-emerald-700 hover:text-white font-bold transition-all shadow-2xs"
+                title="Send receipt confirmation via WhatsApp"
+              >
+                <WhatsAppIcon size={15} className="shrink-0" />
+                <span>WhatsApp</span>
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="btn btn-primary btn-sm rounded-xl gap-1.5 w-full sm:w-1/2 font-bold shadow-sm"
+                className="btn btn-primary btn-sm rounded-xl gap-1.5 font-bold shadow-sm"
               >
                 <Check size={16} />
                 <span>Done</span>

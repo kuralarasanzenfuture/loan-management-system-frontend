@@ -17,7 +17,11 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "../utils/loanCalculations.js";
 import { calculatePenalty } from "../../../redux/installments/installment.service.js";
-import { printInstallmentReceipt } from "../utils/printLoanStatement.js";
+import {
+  printInstallmentReceipt,
+  printOfficialPaymentReceipt,
+} from "../utils/printLoanStatement.js";
+import { sendWhatsAppPaymentReceipt } from "../utils/whatsappShare.js";
 
 /**
  * InstallmentPaymentModal
@@ -45,8 +49,12 @@ export default function InstallmentPaymentModal({
   // Amount paying in THIS transaction
   const [form, setForm] = useState({
     amount_paying_now: "",
+    payment_mode: "cash",
     paid_date: new Date().toISOString().slice(0, 10),
     penalty_amount: "0",
+    transaction_reference: "",
+    cheque_number: "",
+    remarks: "",
   });
   const [fieldErrors, setFieldErrors] = useState({});
 
@@ -161,8 +169,12 @@ export default function InstallmentPaymentModal({
 
       setForm({
         amount_paying_now: initialRemaining > 0 ? String(initialRemaining) : "",
+        payment_mode: "cash",
         paid_date: new Date().toISOString().slice(0, 10),
         penalty_amount: String(existingPenalty),
+        transaction_reference: "",
+        cheque_number: "",
+        remarks: "",
       });
       setFieldErrors({});
       setPayPenaltyLater(false);
@@ -327,22 +339,43 @@ export default function InstallmentPaymentModal({
     if (!validate()) return;
 
     const res = await onSubmit({
-      paid_amount: projectedCumulativePaid,
-      paid_date: form.paid_date,
-      status: autoStatus,
+      installment_id: installment.id,
+      loan_id: loan?.id || installment.loan_id,
+      payment_amount: currentPayingNow,
+      payment_mode: form.payment_mode,
+      payment_date: form.paid_date,
+      transaction_reference: form.transaction_reference || undefined,
+      cheque_number: form.cheque_number || undefined,
+      remarks: form.remarks || undefined,
       penalty_amount: penaltyAmount,
+      // For compatibility
+      paid_amount: projectedCumulativePaid,
+      status: autoStatus,
     });
 
     // If submission succeeded, switch to Payment Successful UI screen
     if (res && res.success !== false) {
+      const pmt = res.payment || {};
       setSuccessData({
         amountPaidNow: currentPayingNow,
-        cumulativePaid: projectedCumulativePaid,
-        remainingBalance: projectedRemainingBalance,
+        cumulativePaid: Number(pmt.installment_paid_amount || projectedCumulativePaid),
+        remainingBalance: Number(
+          res.remaining_balance !== undefined
+            ? res.remaining_balance
+            : (pmt.installment_balance_amount ?? projectedRemainingBalance)
+        ),
         totalLiability: totalPayableLiability,
         paidDate: form.paid_date,
-        status: autoStatus,
-        receiptNo: `REC-${installment.id}-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: res.installment_status || autoStatus,
+        receiptNo: pmt.payment_no
+          ? `RCP-${pmt.loan_id || loan?.id}-${String(pmt.payment_no).padStart(4, "0")}`
+          : (pmt.id
+            ? `RCP-${pmt.id}`
+            : `REC-${installment.id}-${Math.floor(1000 + Math.random() * 9000)}`),
+        paymentMode: form.payment_mode,
+        transactionReference: form.transaction_reference,
+        paymentId: pmt.id,
+        rawPayment: pmt,
       });
     }
   };
@@ -350,12 +383,45 @@ export default function InstallmentPaymentModal({
   // Trigger Cash Receipt Print
   const handlePrintReceipt = () => {
     if (!successData) return;
+    if (successData.rawPayment) {
+      printOfficialPaymentReceipt({
+        receipt_no: successData.receiptNo,
+        payment: {
+          ...successData.rawPayment,
+          customer_name: customer?.name || customer?.customer_name || loan?.customer_name,
+          customer_no: customer?.customer_no || loan?.customer_no,
+          customer_mobile: customer?.mobile || loan?.customer_mobile,
+          loan_no: loan?.loan_no,
+          installment_no: installment.installment_no,
+          installment_due_date: installment.due_date,
+          installment_total_due: totalPayableLiability,
+          installment_paid_amount: successData.cumulativePaid,
+          installment_balance_amount: successData.remainingBalance,
+          installment_status: successData.status,
+        },
+        company,
+      });
+      return;
+    }
     printInstallmentReceipt({
       loan,
       installment,
       customer,
       company,
       successData,
+    });
+  };
+
+  // Trigger WhatsApp Receipt Share
+  const handleWhatsAppShare = () => {
+    if (!successData) return;
+    sendWhatsAppPaymentReceipt({
+      loan,
+      installment,
+      customer,
+      company,
+      successData,
+      payment: successData.rawPayment,
     });
   };
 
@@ -393,7 +459,7 @@ export default function InstallmentPaymentModal({
               <div className="text-[10px] font-bold text-base-content/50 uppercase tracking-wider">
                 Amount Collected in this Transaction
               </div>
-              <div className="text-3xl font-black text-primary font-mono mt-1">
+              <div className="text-3xl font-black text-primary tracking-tight mt-1">
                 {formatCurrency(successData.amountPaidNow)}
               </div>
               <div className="mt-2.5 inline-flex items-center gap-1.5">
@@ -415,7 +481,7 @@ export default function InstallmentPaymentModal({
                 <span className="flex items-center gap-1.5">
                   <Receipt size={13} className="text-primary" /> Receipt Reference
                 </span>
-                <span className="font-bold font-mono text-base-content">{successData.receiptNo}</span>
+                <span className="font-bold text-base-content">{successData.receiptNo}</span>
               </div>
               
               <div className="flex justify-between items-center text-base-content/70">
@@ -449,34 +515,44 @@ export default function InstallmentPaymentModal({
 
               <div className="pt-2 border-t border-base-200 flex justify-between items-center">
                 <span className="text-base-content/70">Cumulative Paid to Date</span>
-                <span className="font-bold text-mono text-base-content">
+                <span className="font-bold text-base-content">
                   {formatCurrency(successData.cumulativePaid)} of {formatCurrency(successData.totalLiability)}
                 </span>
               </div>
 
               <div className="flex justify-between items-center font-bold">
                 <span className="text-base-content/80">Remaining Installment Due</span>
-                <span className={`text-mono ${successData.remainingBalance > 0 ? "text-warning" : "text-success"}`}>
+                <span className={`${successData.remainingBalance > 0 ? "text-warning" : "text-success"}`}>
                   {formatCurrency(successData.remainingBalance)}
                 </span>
               </div>
             </div>
 
-            {/* Action Buttons: Print Receipt & Done */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+            {/* Action Buttons: Print Receipt, WhatsApp Share & Done */}
+            <div className="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={handlePrintReceipt}
-                className="btn btn-outline btn-sm rounded-xl gap-2 w-full sm:w-1/2 border-base-300 hover:border-primary hover:bg-primary/5 font-bold"
+                className="btn btn-sm rounded-xl gap-1.5 border border-base-300 bg-base-100 hover:bg-primary/10 hover:border-primary/50 text-base-content hover:text-primary font-bold transition-all shadow-2xs"
               >
                 <Printer size={15} className="text-primary" />
-                <span>Print Receipt</span>
+                <span>Print</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleWhatsAppShare}
+                className="btn btn-sm rounded-xl gap-1.5 border border-emerald-500/40 bg-emerald-50 hover:bg-emerald-600 hover:border-emerald-600 text-emerald-700 hover:text-white font-bold transition-all shadow-2xs"
+                title="Send receipt confirmation via WhatsApp"
+              >
+                <WhatsAppIcon size={15} className="shrink-0" />
+                <span>WhatsApp</span>
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="btn btn-primary btn-sm rounded-xl gap-1.5 w-full sm:w-1/2 font-bold shadow-sm"
+                className="btn btn-primary btn-sm rounded-xl gap-1.5 font-bold shadow-sm"
               >
                 <Check size={16} />
                 <span>Done</span>
@@ -540,13 +616,13 @@ export default function InstallmentPaymentModal({
                     <ShieldAlert size={14} />
                     Installment Overdue
                   </span>
-                  <span className="text-mono font-bold text-error">
+                  <span className="font-bold text-error">
                     {penaltyApiData.days_overdue} Days Late ({penaltyApiData.penalty_days} Penalty Days)
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-base-content/70 pt-0.5">
                   <span>Policy Calculated Penalty:</span>
-                  <span className="font-bold text-mono text-error">
+                  <span className="font-bold text-error">
                     {formatCurrency(penaltyApiData.penalty_amount)}
                   </span>
                 </div>
@@ -557,7 +633,7 @@ export default function InstallmentPaymentModal({
             <div className="rounded-xl bg-base-200/60 border border-base-300/80 p-3.5 mb-4 text-xs space-y-2">
               <div className="flex justify-between items-center text-base-content/70">
                 <span>Total Installment Amount</span>
-                <span className="font-semibold text-base-content text-mono">
+                <span className="font-semibold text-base-content">
                   {formatCurrency(principalAmount)}
                 </span>
               </div>
@@ -565,7 +641,7 @@ export default function InstallmentPaymentModal({
               {penaltyAmount > 0 && (
                 <div className="flex justify-between items-center text-base-content/70">
                   <span>Late Fee / Penalty</span>
-                  <span className="font-semibold text-mono text-error">
+                  <span className="font-semibold text-error">
                     + {formatCurrency(penaltyAmount)}
                   </span>
                 </div>
@@ -574,7 +650,7 @@ export default function InstallmentPaymentModal({
               {alreadyPaid > 0 && (
                 <div className="flex justify-between items-center text-success font-medium">
                   <span>Already Paid Previously</span>
-                  <span className="font-bold text-mono">
+                  <span className="font-bold">
                     - {formatCurrency(alreadyPaid)}
                   </span>
                 </div>
@@ -589,7 +665,7 @@ export default function InstallmentPaymentModal({
                     </div>
                   )}
                 </div>
-                <span className="font-bold text-base text-primary text-mono">
+                <span className="font-bold text-base text-primary tracking-tight">
                   {formatCurrency(remainingTotalDue)}
                 </span>
               </div>
@@ -767,6 +843,96 @@ export default function InstallmentPaymentModal({
                     </div>
                   </div>
 
+                  {/* Payment Mode Selector */}
+                  <div className="form-control">
+                    <label className="label pb-1">
+                      <span className="label-text text-xs font-semibold">Payment Mode *</span>
+                    </label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[
+                        { id: "cash", label: "Cash" },
+                        { id: "upi", label: "UPI" },
+                        { id: "bank", label: "Bank" },
+                        { id: "cheque", label: "Cheque" },
+                        { id: "other", label: "Other" },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setForm((prev) => ({ ...prev, payment_mode: m.id }))}
+                          className={`btn btn-xs rounded-xl font-bold uppercase transition-all ${
+                            form.payment_mode === m.id
+                              ? "btn-primary shadow-xs"
+                              : "btn-outline border-base-300 hover:border-primary/50 text-base-content/70"
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Transaction Reference & Cheque Number (conditional) */}
+                  {form.payment_mode !== "cash" && (
+                    <div className="grid grid-cols-2 gap-3 animate-in fade-in">
+                      <div className="form-control">
+                        <label className="label pb-1">
+                          <span className="label-text text-xs font-semibold">
+                            {form.payment_mode === "upi" ? "UPI Ref / UTR" : "Txn Reference"}
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. UTR / Ref Number"
+                          value={form.transaction_reference}
+                          onChange={(e) => setForm((prev) => ({ ...prev, transaction_reference: e.target.value }))}
+                          className="input input-bordered input-sm rounded-xl w-full text-xs font-mono"
+                        />
+                      </div>
+
+                      {form.payment_mode === "cheque" ? (
+                        <div className="form-control">
+                          <label className="label pb-1">
+                            <span className="label-text text-xs font-semibold">Cheque Number</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Cheque No"
+                            value={form.cheque_number}
+                            onChange={(e) => setForm((prev) => ({ ...prev, cheque_number: e.target.value }))}
+                            className="input input-bordered input-sm rounded-xl w-full text-xs font-mono"
+                          />
+                        </div>
+                      ) : (
+                        <div className="form-control">
+                          <label className="label pb-1">
+                            <span className="label-text text-xs font-semibold">Payment Note</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Note / Remarks"
+                            value={form.remarks}
+                            onChange={(e) => setForm((prev) => ({ ...prev, remarks: e.target.value }))}
+                            className="input input-bordered input-sm rounded-xl w-full text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Remarks input if mode is cash or cheque */}
+                  {(form.payment_mode === "cash" || form.payment_mode === "cheque") && (
+                    <div className="form-control">
+                      <input
+                        type="text"
+                        placeholder="Remarks / Note (optional)"
+                        value={form.remarks}
+                        onChange={(e) => setForm((prev) => ({ ...prev, remarks: e.target.value }))}
+                        className="input input-bordered input-sm rounded-xl w-full text-xs"
+                      />
+                    </div>
+                  )}
+
                   {/* Automatic Status & Cumulative Accounting Summary */}
                   <div className="rounded-xl border border-base-300 bg-base-200/40 p-3 flex items-center justify-between">
                     <div>
@@ -798,7 +964,7 @@ export default function InstallmentPaymentModal({
                       <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">
                         Remaining After Payment
                       </div>
-                      <div className="text-sm font-bold text-mono text-base-content mt-0.5">
+                      <div className="text-sm font-bold text-base-content mt-0.5">
                         {formatCurrency(projectedRemainingBalance)}
                       </div>
                     </div>
@@ -808,7 +974,7 @@ export default function InstallmentPaymentModal({
                   {alreadyPaid > 0 && currentPayingNow > 0 && (
                     <div className="text-[11px] text-base-content/60 bg-base-200/70 rounded-lg px-3 py-1.5 flex items-center justify-between">
                       <span>Ledger Progress:</span>
-                      <span className="font-mono font-medium">
+                      <span className="font-medium">
                         {formatCurrency(alreadyPaid)} + <strong className="text-primary">{formatCurrency(currentPayingNow)}</strong> = <strong>{formatCurrency(projectedCumulativePaid)}</strong> of {formatCurrency(totalPayableLiability)}
                       </span>
                     </div>
@@ -844,3 +1010,18 @@ export default function InstallmentPaymentModal({
     </div>
   );
 }
+
+function WhatsAppIcon({ size = 16, className = "" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  );
+}
+
