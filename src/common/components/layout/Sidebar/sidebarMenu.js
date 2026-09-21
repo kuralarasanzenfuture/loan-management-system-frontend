@@ -87,9 +87,21 @@ export const NAV_SECTIONS = [
         permission: PERMISSIONS.INTEREST_LOAN_PLAN_VIEW,
       },
       {
+        label: "Interest Plans",
+        icon: Percent,
+        path: "/interest-plans",
+        permission: PERMISSIONS.INTEREST_LOAN_PLAN_VIEW,
+      },
+      {
         label: "Customer Interest Loans",
         icon: Receipt,
         path: "/interest-only-loans",
+        permission: PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
+      },
+      {
+        label: "Anytime Interest Loans",
+        icon: Receipt,
+        path: "/interest-loans",
         permission: PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
       },
     ],
