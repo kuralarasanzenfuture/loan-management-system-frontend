@@ -49,7 +49,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="w-full shrink-0 border-t border-base-300 bg-base-100/70 backdrop-blur-sm">
+    <footer className="w-full shrink-0 border-t border-base-300 bg-base-100/70 backdrop-blur-sm print:hidden">
       <div className="mx-auto w-full max-w-[1600px] px-4 py-3 sm:px-5 md:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-2 sm:flex-row sm:gap-4">
           {/* Copyright */}

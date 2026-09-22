@@ -149,48 +149,54 @@ export default function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 text-base-content antialiased">
+    <div className="min-h-screen bg-base-200 text-base-content antialiased print:min-h-0 print:bg-white print:text-black">
       {/* =====================================================
           APPLICATION SHELL
       ====================================================== */}
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full print:block print:min-h-0">
         {/* ===================================================
-            SIDEBAR
+            SIDEBAR (Hidden on print)
         ==================================================== */}
-        <Sidebar
-          open={sidebarOpen}
-          onClose={handleCloseSidebar}
-          collapsed={sidebarCollapsed}
-        />
+        <div className="print:hidden">
+          <Sidebar
+            open={sidebarOpen}
+            onClose={handleCloseSidebar}
+            collapsed={sidebarCollapsed}
+          />
+        </div>
 
         {/* ===================================================
             RIGHT SIDE APPLICATION AREA
         ==================================================== */}
-        <div className="flex min-w-0 flex-1 flex-col min-h-screen">
+        <div className="flex min-w-0 flex-1 flex-col min-h-screen print:block print:min-h-0">
           {/* =================================================
-              HEADER
+              HEADER (Hidden on print)
           ================================================== */}
-          <Header
-            onMenuClick={handleOpenSidebar}
-            collapsed={sidebarCollapsed}
-            onCollapseToggle={handleSidebarToggle}
-          />
+          <div className="print:hidden">
+            <Header
+              onMenuClick={handleOpenSidebar}
+              collapsed={sidebarCollapsed}
+              onCollapseToggle={handleSidebarToggle}
+            />
+          </div>
 
           {/* =================================================
               MAIN CONTENT
           ================================================== */}
-          <main className="flex-1 min-w-0">
-            <div className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-5 md:px-6 lg:px-8 lg:py-7">
-              <div className="animate-fade-in">
+          <main className="flex-1 min-w-0 print:p-0 print:m-0 print:block">
+            <div className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-5 md:px-6 lg:px-8 lg:py-7 print:p-0 print:m-0 print:max-w-none">
+              <div className="animate-fade-in print:animate-none">
                 <Outlet />
               </div>
             </div>
           </main>
 
           {/* =================================================
-              FOOTER
+              FOOTER (Hidden on print)
           ================================================== */}
-          <Footer />
+          <div className="print:hidden">
+            <Footer />
+          </div>
         </div>
       </div>
     </div>

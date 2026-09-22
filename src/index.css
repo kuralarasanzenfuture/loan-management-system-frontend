@@ -144,3 +144,52 @@ html.reduce-motion *::after {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
 }
+
+/* =========================================================
+   PRINT STYLESHEET
+   Removes application headers, footers, sidebars, and resets
+   page margins so official receipts & reports print cleanly.
+========================================================= */
+@media print {
+  /* 1. Hide all navigation, headers, and footers */
+  header,
+  footer,
+  aside,
+  nav,
+  .print\:hidden,
+  .no-print,
+  #header,
+  #sidebar,
+  #footer {
+    display: none !important;
+  }
+
+  /* 2. Reset backgrounds, margins, and layout constraints */
+  html,
+  body,
+  #root {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* 3. Clean page borders and margin settings */
+  @page {
+    size: auto;
+    margin: 10mm 8mm;
+  }
+}
+

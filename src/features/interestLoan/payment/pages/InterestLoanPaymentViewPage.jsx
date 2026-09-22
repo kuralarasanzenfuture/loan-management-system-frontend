@@ -91,7 +91,7 @@ export default function InterestLoanPaymentViewPage() {
   const allocations = payment.allocations || [];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 print:space-y-4 print:max-w-none print:w-full print:m-0 print:p-0">
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between gap-3 pb-2 border-b border-base-200 print:hidden">
         <div className="flex items-center gap-2">
@@ -129,7 +129,7 @@ export default function InterestLoanPaymentViewPage() {
       </div>
 
       {/* Official Receipt Card */}
-      <div className="rounded-2xl border border-base-300 bg-base-100 p-8 shadow-sm space-y-6 print:border-none print:shadow-none print:p-0">
+      <div className="rounded-2xl border border-base-300 bg-base-100 p-8 shadow-sm space-y-6 print:border-none print:shadow-none print:p-0 print:m-0 print:w-full print:bg-white">
         {/* Receipt Header */}
         <div className="flex items-start justify-between border-b border-base-200 pb-5">
           <div>

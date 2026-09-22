@@ -256,6 +256,7 @@ import InterestLoanViewPage from "../features/interestLoan/loan/pages/InterestLo
 import InterestLoanPaymentsPage from "../features/interestLoan/payment/pages/InterestLoanPaymentsPage.jsx";
 import InterestLoanPaymentViewPage from "../features/interestLoan/payment/pages/InterestLoanPaymentViewPage.jsx";
 import InterestLoanCollectionPage from "../features/interestLoan/collection/pages/InterestLoanCollectionPage.jsx";
+import InterestLoanReportsPage from "../features/interestLoan/reports/pages/InterestLoanReportsPage.jsx";
 import InterestOnlyLoansPage from "../features/customerInterest/pages/InterestOnlyLoansPage.jsx";
 import InterestOnlyLoanViewPage from "../features/customerInterest/pages/InterestOnlyLoanViewPage.jsx";
 import InterestCollectionPage from "../features/interestCollection/pages/InterestCollectionPage.jsx";
@@ -579,6 +580,16 @@ const protectedRoutesConfig = [
   {
     path: "/interest-loan-collections",
     element: <InterestLoanCollectionPage />,
+    permission: "INTEREST_ONLY_LOAN_VIEW",
+  },
+  {
+    path: "/interest-loans/reports",
+    element: <InterestLoanReportsPage />,
+    permission: "INTEREST_ONLY_LOAN_VIEW",
+  },
+  {
+    path: "/reports/anytime-interest-loans",
+    element: <InterestLoanReportsPage />,
     permission: "INTEREST_ONLY_LOAN_VIEW",
   },
   {

@@ -29,6 +29,7 @@ import interestPlanReducer from "../redux/interestLoan/plan/interestPlanSlice.js
 import interestLoanReducer from "../redux/interestLoan/loan/interestLoanSlice.js";
 import interestPeriodReducer from "../redux/interestLoan/period/interestPeriodSlice.js";
 import interestLoanPaymentReducer from "../redux/interestLoan/payment/interestLoanPaymentSlice.js";
+import interestLoanReportReducer from "../redux/interestLoan/reports/interestLoanReportSlice.js";
 import loanPaymentReducer from "../redux/loanPayments/loanPaymentSlice.js";
 
 export const store = configureStore({
@@ -63,6 +64,7 @@ export const store = configureStore({
     interestLoans: interestLoanReducer,
     interestPeriods: interestPeriodReducer,
     interestLoanPayments: interestLoanPaymentReducer,
+    interestLoanReports: interestLoanReportReducer,
     // },
     // middleware: (getDefaultMiddleware) => {
     //   return getDefaultMiddleware({

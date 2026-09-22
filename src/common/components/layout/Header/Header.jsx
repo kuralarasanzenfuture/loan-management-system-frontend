@@ -35,7 +35,7 @@ export default function Header({
 
   return (
     <header
-      className="sticky top-0 z-40 h-16 w-full flex items-center justify-between gap-4 px-4 lg:px-6 bg-base-100 backdrop-blur-md border-b border-base-300"
+      className="sticky top-0 z-40 h-16 w-full flex items-center justify-between gap-4 px-4 lg:px-6 bg-base-100 backdrop-blur-md border-b border-base-300 print:hidden"
       style={{ overflow: "visible" }}
     >
       <div className="flex items-center gap-2">

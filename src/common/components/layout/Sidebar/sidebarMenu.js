@@ -20,6 +20,7 @@ import {
   Percent,
   Coins,
   CreditCard,
+  FileBarChart2,
 } from "lucide-react";
 import { PERMISSIONS, ROLES } from "../../../../constants/permissions.js";
 
@@ -257,31 +258,37 @@ export const NAV_SECTIONS = [
         permission: PERMISSIONS.LOAN_INSTALLMENT_REPORT_VIEW,
       },
       {
-        label: "Collection Reports",
-        icon: Receipt,
-        path: "/reports/loan-collections",
-        permission: PERMISSIONS.COLLECTION_REPORT_VIEW,
-      },
-      {
-        label: "Interest Collection Reports",
-        icon: Coins,
-        path: "/reports/interest-collections",
-        permission: PERMISSIONS.INTEREST_COLLECTION_REPORT_VIEW,
-      },
-      {
-        label: "Customer Reports",
-        icon: Users,
-        path: "/customer-reports",
-        permission: PERMISSIONS.CUSTOMER_REPORT_VIEW,
-      },
-    ],
-  },
+          label: "Collection Reports",
+          icon: Receipt,
+          path: "/reports/loan-collections",
+          permission: PERMISSIONS.COLLECTION_REPORT_VIEW,
+        },
+        {
+          label: "Interest Collection Reports",
+          icon: Coins,
+          path: "/reports/interest-collections",
+          permission: PERMISSIONS.INTEREST_COLLECTION_REPORT_VIEW,
+        },
+        {
+          label: "Anytime Interest Reports",
+          icon: FileBarChart2,
+          path: "/interest-loans/reports",
+          permission: PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
+        },
+        {
+          label: "Customer Reports",
+          icon: Users,
+          path: "/customer-reports",
+          permission: PERMISSIONS.CUSTOMER_REPORT_VIEW,
+        },
+      ],
+    },
 
-  {
-    label: "System",
-    items: [
-      {
-        label: "Settings",
+    {
+      label: "System",
+      items: [
+        {
+          label: "Settings",
         icon: Settings,
         path: "/settings",
         permission: PERMISSIONS.SETTINGS_VIEW,

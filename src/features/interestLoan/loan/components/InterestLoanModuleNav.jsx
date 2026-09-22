@@ -1,10 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Receipt, CreditCard, Coins } from "lucide-react";
+import { Receipt, CreditCard, Coins, BarChart3 } from "lucide-react";
 
 /**
  * Premium Segmented Navigation Tabs for Anytime Interest Loan Module
- * Connects Anytime Loans, Payments Ledger, and Collections Ledger seamlessly.
+ * Connects Anytime Loans, Payments Ledger, Collections Ledger, and Reports seamlessly.
  */
 export default function InterestLoanModuleNav({ activeTab }) {
   const location = useLocation();
@@ -35,6 +35,14 @@ export default function InterestLoanModuleNav({ activeTab }) {
       icon: Coins,
       description: "Daily dues & overdue ledger",
     },
+    {
+      id: "reports",
+      label: "Anytime Reports",
+      shortLabel: "Reports",
+      path: "/interest-loans/reports",
+      icon: BarChart3,
+      description: "Portfolio analytics & ledger",
+    },
   ];
 
   return (
@@ -48,7 +56,9 @@ export default function InterestLoanModuleNav({ activeTab }) {
             ? currentPath === "/interest-loans"
             : tab.id === "payments"
             ? currentPath.startsWith("/interest-loans/payments")
-            : currentPath.startsWith("/interest-loans/collections");
+            : tab.id === "collections"
+            ? currentPath.startsWith("/interest-loans/collections")
+            : currentPath.startsWith("/interest-loans/reports");
 
           return (
             <Link
