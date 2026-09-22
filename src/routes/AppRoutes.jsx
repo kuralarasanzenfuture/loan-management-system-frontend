@@ -253,6 +253,9 @@ import InterestPlansPage from "../features/interestLoan/plan/pages/InterestPlans
 import InterestPlanViewPage from "../features/interestLoan/plan/pages/InterestPlanViewPage.jsx";
 import InterestLoansPage from "../features/interestLoan/loan/pages/InterestLoansPage.jsx";
 import InterestLoanViewPage from "../features/interestLoan/loan/pages/InterestLoanViewPage.jsx";
+import InterestLoanPaymentsPage from "../features/interestLoan/payment/pages/InterestLoanPaymentsPage.jsx";
+import InterestLoanPaymentViewPage from "../features/interestLoan/payment/pages/InterestLoanPaymentViewPage.jsx";
+import InterestLoanCollectionPage from "../features/interestLoan/collection/pages/InterestLoanCollectionPage.jsx";
 import InterestOnlyLoansPage from "../features/customerInterest/pages/InterestOnlyLoansPage.jsx";
 import InterestOnlyLoanViewPage from "../features/customerInterest/pages/InterestOnlyLoanViewPage.jsx";
 import InterestCollectionPage from "../features/interestCollection/pages/InterestCollectionPage.jsx";
@@ -556,6 +559,26 @@ const protectedRoutesConfig = [
   {
     path: "/interest-loans",
     element: <InterestLoansPage />,
+    permission: "INTEREST_ONLY_LOAN_VIEW",
+  },
+  {
+    path: "/interest-loans/payments",
+    element: <InterestLoanPaymentsPage />,
+    permission: "INTEREST_ONLY_LOAN_VIEW",
+  },
+  {
+    path: "/interest-loans/payments/:id",
+    element: <InterestLoanPaymentViewPage />,
+    permission: "INTEREST_ONLY_LOAN_VIEW",
+  },
+  {
+    path: "/interest-loans/collections",
+    element: <InterestLoanCollectionPage />,
+    permission: "INTEREST_ONLY_LOAN_VIEW",
+  },
+  {
+    path: "/interest-loan-collections",
+    element: <InterestLoanCollectionPage />,
     permission: "INTEREST_ONLY_LOAN_VIEW",
   },
   {

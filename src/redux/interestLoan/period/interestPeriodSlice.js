@@ -3,6 +3,9 @@ import {
   getPeriodsByLoanId,
   getPeriodById,
   syncDuePeriods,
+  getTodayCollections,
+  getOverdueCollections,
+  getCollectionsOverview,
 } from "./interestPeriod.service.js";
 
 // =========================================================
@@ -58,6 +61,54 @@ export const triggerSyncDuePeriods = createAsyncThunk(
   },
 );
 
+// Fetch Today's Collections
+export const fetchTodayCollections = createAsyncThunk(
+  "interestPeriods/fetchTodayCollections",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      return await getTodayCollections(params);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to fetch today's collections",
+      );
+    }
+  },
+);
+
+// Fetch Overdue Collections
+export const fetchOverdueCollections = createAsyncThunk(
+  "interestPeriods/fetchOverdueCollections",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      return await getOverdueCollections(params);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to fetch overdue collections",
+      );
+    }
+  },
+);
+
+// Fetch Unified Collections Overview
+export const fetchCollectionsOverview = createAsyncThunk(
+  "interestPeriods/fetchCollectionsOverview",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      return await getCollectionsOverview(params);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to fetch collections overview",
+      );
+    }
+  },
+);
+
 // =========================================================
 // INITIAL STATE
 // =========================================================
@@ -68,6 +119,29 @@ const initialState = {
   loading: false,
   syncing: false,
   error: null,
+
+  // Collections state
+  todayCollections: [],
+  todaySummary: {
+    total_records: 0,
+    total_due_amount: 0,
+    total_collected_amount: 0,
+    total_outstanding_amount: 0,
+  },
+  todayLoading: false,
+
+  overdueCollections: [],
+  overdueSummary: {
+    total_overdue_periods: 0,
+    total_loans_overdue: 0,
+    total_overdue_amount: 0,
+    max_days_overdue: 0,
+  },
+  overdueLoading: false,
+
+  collectionsOverview: null,
+  overviewLoading: false,
+  collectionError: null,
 };
 
 // =========================================================
@@ -84,6 +158,13 @@ const interestPeriodSlice = createSlice({
     },
     clearPeriodError: (state) => {
       state.error = null;
+      state.collectionError = null;
+    },
+    clearCollections: (state) => {
+      state.todayCollections = [];
+      state.overdueCollections = [];
+      state.collectionsOverview = null;
+      state.collectionError = null;
     },
   },
   extraReducers: (builder) => {
@@ -126,10 +207,54 @@ const interestPeriodSlice = createSlice({
       .addCase(triggerSyncDuePeriods.rejected, (state, action) => {
         state.syncing = false;
         state.error = action.payload;
+      })
+
+      // Today's Collections
+      .addCase(fetchTodayCollections.pending, (state) => {
+        state.todayLoading = true;
+        state.collectionError = null;
+      })
+      .addCase(fetchTodayCollections.fulfilled, (state, action) => {
+        state.todayLoading = false;
+        state.todayCollections = action.payload.data?.data || [];
+        state.todaySummary = action.payload.data?.summary || state.todaySummary;
+      })
+      .addCase(fetchTodayCollections.rejected, (state, action) => {
+        state.todayLoading = false;
+        state.collectionError = action.payload;
+      })
+
+      // Overdue Collections
+      .addCase(fetchOverdueCollections.pending, (state) => {
+        state.overdueLoading = true;
+        state.collectionError = null;
+      })
+      .addCase(fetchOverdueCollections.fulfilled, (state, action) => {
+        state.overdueLoading = false;
+        state.overdueCollections = action.payload.data?.data || [];
+        state.overdueSummary = action.payload.data?.summary || state.overdueSummary;
+      })
+      .addCase(fetchOverdueCollections.rejected, (state, action) => {
+        state.overdueLoading = false;
+        state.collectionError = action.payload;
+      })
+
+      // Collections Overview
+      .addCase(fetchCollectionsOverview.pending, (state) => {
+        state.overviewLoading = true;
+      })
+      .addCase(fetchCollectionsOverview.fulfilled, (state, action) => {
+        state.overviewLoading = false;
+        state.collectionsOverview = action.payload.data;
+      })
+      .addCase(fetchCollectionsOverview.rejected, (state, action) => {
+        state.overviewLoading = false;
+        state.collectionError = action.payload;
       });
   },
 });
 
-export const { clearPeriods, clearPeriodError } = interestPeriodSlice.actions;
+export const { clearPeriods, clearPeriodError, clearCollections } =
+  interestPeriodSlice.actions;
 
 export default interestPeriodSlice.reducer;

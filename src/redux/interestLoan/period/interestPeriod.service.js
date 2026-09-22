@@ -41,3 +41,49 @@ export const syncDuePeriods = async (loanId = null) => {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
+
+// =========================================================
+// GET TODAY'S COLLECTIONS
+// GET /api/interest-loans/periods/collections/today
+// =========================================================
+export const getTodayCollections = async (params = {}) => {
+  try {
+    const response = await api.get("/interest-loans/periods/collections/today", {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};
+
+// =========================================================
+// GET OVERDUE COLLECTIONS
+// GET /api/interest-loans/periods/collections/overdue
+// =========================================================
+export const getOverdueCollections = async (params = {}) => {
+  try {
+    const response = await api.get("/interest-loans/periods/collections/overdue", {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};
+
+// =========================================================
+// GET UNIFIED COLLECTIONS OVERVIEW
+// GET /api/interest-loans/periods/collections
+// =========================================================
+export const getCollectionsOverview = async (params = {}) => {
+  try {
+    const response = await api.get("/interest-loans/periods/collections", {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};
+

@@ -1,10 +1,31 @@
 import React, { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { NAV_SECTIONS } from "./sidebarMenu";
 import usePermissions from "../../../hooks/usePermissions.js";
 import { filterNavSections } from "../../../utils/permissionUtils.js";
+
+/**
+ * Accurately determines if a menu item is active.
+ * Handles subroutes (e.g. /customers/123 -> /customers) while preventing
+ * prefix collisions (e.g. /interest-loans vs /interest-loans/payments vs /interest-loans/collections).
+ */
+const isItemActive = (itemPath, currentPath, allItemPaths) => {
+  if (currentPath === itemPath) return true;
+
+  if (currentPath.startsWith(itemPath + "/")) {
+    const hasMoreSpecificMatch = allItemPaths.some(
+      (otherPath) =>
+        otherPath !== itemPath &&
+        otherPath.startsWith(itemPath + "/") &&
+        (currentPath === otherPath || currentPath.startsWith(otherPath + "/"))
+    );
+    return !hasMoreSpecificMatch;
+  }
+
+  return false;
+};
 
 /**
  * SidebarNav Component
@@ -19,6 +40,8 @@ export default function SidebarNav({
   onItemClick = () => {},
 }) {
   const { user } = usePermissions();
+  const location = useLocation();
+  const currentPath = location.pathname;
   const dashboardOverview = useSelector((state) => state.dashboard?.overview);
   const activeLoansCount = Number(dashboardOverview?.active_loans || 0);
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -27,6 +50,10 @@ export default function SidebarNav({
   const visibleSections = useMemo(() => {
     return filterNavSections(NAV_SECTIONS, user);
   }, [user]);
+
+  const allItemPaths = useMemo(() => {
+    return visibleSections.flatMap((s) => s.items.map((i) => i.path));
+  }, [visibleSections]);
 
   const handleMouseEnter = (e, item, badgeValue) => {
     if (!collapsed) return;
@@ -72,10 +99,13 @@ export default function SidebarNav({
                   badgeValue !== null &&
                   badgeValue !== "";
 
+                const isActive = isItemActive(item.path, currentPath, allItemPaths);
+
                 return (
                   <li key={item.path} className="min-w-0">
                     <NavLink
                       to={item.path}
+                      end
                       onClick={(e) => {
                         setActiveTooltip(null);
                         onItemClick(e);
@@ -84,7 +114,7 @@ export default function SidebarNav({
                         handleMouseEnter(e, item, hasBadge ? badgeValue : null)
                       }
                       onMouseLeave={handleMouseLeave}
-                      className={({ isActive }) => `
+                      className={() => `
                         group relative flex items-center transition-all duration-200 min-w-0 select-none
                         ${
                           collapsed

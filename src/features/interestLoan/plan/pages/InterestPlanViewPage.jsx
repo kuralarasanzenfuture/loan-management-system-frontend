@@ -192,11 +192,11 @@ export default function InterestPlanViewPage() {
         <div className="flex items-center gap-2">
           {canEdit && (
             <button
-              className="btn btn-outline btn-sm gap-1.5 rounded-lg"
+              className="btn btn-sm bg-base-100 hover:bg-base-200 border border-base-300 text-base-content gap-1.5 rounded-lg text-xs font-semibold shadow-2xs transition-all"
               onClick={handleOpenEdit}
             >
-              <Pencil size={15} />
-              Edit
+              <Pencil size={15} className="text-base-content/70" />
+              <span>Edit</span>
             </button>
           )}
           {canDelete && (

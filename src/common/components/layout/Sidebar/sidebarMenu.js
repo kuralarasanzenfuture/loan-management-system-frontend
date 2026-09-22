@@ -19,6 +19,7 @@ import {
   Wallet,
   Percent,
   Coins,
+  CreditCard,
 } from "lucide-react";
 import { PERMISSIONS, ROLES } from "../../../../constants/permissions.js";
 
@@ -104,6 +105,13 @@ export const NAV_SECTIONS = [
         path: "/interest-loans",
         permission: PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
       },
+      {
+        label: "Interest Loan Payments",
+        icon: CreditCard,
+        path: "/interest-loans/payments",
+        permission: PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
+      },
+      
     ],
   },
 
@@ -127,6 +135,12 @@ export const NAV_SECTIONS = [
         icon: Coins,
         path: "/interest-collections",
         permission: PERMISSIONS.INTEREST_COLLECTION_VIEW,
+      },
+      {
+        label: "Anytime Collections",
+        icon: Coins,
+        path: "/interest-loans/collections",
+        permission: PERMISSIONS.INTEREST_ONLY_LOAN_VIEW,
       },
     ],
   },

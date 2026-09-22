@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, HandCoins, Phone, Pencil, Trash2 } from "lucide-react";
+import { Eye, HandCoins, Phone, Pencil, Trash2, CreditCard } from "lucide-react";
 import {
   formatCurrency,
   formatDate,
@@ -8,14 +8,17 @@ import {
   FREQUENCY_CONFIG,
   LOAN_STATUS_CONFIG,
 } from "../utils/interestLoanHelpers.js";
+import { loanTotalOutstanding } from "../../payment/utils/interestLoanPaymentHelpers.js";
 
 const InterestLoanTable = ({
   loans = [],
   loading = false,
   canEdit = true,
   canDelete = true,
+  canCollect = true,
   onEdit,
   onDelete,
+  onCollectPayment,
 }) => {
   const navigate = useNavigate();
 
@@ -167,6 +170,17 @@ const InterestLoanTable = ({
                     >
                       <Eye size={15} />
                     </button>
+                    {canCollect &&
+                      onCollectPayment &&
+                      loanTotalOutstanding(loan) > 0 && (
+                        <button
+                          onClick={() => onCollectPayment(loan)}
+                          className="btn btn-ghost btn-xs btn-square text-base-content/60 hover:text-success"
+                          title="Collect payment"
+                        >
+                          <CreditCard size={14} />
+                        </button>
+                      )}
                     {canEdit && onEdit && (
                       <button
                         onClick={() => onEdit(loan)}

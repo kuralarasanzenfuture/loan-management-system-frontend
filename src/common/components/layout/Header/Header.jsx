@@ -7,7 +7,6 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import Breadcrumbs from "./components/Breadcrumbs.jsx";
-import SearchBar from "./components/SearchBar.jsx";
 import NotificationBell from "./components/NotificationBell.jsx";
 import ProfileDropdown from "./components/ProfileDropdown.jsx";
 import ThemeSelector from "../../theme/ThemeSelector.jsx";
@@ -65,9 +64,9 @@ export default function Header({
         <Breadcrumbs />
       </div>
 
-      {/* <SearchBar /> */}
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        <QuickSearch />
 
-      <div className="flex items-center gap-2.5 shrink-0">
         <ThemeSelector />
 
         <button
@@ -83,7 +82,6 @@ export default function Header({
           )}
         </button>
 
-          <QuickSearch />
         {/* <NotificationBell /> */}
 
         <div className="divider divider-horizontal mx-0.5 h-6 self-center" />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -9,6 +10,7 @@ import {
   CheckCircle2,
   TrendingUp,
   DollarSign,
+  CreditCard,
 } from "lucide-react";
 import {
   fetchInterestLoans,
@@ -18,6 +20,8 @@ import {
 import InterestLoanTable from "../components/InterestLoanTable.jsx";
 import InterestLoanFormModal from "../components/InterestLoanFormModal.jsx";
 import InterestLoanDeleteModal from "../components/InterestLoanDeleteModal.jsx";
+import InterestLoanPaymentFormModal from "../../payment/components/InterestLoanPaymentFormModal.jsx";
+import InterestLoanModuleNav from "../components/InterestLoanModuleNav.jsx";
 import { formatCurrency } from "../utils/interestLoanHelpers.js";
 import usePermissions from "../../../../common/hooks/usePermissions.js";
 import { PERMISSIONS } from "../../../../constants/permissions.js";
@@ -37,6 +41,11 @@ const InterestLoansPage = () => {
   const canCreate = can(PERMISSIONS.INTEREST_ONLY_LOAN_CREATE);
   const canEdit = can(PERMISSIONS.INTEREST_ONLY_LOAN_EDIT);
   const canDelete = can(PERMISSIONS.INTEREST_ONLY_LOAN_DELETE);
+  const canCollect = can([
+    PERMISSIONS.INTEREST_ONLY_LOAN_PAY,
+    PERMISSIONS.INTEREST_ONLY_PAYMENT_CREATE,
+    PERMISSIONS.INTEREST_ONLY_LOAN_CREATE,
+  ]);
 
   const { loans, summary, pagination, loading } = useSelector(
     (state) => state.interestLoans || {},
@@ -52,6 +61,7 @@ const InterestLoansPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoan, setEditingLoan] = useState(null);
   const [deletingLoan, setDeletingLoan] = useState(null);
+  const [collectingLoan, setCollectingLoan] = useState(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   // Fetch Summary and Loans
@@ -122,27 +132,39 @@ const InterestLoansPage = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            to="/interest-loans/payments"
+            className="btn btn-outline btn-sm gap-1.5 rounded-xl text-xs font-semibold"
+            title="Go to Anytime Loan Payments"
+          >
+            <CreditCard size={14} />
+            <span>Payments Ledger</span>
+          </Link>
+
           <button
-            className="btn btn-ghost btn-sm gap-1.5 text-base-content/70"
+            className="btn btn-ghost btn-sm gap-1.5 text-xs text-base-content/70 rounded-xl"
             onClick={loadData}
             title="Refresh list"
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
 
           {canCreate && (
             <button
               onClick={handleOpenCreate}
-              className="btn btn-primary btn-sm gap-1.5 shadow-sm"
+              className="btn btn-primary btn-sm gap-1.5 shadow-xs text-xs rounded-xl"
             >
-              <Plus size={16} />
+              <Plus size={15} />
               New Loan
             </button>
           )}
         </div>
       </div>
+
+      {/* Module Navigation Tabs */}
+      <InterestLoanModuleNav activeTab="loans" />
 
       {/* Summary KPI Cards Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -226,11 +248,10 @@ const InterestLoansPage = () => {
                   setStatusFilter(tab.value);
                   setCurrentPage(1);
                 }}
-                className={`join-item btn btn-sm px-3.5 ${
-                  statusFilter === tab.value
+                className={`join-item btn btn-sm px-3.5 ${statusFilter === tab.value
                     ? "btn-primary font-bold"
                     : "btn-ghost text-base-content/60 hover:text-base-content"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -260,8 +281,10 @@ const InterestLoansPage = () => {
         loading={loading}
         canEdit={canEdit}
         canDelete={canDelete}
+        canCollect={canCollect}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onCollectPayment={(loan) => setCollectingLoan(loan)}
       />
 
       {/* Pagination */}
@@ -309,6 +332,14 @@ const InterestLoansPage = () => {
         loading={deleteSubmitting}
         onClose={() => setDeletingLoan(null)}
         onConfirm={handleDeleteConfirm}
+      />
+
+      {/* Collect Payment Modal */}
+      <InterestLoanPaymentFormModal
+        open={Boolean(collectingLoan)}
+        preselectedLoan={collectingLoan}
+        onClose={() => setCollectingLoan(null)}
+        onSuccess={() => loadData()}
       />
     </div>
   );
