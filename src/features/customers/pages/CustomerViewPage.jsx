@@ -31,10 +31,15 @@ import {
   addInterestOnlyLoan,
 } from "../../../redux/interestOnlyLoans/interestLoanSlice.js";
 import { fetchActiveInterestOnlyLoanPlans } from "../../../redux/interestLoanPlan/interestLoanPlanSlice.js";
+import {
+  fetchInterestLoansByCustomer,
+  fetchInterestLoans,
+} from "../../../redux/interestLoan/loan/interestLoanSlice.js";
 import CustomerFormModal from "../components/CustomerFormModal.jsx";
 import CustomerDeleteModal from "../components/CustomerDeleteModal.jsx";
 import CustomerLoanFormModal from "../../customerLoans/components/CustomerLoanFormModal.jsx";
 import InterestOnlyLoanFormModal from "../../customerInterest/components/InterestOnlyLoanFormModal.jsx";
+import InterestLoanFormModal from "../../interestLoan/loan/components/InterestLoanFormModal.jsx";
 import CustomerOverviewTab from "../components/customer-view/CustomerOverviewTab.jsx";
 import CustomerLoansTab from "../components/customer-view/CustomerLoansTab.jsx";
 import CustomerDocumentsTab from "../components/customer-view/CustomerDocumentsTab.jsx";
@@ -49,8 +54,21 @@ const STATUS_STYLES = {
 };
 
 // ─── Tab definitions ────────────────────────────────────────────────────────────
-function buildTabs(customer, customerLoansList, customerInterestLoansList) {
-  const totalLoans = (customerLoansList?.length || 0) + (customerInterestLoansList?.length || 0);
+const normalizeLoanList = (value) => {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== "object") return [];
+  if (Array.isArray(value.data)) return value.data;
+  if (Array.isArray(value.loans)) return value.loans;
+  if (Array.isArray(value.items)) return value.items;
+  if (Array.isArray(value.results)) return value.results;
+  return [];
+};
+
+function buildTabs(customer, customerLoansList, customerInterestLoansList, customerAnytimeLoansList) {
+  const totalLoans =
+    (customerLoansList?.length || 0) +
+    (customerInterestLoansList?.length || 0) +
+    (customerAnytimeLoansList?.length || 0);
   return [
     {
       key: "overview",
@@ -123,6 +141,11 @@ export default function CustomerViewPage() {
     customerLoans: interestCustomerLoans = [],
     loading: interestLoansLoading,
   } = useSelector((state) => state.interestOnlyLoans || {});
+  const {
+    loans: allAnytimeLoans = [],
+    customerLoans: anytimeCustomerLoans = [],
+    loading: anytimeLoansLoading,
+  } = useSelector((state) => state.interestLoans || {});
   const { activePlans: interestPlans = [] } = useSelector(
     (state) => state.interestLoanPlans || {}
   );
@@ -143,6 +166,9 @@ export default function CustomerViewPage() {
   const [interestLoanSubmitting, setInterestLoanSubmitting] = useState(false);
   const [interestLoanError, setInterestLoanError] = useState(null);
 
+  // Anytime Interest loan creation state
+  const [anytimeLoanModalOpen, setAnytimeLoanModalOpen] = useState(false);
+
   // ── Fetch data on mount ───────────────────────────────────────────────────────
   useEffect(() => {
     if (canView) {
@@ -151,6 +177,8 @@ export default function CustomerViewPage() {
       dispatch(fetchLoanPlanAndPenalities());
       dispatch(fetchInterestOnlyLoansByCustomer(id));
       dispatch(fetchActiveInterestOnlyLoanPlans());
+      dispatch(fetchInterestLoansByCustomer(id));
+      dispatch(fetchInterestLoans({ limit: 100 }));
     }
     return () => dispatch(clearSelectedCustomer());
   }, [dispatch, id, canView]);
@@ -170,6 +198,38 @@ export default function CustomerViewPage() {
     );
   }, [interestCustomerLoans, allInterestLoans, id]);
 
+  const customerAnytimeLoansList = useMemo(() => {
+    const list = normalizeLoanList(anytimeCustomerLoans);
+    const all = normalizeLoanList(allAnytimeLoans);
+    const map = new Map();
+
+    const addLoan = (loan, isFromCustomerList = false) => {
+      if (!loan || typeof loan !== "object") return;
+      const loanId = loan.id ?? loan.loan_id;
+      if (loanId == null) return;
+
+      const customerValue =
+        loan.customer_id ?? loan.customerId ?? loan.customer?.id ?? null;
+      const matchesCustomer =
+        isFromCustomerList ||
+        (customerValue != null && String(customerValue) === String(id)) ||
+        (loan.customer?.id != null && String(loan.customer.id) === String(id));
+
+      if (matchesCustomer) {
+        map.set(String(loanId), loan);
+      }
+    };
+
+    list.forEach((l) => addLoan(l, true));
+    all.forEach((loan) => {
+      if (!map.has(String(loan?.id ?? loan?.loan_id))) {
+        addLoan(loan, false);
+      }
+    });
+
+    return Array.from(map.values());
+  }, [anytimeCustomerLoans, allAnytimeLoans, id]);
+
   const fullName = useMemo(
     () =>
       [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") ||
@@ -178,8 +238,19 @@ export default function CustomerViewPage() {
   );
 
   const tabs = useMemo(
-    () => buildTabs(customer, customerLoansList, customerInterestLoansList),
-    [customer, customerLoansList, customerInterestLoansList]
+    () =>
+      buildTabs(
+        customer,
+        customerLoansList,
+        customerInterestLoansList,
+        customerAnytimeLoansList
+      ),
+    [
+      customer,
+      customerLoansList,
+      customerInterestLoansList,
+      customerAnytimeLoansList,
+    ]
   );
 
   // ── Handlers ──────────────────────────────────────────────────────────────────
@@ -451,9 +522,11 @@ export default function CustomerViewPage() {
         <CustomerLoansTab
           loans={customerLoansList}
           interestLoans={customerInterestLoansList}
-          loading={loansLoading || interestLoansLoading}
+          anytimeLoans={customerAnytimeLoansList}
+          loading={loansLoading || interestLoansLoading || anytimeLoansLoading}
           onOpenCreateLoan={canCreateLoan ? handleOpenCreateLoan : undefined}
           onOpenCreateInterestLoan={canCreateInterestLoan ? handleOpenCreateInterestLoan : undefined}
+          onOpenCreateAnytimeLoan={canCreateInterestLoan ? () => setAnytimeLoanModalOpen(true) : undefined}
         />
       )}
 
@@ -528,6 +601,25 @@ export default function CustomerViewPage() {
           lockedCustomer={true}
           onClose={handleCloseCreateInterestLoan}
           onSubmit={handleSubmitCreateInterestLoan}
+        />
+      )}
+
+      {/* ── Anytime Interest Loan Creation Modal ────────────────────────────── */}
+      {anytimeLoanModalOpen && (
+        <InterestLoanFormModal
+          isOpen={anytimeLoanModalOpen}
+          initialData={{
+            customer_id: id,
+            customer_name: fullName,
+            mobile: customer?.mobile,
+            customer_no: customer?.customer_no,
+          }}
+          lockedCustomer={true}
+          onClose={() => setAnytimeLoanModalOpen(false)}
+          onSuccess={() => {
+            dispatch(fetchInterestLoansByCustomer(id));
+            dispatch(fetchInterestLoans({ limit: 100 }));
+          }}
         />
       )}
     </div>

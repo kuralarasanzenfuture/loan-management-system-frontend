@@ -332,7 +332,7 @@ const authSlice = createSlice({
         const userData = unwrapUser(action.payload);
         state.user = userData;
 
-        console.log("Fetched Current User:", userData); // Debugging line to check the fetched user data
+        // console.log("Fetched Current User:", userData); // Debugging line to check the fetched user data
         // Persist the updated getMe profile to LocalStorage
         localStorage.setItem("user", JSON.stringify(userData));
       })

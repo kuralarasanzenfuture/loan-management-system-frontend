@@ -123,8 +123,23 @@ export const removeInterestLoan = createAsyncThunk(
 // INITIAL STATE
 // =========================================================
 
+const unwrapLoanArray = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+
+  if (Array.isArray(payload.loans)) return payload.loans;
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.data?.loans)) return payload.data.loans;
+  if (Array.isArray(payload.data?.customerLoans)) return payload.data.customerLoans;
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.results)) return payload.results;
+
+  return [];
+};
+
 const initialState = {
   loans: [],
+  customerLoans: [],
   loan: null,
   summary: {
     total_loans: 0,
@@ -187,20 +202,20 @@ const interestLoanSlice = createSlice({
       })
       .addCase(fetchInterestLoans.fulfilled, (state, action) => {
         state.loading = false;
-        const payloadData = action.payload.data;
+        const payloadData = action.payload?.data ?? action.payload;
+
         if (payloadData && payloadData.loans && payloadData.pagination) {
           state.loans = payloadData.loans;
           state.pagination = payloadData.pagination;
-        } else if (Array.isArray(payloadData)) {
-          state.loans = payloadData;
+        } else {
+          const list = unwrapLoanArray(payloadData);
+          state.loans = list;
           state.pagination = {
-            total: payloadData.length,
+            total: list.length,
             page: 1,
-            limit: payloadData.length,
+            limit: list.length,
             totalPages: 1,
           };
-        } else {
-          state.loans = [];
         }
       })
       .addCase(fetchInterestLoans.rejected, (state, action) => {
@@ -222,6 +237,20 @@ const interestLoanSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Fetch By Customer
+      .addCase(fetchInterestLoansByCustomer.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchInterestLoansByCustomer.fulfilled, (state, action) => {
+        state.loading = false;
+        state.customerLoans = unwrapLoanArray(action.payload);
+      })
+      .addCase(fetchInterestLoansByCustomer.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       // Add Loan
       .addCase(addInterestLoan.pending, (state) => {
         state.saving = true;
@@ -229,8 +258,20 @@ const interestLoanSlice = createSlice({
       })
       .addCase(addInterestLoan.fulfilled, (state, action) => {
         state.saving = false;
-        if (action.payload.data) {
-          state.loans.unshift(action.payload.data);
+        const newLoan = action.payload?.data ?? action.payload;
+        if (newLoan && typeof newLoan === "object") {
+          state.loans = [
+            newLoan,
+            ...state.loans.filter((l) => l.id !== newLoan.id),
+          ];
+          if (Array.isArray(state.customerLoans)) {
+            state.customerLoans = [
+              newLoan,
+              ...state.customerLoans.filter((l) => l.id !== newLoan.id),
+            ];
+          } else {
+            state.customerLoans = [newLoan];
+          }
           state.pagination.total += 1;
         }
       })

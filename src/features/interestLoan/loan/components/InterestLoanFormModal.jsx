@@ -26,9 +26,15 @@ import {
   FREQUENCY_CONFIG,
 } from "../utils/interestLoanHelpers.js";
 
-const InterestLoanFormModal = ({ isOpen, initialData = null, onClose, onSuccess }) => {
+const InterestLoanFormModal = ({
+  isOpen,
+  initialData = null,
+  lockedCustomer = false,
+  onClose,
+  onSuccess,
+}) => {
   const dispatch = useDispatch();
-  const isEdit = Boolean(initialData);
+  const isEdit = Boolean(initialData?.id);
 
   const { activePlans = [] } = useSelector(
     (state) => state.interestPlans || {},
@@ -124,11 +130,15 @@ const InterestLoanFormModal = ({ isOpen, initialData = null, onClose, onSuccess 
     customerList.find((c) => String(c.id) === String(formData.customer_id)) ||
     (initialData
       ? {
-          id: initialData.customer_id,
-          first_name: initialData.first_name || initialData.customer_name || "Customer",
-          last_name: initialData.last_name || "",
+          id: initialData.customer_id || initialData.id,
+          first_name:
+            initialData.first_name ||
+            (initialData.customer_name ? initialData.customer_name.split(" ")[0] : "Customer"),
+          last_name:
+            initialData.last_name ||
+            (initialData.customer_name ? initialData.customer_name.split(" ").slice(1).join(" ") : ""),
           customer_no: initialData.customer_no,
-          mobile: initialData.customer_mobile,
+          mobile: initialData.customer_mobile || initialData.mobile,
         }
       : null);
 
@@ -295,7 +305,7 @@ const InterestLoanFormModal = ({ isOpen, initialData = null, onClose, onSuccess 
             <label className="label pb-1">
               <span className="label-text text-xs font-semibold flex items-center gap-1.5 text-base-content">
                 <User size={13} className="text-primary" />
-                Customer {isEdit ? "(Locked)" : "*"}
+                Customer {isEdit || lockedCustomer ? "(Locked)" : "*"}
               </span>
             </label>
 
@@ -321,7 +331,7 @@ const InterestLoanFormModal = ({ isOpen, initialData = null, onClose, onSuccess 
                   </div>
                 </div>
 
-                {!isEdit && (
+                {!isEdit && !lockedCustomer && (
                   <button
                     type="button"
                     onClick={handleClearCustomer}
@@ -329,6 +339,11 @@ const InterestLoanFormModal = ({ isOpen, initialData = null, onClose, onSuccess 
                   >
                     Change
                   </button>
+                )}
+                {(isEdit || lockedCustomer) && (
+                  <span className="badge badge-sm badge-ghost gap-1 text-[11px] text-base-content/60">
+                    <Lock size={11} /> Locked
+                  </span>
                 )}
               </div>
             ) : (
