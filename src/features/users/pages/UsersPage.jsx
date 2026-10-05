@@ -21,6 +21,7 @@ import UserFormModal from "../components/UserFormModal.jsx";
 import DeleteConfirmModal from "../components/DeleteConfirmModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
+import { isSystemUser } from "../utils/userUtils.js";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All statuses" },
@@ -131,15 +132,25 @@ export default function UsersPage() {
 
       if (wasFulfilled) {
         setFormModal(null);
+        dispatch(fetchUsers());
       }
     } finally {
-      dispatch(fetchUsers());
       setFormSubmitting(false);
     }
   };
 
+  const handleOpenDelete = (user) => {
+    dispatch(clearUserError());
+    setDeleteTarget(user);
+  };
+
+  const handleCloseDelete = () => {
+    setDeleteTarget(null);
+    dispatch(clearUserError());
+  };
+
   const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || isSystemUser(deleteTarget)) return;
     setDeleteSubmitting(true);
     try {
       const action = await dispatch(removeUser(deleteTarget.id));
@@ -173,10 +184,10 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {error && !formModal && (
+      {error && !formModal && !deleteTarget && (
         <div className="alert alert-error text-sm py-2 mb-4">
           <span>
-            {typeof error === "string" ? error : "Something went wrong."}
+            {typeof error === "string" ? error : error?.message || "Something went wrong."}
           </span>
         </div>
       )}
@@ -257,7 +268,7 @@ export default function UsersPage() {
           loading={loading}
           roleMap={roleMap}
           onEdit={handleOpenEdit}
-          onDelete={setDeleteTarget}
+          onDelete={handleOpenDelete}
         />
 
         {totalItems > 0 && (
@@ -287,9 +298,11 @@ export default function UsersPage() {
         open={Boolean(deleteTarget)}
         itemName={deleteTarget?.username}
         itemLabel="user"
+        isSystem={isSystemUser(deleteTarget)}
         loading={deleteSubmitting}
+        error={deleteTarget ? error : null}
         onConfirm={handleConfirmDelete}
-        onClose={() => setDeleteTarget(null)}
+        onClose={handleCloseDelete}
       />
     </div>
   );

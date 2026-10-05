@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Pencil, Trash2, UserRound, Phone, Mail, KeyRound } from "lucide-react";
+import { Pencil, Trash2, UserRound, Phone, Mail, KeyRound, Lock, Shield } from "lucide-react";
+import { isSystemUser } from "../utils/userUtils.js";
 
 const STATUS_STYLES = {
   active: "badge-success badge-outline",
@@ -70,6 +71,7 @@ export default function UserTable({
         <tbody>
           {users.map((user, index) => {
             const permPath = `/user-permissions/${user.id}`;
+            const isSystem = isSystemUser(user);
 
             return (
               <tr
@@ -85,12 +87,26 @@ export default function UserTable({
                     className="flex items-center gap-3 py-1 group no-underline text-inherit"
                     title="Click or Ctrl+Click to open user permissions in new tab"
                   >
-                    <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10 text-primary shrink-0 uppercase text-xs font-bold group-hover:bg-primary group-hover:text-primary-content transition-colors">
+                    <div
+                      className={`flex items-center justify-center w-9 h-9 rounded-xl shrink-0 uppercase text-xs font-bold transition-colors ${
+                        isSystem
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white"
+                          : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content"
+                      }`}
+                    >
                       {user.username?.slice(0, 2) || <UserRound size={16} />}
                     </div>
                     <div>
-                      <div className="font-bold text-sm group-hover:text-primary transition-colors">
-                        {user.username}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm group-hover:text-primary transition-colors">
+                          {user.username}
+                        </span>
+                        {isSystem && (
+                          <span className="badge badge-warning badge-sm font-semibold gap-1 text-[10px] shadow-sm">
+                            <Shield size={10} />
+                            System User
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-base-content/40">
                         ID: #{user.id}
@@ -122,9 +138,16 @@ export default function UserTable({
                 </td>
 
                 <td>
-                  <span className="badge badge-ghost badge-sm font-medium">
-                    {user.role_name || roleMap[user.role_id] || `Role #${user.role_id}`}
-                  </span>
+                  {isSystem ? (
+                    <span className="badge badge-warning badge-outline badge-sm font-semibold gap-1 shadow-sm">
+                      <Shield size={10} />
+                      {user.role_name || roleMap[user.role_id] || "System Role"}
+                    </span>
+                  ) : (
+                    <span className="badge badge-ghost badge-sm font-medium">
+                      {user.role_name || roleMap[user.role_id] || `Role #${user.role_id}`}
+                    </span>
+                  )}
                 </td>
 
                 <td>
@@ -172,14 +195,25 @@ export default function UserTable({
                       <Pencil size={15} />
                     </button>
 
-                    <button
-                      className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
-                      onClick={() => onDelete(user)}
-                      aria-label={`Delete ${user.username}`}
-                      title="Delete user"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    {isSystem ? (
+                      <button
+                        disabled
+                        className="btn btn-ghost btn-sm btn-square text-base-content/30 cursor-not-allowed disabled:bg-transparent"
+                        aria-label={`System user ${user.username} cannot be deleted`}
+                        title="System role user is locked and cannot be deleted"
+                      >
+                        <Lock size={15} />
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                        onClick={() => onDelete(user)}
+                        aria-label={`Delete ${user.username}`}
+                        title="Delete user"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

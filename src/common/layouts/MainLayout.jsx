@@ -185,7 +185,7 @@ export default function MainLayout() {
           ================================================== */}
           <main className="flex-1 min-w-0 print:p-0 print:m-0 print:block">
             <div className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-5 md:px-6 lg:px-8 lg:py-7 print:p-0 print:m-0 print:max-w-none">
-              <div className="animate-fade-in print:animate-none">
+              <div className="w-full print:animate-none">
                 <Outlet />
               </div>
             </div>

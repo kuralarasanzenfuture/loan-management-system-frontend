@@ -34,7 +34,9 @@ export const editRole = createAsyncThunk(
     try {
       return await updateRole({ id, formData });
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      return rejectWithValue(
+        err.response?.data?.message || err.response?.data || err.message,
+      );
     }
   },
 );
@@ -47,7 +49,9 @@ export const removeRole = createAsyncThunk(
       await deleteRole(id);
       return id;
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      return rejectWithValue(
+        err.response?.data?.message || err.response?.data || err.message,
+      );
     }
   },
 );
@@ -94,7 +98,13 @@ const roleSlice = createSlice({
       })
 
       // Update
+      .addCase(editRole.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(editRole.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
         const updated = action.payload.data || action.payload;
 
         const index = state.roles.findIndex((role) => role.id === updated.id);
@@ -103,10 +113,24 @@ const roleSlice = createSlice({
           state.roles[index] = updated;
         }
       })
+      .addCase(editRole.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
       // Delete
+      .addCase(removeRole.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(removeRole.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
         state.roles = state.roles.filter((role) => role.id !== action.payload);
+      })
+      .addCase(removeRole.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

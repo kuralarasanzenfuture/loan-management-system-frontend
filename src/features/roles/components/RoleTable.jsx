@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Pencil, Trash2, ShieldCheck, KeyRound } from "lucide-react";
+import { Pencil, Trash2, ShieldCheck, Shield, KeyRound, Lock } from "lucide-react";
+import { isSystemRole } from "../utils/roleUtils.js";
 
 /**
  * RoleTable
@@ -57,6 +58,7 @@ export default function RoleTable({ roles, loading, onEdit, onDelete }) {
           <tbody>
             {roles.map((role, index) => {
               const permPath = `/role-permissions/${role.id}`;
+              const isSystem = isSystemRole(role);
 
               return (
                 <tr
@@ -72,12 +74,26 @@ export default function RoleTable({ roles, loading, onEdit, onDelete }) {
                       className="flex items-center gap-3 py-1 group no-underline text-inherit"
                       title="Click or Ctrl+Click to open permissions in new tab"
                     >
-                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10 text-primary shrink-0 group-hover:bg-primary group-hover:text-primary-content transition-colors">
-                        <ShieldCheck size={16} />
+                      <div
+                        className={`flex items-center justify-center w-9 h-9 rounded-xl shrink-0 transition-colors ${
+                          isSystem
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white"
+                            : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content"
+                        }`}
+                      >
+                        {isSystem ? <Shield size={16} /> : <ShieldCheck size={16} />}
                       </div>
                       <div>
-                        <div className="font-bold text-sm group-hover:text-primary transition-colors">
-                          {role.name}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm group-hover:text-primary transition-colors">
+                            {role.name}
+                          </span>
+                          {isSystem && (
+                            <span className="badge badge-warning badge-sm font-semibold gap-1 text-[11px] shadow-sm">
+                              <Shield size={11} />
+                              System Role
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-base-content/40">
                           ID: #{role.id}
@@ -125,23 +141,45 @@ export default function RoleTable({ roles, loading, onEdit, onDelete }) {
                         <KeyRound size={15} />
                       </Link>
 
-                      <button
-                        className="btn btn-ghost btn-sm btn-square"
-                        onClick={() => onEdit(role)}
-                        aria-label={`Edit ${role.name}`}
-                        title="Edit role"
-                      >
-                        <Pencil size={15} />
-                      </button>
+                      {isSystem ? (
+                        <button
+                          disabled
+                          className="btn btn-ghost btn-sm btn-square text-base-content/30 cursor-not-allowed disabled:bg-transparent"
+                          aria-label={`System role ${role.name} cannot be modified`}
+                          title="System role is protected and cannot be modified"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-ghost btn-sm btn-square"
+                          onClick={() => onEdit(role)}
+                          aria-label={`Edit ${role.name}`}
+                          title="Edit role"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      )}
 
-                      <button
-                        className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
-                        onClick={() => onDelete(role)}
-                        aria-label={`Delete ${role.name}`}
-                        title="Delete role"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      {isSystem ? (
+                        <button
+                          disabled
+                          className="btn btn-ghost btn-sm btn-square text-base-content/30 cursor-not-allowed disabled:bg-transparent"
+                          aria-label={`System role ${role.name} cannot be deleted`}
+                          title="System role is locked and cannot be deleted"
+                        >
+                          <Lock size={15} />
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                          onClick={() => onDelete(role)}
+                          aria-label={`Delete ${role.name}`}
+                          title="Delete role"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -13,6 +13,7 @@ import RoleFormModal from "../components/RoleFormModal.jsx";
 import DeleteConfirmModal from "../components/DeleteConfirmModal.jsx";
 import Pagination from "../../../common/components/Pagination/Pagination.jsx";
 import usePagination from "../../../common/hooks/usePagination.js";
+import { isSystemRole } from "../utils/roleUtils.js";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All statuses" },
@@ -95,6 +96,7 @@ export default function RolesPage() {
   };
 
   const handleOpenEdit = (role) => {
+    if (isSystemRole(role)) return;
     dispatch(clearRoleError());
     setFormModal(role);
   };
@@ -127,8 +129,18 @@ export default function RolesPage() {
     }
   };
 
+  const handleOpenDelete = (role) => {
+    dispatch(clearRoleError());
+    setDeleteTarget(role);
+  };
+
+  const handleCloseDelete = () => {
+    setDeleteTarget(null);
+    dispatch(clearRoleError());
+  };
+
   const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || isSystemRole(deleteTarget)) return;
     setDeleteSubmitting(true);
     try {
       const action = await dispatch(removeRole(deleteTarget.id));
@@ -162,11 +174,11 @@ export default function RolesPage() {
         </button>
       </div>
 
-      {/* Fetch-level error (not the form's — that's shown inside the modal) */}
-      {error && !formModal && (
+      {/* Fetch-level error (not the form's or delete modal's) */}
+      {error && !formModal && !deleteTarget && (
         <div className="alert alert-error text-sm py-2 mb-4">
           <span>
-            {typeof error === "string" ? error : "Something went wrong."}
+            {typeof error === "string" ? error : error?.message || "Something went wrong."}
           </span>
         </div>
       )}
@@ -246,7 +258,7 @@ export default function RolesPage() {
           roles={pagedRoles}
           loading={loading}
           onEdit={handleOpenEdit}
-          onDelete={setDeleteTarget}
+          onDelete={handleOpenDelete}
         />
 
         {totalItems > 0 && (
@@ -274,9 +286,11 @@ export default function RolesPage() {
       <DeleteConfirmModal
         open={Boolean(deleteTarget)}
         itemName={deleteTarget?.name}
+        isSystem={isSystemRole(deleteTarget)}
         loading={deleteSubmitting}
+        error={deleteTarget ? error : null}
         onConfirm={handleConfirmDelete}
-        onClose={() => setDeleteTarget(null)}
+        onClose={handleCloseDelete}
       />
     </div>
   );

@@ -384,15 +384,31 @@ export default function UserFormModal({
 
   const validate = () => {
     const errors = {};
-    if (!form.username.trim()) errors.username = "Username is required";
-    if (!isEdit && !form.password) errors.password = "Password is required";
-    if (form.password && form.password.length < 6)
+    if (!form.username.trim()) {
+      errors.username = "Username is required";
+    } else if (form.username.trim().length < 3) {
+      errors.username = "Username must be at least 3 characters";
+    }
+
+    if (!form.mobile || !form.mobile.trim()) {
+      errors.mobile = "Mobile number is required";
+    } else if (form.mobile.replace(/\D/g, "").length < 10) {
+      errors.mobile = "Mobile number must be at least 10 digits";
+    }
+
+    if (!isEdit && !form.password) {
+      errors.password = "Password is required";
+    } else if (form.password && form.password.length < 6) {
       errors.password = "Password must be at least 6 characters";
-    if (!form.role_id) errors.role_id = "Please select a role";
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email))
+    }
+
+    if (!form.role_id) {
+      errors.role_id = "Please select a role";
+    }
+
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) {
       errors.email = "Enter a valid email";
-    if (form.mobile && form.mobile.length < 10)
-      errors.mobile = "Mobile number must be 10 digits";
+    }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -402,15 +418,17 @@ export default function UserFormModal({
     e.preventDefault();
     if (!validate()) return;
 
+    const rawMobile = form.mobile ? form.mobile.replace(/\D/g, "") : "";
+
     const payload = {
-      username: form.username.trim(),
-      email: form.email.trim() || null,
-      mobile: form.mobile.trim() || null, // Clean 10-digit numeric string sent to DB
+      username: form.username.trim().toLowerCase(),
+      email: form.email.trim() ? form.email.trim().toLowerCase() : null,
+      mobile: rawMobile, // Clean 10-digit numeric string sent to DB
       role_id: Number(form.role_id),
       status: form.status,
     };
 
-    if (!isEdit || form.password) {
+    if (!isEdit || (form.password && form.password.trim())) {
       payload.password = form.password;
     }
 
@@ -438,7 +456,7 @@ export default function UserFormModal({
         {error && (
           <div className="alert alert-error text-sm py-2 mb-4">
             <span>
-              {typeof error === "string" ? error : "Something went wrong."}
+              {typeof error === "string" ? error : error?.message || "Something went wrong."}
             </span>
           </div>
         )}
@@ -539,7 +557,7 @@ export default function UserFormModal({
           {/* Mobile Field (With Realtime Formatting) */}
           <div className="form-control">
             <label className="label pb-1">
-              <span className="label-text text-xs font-semibold">Mobile</span>
+              <span className="label-text text-xs font-semibold">Mobile *</span>
             </label>
             <input
               type="tel"

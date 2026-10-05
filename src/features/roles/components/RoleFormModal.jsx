@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { X, ShieldCheck } from "lucide-react";
+import { X, ShieldCheck, Lock } from "lucide-react";
+import { isSystemRole } from "../utils/roleUtils.js";
 
 /**
  * RoleFormModal
@@ -32,6 +33,7 @@ export default function RoleFormModal({
   onSubmit,
 }) {
   const isEdit = Boolean(initialData);
+  const isSystem = isSystemRole(initialData);
   const [form, setForm] = useState(EMPTY_FORM);
   const [validationError, setValidationError] = useState("");
 
@@ -55,6 +57,7 @@ export default function RoleFormModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isSystem) return;
     if (!form.name.trim()) {
       setValidationError("Role name is required.");
       return;
@@ -79,17 +82,26 @@ export default function RoleFormModal({
 
         <div className="flex items-center gap-3 mb-1">
           <span className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary shrink-0">
-            <ShieldCheck size={17} />
+            {isSystem ? <Lock size={17} /> : <ShieldCheck size={17} />}
           </span>
           <h3 className="font-semibold text-lg leading-tight">
-            {isEdit ? "Edit role" : "Create a new role"}
+            {isSystem ? "System role" : isEdit ? "Edit role" : "Create a new role"}
           </h3>
         </div>
         <p className="text-sm text-base-content/50 mb-5">
-          {isEdit
-            ? "Update this role's name, description, or status."
-            : "Give the role a name and description to get started."}
+          {isSystem
+            ? "This is a core system role and its configuration cannot be modified."
+            : isEdit
+              ? "Update this role's name, description, or status."
+              : "Give the role a name and description to get started."}
         </p>
+
+        {isSystem && (
+          <div className="alert alert-warning text-sm py-2 mb-4 flex items-center gap-2">
+            <Lock size={16} />
+            <span>System roles are protected and cannot be modified.</span>
+          </div>
+        )}
 
         {displayError && (
           <div className="alert alert-error text-sm py-2 mb-4">
@@ -109,7 +121,7 @@ export default function RoleFormModal({
               placeholder="e.g. Senior Loan Officer"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              disabled={loading}
+              disabled={loading || isSystem}
               autoFocus
             />
           </div>
@@ -129,7 +141,7 @@ export default function RoleFormModal({
               onChange={(e) =>
                 setForm((f) => ({ ...f, description: e.target.value }))
               }
-              disabled={loading}
+              disabled={loading || isSystem}
             />
           </div>
 
@@ -144,7 +156,7 @@ export default function RoleFormModal({
               onChange={(e) =>
                 setForm((f) => ({ ...f, status: e.target.value }))
               }
-              disabled={loading}
+              disabled={loading || isSystem}
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -163,15 +175,17 @@ export default function RoleFormModal({
             <button
               type="submit"
               className="btn btn-primary btn-sm"
-              disabled={loading}
+              disabled={loading || isSystem}
             >
               {loading
                 ? isEdit
                   ? "Saving…"
                   : "Creating…"
-                : isEdit
-                  ? "Save changes"
-                  : "Create role"}
+                : isSystem
+                  ? "Protected role"
+                  : isEdit
+                    ? "Save changes"
+                    : "Create role"}
             </button>
           </div>
         </form>
